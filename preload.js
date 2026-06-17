@@ -7,7 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanProcesses: ()   => ipcRenderer.invoke('scan-processes'),
   onProcessList: (cb) => ipcRenderer.on('process-list', (_, list) => cb(list)),
   onWinStatus:   (cb) => ipcRenderer.on('win-status', (_, data) => cb(data)),
-  updateTray:    (lbl)=> ipcRenderer.send('tray-update', lbl)
+  updateTray:    (lbl)=> ipcRenderer.send('tray-update', lbl),
+  setLanguage:   (lang)=> ipcRenderer.send('set-language', lang)
 });
 
 

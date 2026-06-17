@@ -6,6 +6,12 @@ let mainWindow    = null;
 let tray          = null;
 let processPoller = null;
 let idleProcess   = null;
+let currentLang   = 'tr';
+
+const MAIN_TRANSLATIONS = {
+  tr: { open: 'Aç', exit: 'Çıkış', defaultToolTip: 'GameTime Tracker' },
+  en: { open: 'Open', exit: 'Exit', defaultToolTip: 'GameTime Tracker' }
+};
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
@@ -14,6 +20,7 @@ function createWindow() {
     minWidth: 800, minHeight: 560,
     frame: false,
     backgroundColor: '#0d1117',
+    icon: path.join(__dirname, 'icon.png'),
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -46,6 +53,27 @@ function parseTasklist(stdout) {
     if (!m) continue;
     const name = m[1];
     const key  = name.toLowerCase();
+    if (seen.has(key) || SYSTEM_PROCS.has(key)) continue;
+    seen.add(key);
+    list.push({ name, pid: parseInt(m[2]) });
+  }
+  return list.sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function parsePowerShellList(stdout) {
+  const seen = new Set();
+  const list = [];
+  const lines = stdout.split('\n');
+  for (let i = 1; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const m = line.match(/^"([^"]+)","(\d+)"/);
+    if (!m) continue;
+    let name = m[1];
+    if (!name.toLowerCase().endsWith('.exe')) {
+      name += '.exe';
+    }
+    const key = name.toLowerCase();
     if (seen.has(key) || SYSTEM_PROCS.has(key)) continue;
     seen.add(key);
     list.push({ name, pid: parseInt(m[2]) });
@@ -138,8 +166,8 @@ function startIdlePoller() {
 // One-shot scan (invokable)
 ipcMain.handle('scan-processes', () =>
   new Promise(resolve => {
-    exec('tasklist /fo csv /nh', { windowsHide: true }, (err, stdout) => {
-      resolve(err ? [] : parseTasklist(stdout));
+    exec('powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object MainWindowTitle | Select-Object -Property ProcessName, Id | ConvertTo-Csv -NoTypeInformation"', { windowsHide: true }, (err, stdout) => {
+      resolve(err ? [] : parsePowerShellList(stdout));
     });
   })
 );
@@ -148,19 +176,30 @@ ipcMain.handle('scan-processes', () =>
 ipcMain.on('win-minimize', () => mainWindow?.minimize());
 ipcMain.on('win-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize());
 ipcMain.on('win-close',    () => mainWindow?.hide());
-ipcMain.on('tray-update',  (_, label) => tray?.setToolTip(label || 'GameTime Tracker'));
+ipcMain.on('tray-update',  (_, label) => tray?.setToolTip(label || (MAIN_TRANSLATIONS[currentLang] || MAIN_TRANSLATIONS.tr).defaultToolTip));
+ipcMain.on('set-language', (_, lang) => {
+  currentLang = lang;
+  if (tray) updateTrayMenu();
+});
 
 // ─── Tray ─────────────────────────────────────────────────────────────────────
 function createTray() {
-  const img = nativeImage.createEmpty();
-  tray = new Tray(img);
-  tray.setToolTip('GameTime Tracker');
-  tray.setContextMenu(Menu.buildFromTemplate([
-    { label: 'Aç',    click: () => { mainWindow?.show(); mainWindow?.focus(); } },
-    { type: 'separator' },
-    { label: 'Çıkış', click: () => app.quit() }
-  ]));
+  const iconPath = path.join(__dirname, 'icon.png');
+  const img = nativeImage.createFromPath(iconPath);
+  const trayImg = img.resize({ width: 16, height: 16 });
+  tray = new Tray(trayImg);
+  updateTrayMenu();
   tray.on('click', () => { mainWindow?.show(); mainWindow?.focus(); });
+}
+
+function updateTrayMenu() {
+  const dict = MAIN_TRANSLATIONS[currentLang] || MAIN_TRANSLATIONS.tr;
+  tray.setToolTip(dict.defaultToolTip);
+  tray.setContextMenu(Menu.buildFromTemplate([
+    { label: dict.open,  click: () => { mainWindow?.show(); mainWindow?.focus(); } },
+    { type: 'separator' },
+    { label: dict.exit,  click: () => app.quit() }
+  ]));
 }
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
