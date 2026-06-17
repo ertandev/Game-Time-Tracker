@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>GameTime Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="bg-grid"></div>
+  <div class="bg-glow glow-1"></div>
+  <div class="bg-glow glow-2"></div>
+
+  <!-- TITLEBAR -->
+  <div class="titlebar">
+    <div class="tb-logo">
+      <span class="tb-icon">⚡</span>
+      <span>GameTime<span class="tb-accent">Tracker</span></span>
+    </div>
+    <div class="tb-controls">
+      <button class="tc tc-settings" id="globalSettingsBtn" title="Ayarlar">⚙</button>
+      <button class="tc" id="btnMin">─</button>
+      <button class="tc" id="btnMax">▢</button>
+      <button class="tc tc-x" id="btnClose">✕</button>
+    </div>
+  </div>
+
+  <!-- LAYOUT -->
+  <div class="layout">
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-section-label">OYUNLARIM</div>
+      <div class="sidebar-games" id="sidebarGames">
+        <!-- Injected by JS -->
+      </div>
+      <div class="sidebar-bottom">
+        <button class="btn-add-game" id="addGameBtn">
+          <span class="add-icon">＋</span> Oyun Ekle
+        </button>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main" id="mainContent">
+      <!-- Welcome state -->
+      <div class="welcome-screen" id="welcomeScreen">
+        <div class="welcome-glow"></div>
+        <div class="welcome-icon">🎮</div>
+        <h1 class="welcome-title">Hoş Geldin!</h1>
+        <p class="welcome-sub">Sol panelden bir oyun seç veya yeni oyun ekle.</p>
+        <button class="btn-welcome-add" id="welcomeAddBtn">＋ İlk Oyununu Ekle</button>
+      </div>
+
+      <!-- Game page (hidden until game selected) -->
+      <div class="game-page hidden" id="gamePage">
+
+        <!-- Game Header -->
+        <div class="game-header">
+          <div class="game-avatar" id="gameAvatar"></div>
+          <div class="game-header-info">
+            <h1 class="game-name" id="gameNameTitle"></h1>
+            <div class="game-exe-badge" id="gameExeBadge"></div>
+          </div>
+          <div class="game-header-right">
+            <div class="game-auto-status" id="gameAutoStatus">
+              <span class="auto-dot" id="autoStatusDot"></span>
+              <span id="autoStatusText">İzleniyor</span>
+            </div>
+            <button class="btn-icon-danger" id="deleteGameBtn" title="Oyunu Sil">🗑</button>
+          </div>
+        </div>
+
+        <!-- Timer Card -->
+        <div class="timer-card">
+          <div class="timer-card-top">
+            <div class="session-badge" id="sessionBadge">Oturum bekleniyor</div>
+          </div>
+          <div class="timer-display" id="timerDisplay">
+            <span id="th">00</span><span class="col blink">:</span><span id="tm">00</span><span class="col blink">:</span><span id="ts">00</span>
+          </div>
+          <div class="status-row">
+            <div class="status-pill">
+              <span class="status-dot" id="statusDot"></span>
+              <span id="statusText">Hazır</span>
+            </div>
+            <div class="inact-bar-wrap" id="inactWrap">
+              <div class="inact-bar" id="inactBar"></div>
+              <span class="inact-label" id="inactivityLabel">AFK</span>
+            </div>
+          </div>
+          <div class="controls">
+            <button class="btn-start" id="startBtn">
+              <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
+              Başlat
+            </button>
+            <button class="btn-pause" id="pauseBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+              Duraklat
+            </button>
+            <button class="btn-stop" id="stopBtn" disabled>
+              <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+              Bitir
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats -->
+        <div class="stats-bar">
+          <div class="stat-card">
+            <span class="stat-icon">🕐</span>
+            <div><span class="stat-label">Bugün</span><span class="stat-val" id="statToday">--</span></div>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-card">
+            <span class="stat-icon">📅</span>
+            <div><span class="stat-label">Toplam</span><span class="stat-val" id="statTotal">--</span></div>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-card">
+            <span class="stat-icon">🏆</span>
+            <div><span class="stat-label">En Uzun</span><span class="stat-val" id="statBest">--</span></div>
+          </div>
+          <div class="stat-div"></div>
+          <div class="stat-card">
+            <span class="stat-icon">🎮</span>
+            <div><span class="stat-label">Oturum</span><span class="stat-val" id="statCount">0</span></div>
+          </div>
+        </div>
+
+        <!-- Sessions -->
+        <div class="sessions-section">
+          <div class="sessions-header">
+            <h2 class="sessions-title">📋 Oturum Geçmişi</h2>
+            <button class="btn-clear-sessions" id="clearSessionsBtn">Temizle</button>
+          </div>
+          <div class="session-list" id="sessionList">
+            <div class="empty-state" id="emptyState">
+              <div class="empty-icon">📭</div>
+              <p>Henüz oturum yok</p>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /game-page -->
+    </main>
+  </div>
+
+  <!-- ===== GLOBAL SETTINGS MODAL ===== -->
+  <div class="overlay" id="settingsOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Global Ayarlar</h3>
+        <button class="modal-close" id="settingsClose">✕</button>
+      </div>
+
+      <div class="settings-section-title">Oyun İçi AFK</div>
+      <div class="form-group">
+        <label>Oyun açıkken hiç input olmayınca ne kadar sonra dursun?</label>
+        <div class="setting-control">
+          <input type="range" id="afkSlider" min="0" max="3600" step="30" value="600" />
+          <span class="setting-val" id="afkVal">10dk</span>
+        </div>
+        <p class="setting-hint">Grafik ayarlarında, menüde mouse/klavye yoksa. <strong>0 = kapalı</strong></p>
+      </div>
+
+      <div class="settings-section-title">Alt-Tab Toleransı</div>
+      <div class="form-group">
+        <label>Oyun arka planda kaç saniye kalabilsin?</label>
+        <div class="setting-control">
+          <input type="range" id="altTabSlider" min="0" max="600" step="15" value="120" />
+          <span class="setting-val" id="altTabVal">2dk</span>
+        </div>
+        <p class="setting-hint">Bu süre geçince oyun alt-tab'dayken sayaç durur. <strong>0 = hiç durma</strong></p>
+      </div>
+
+      <div class="settings-section-title">Otomatik Kaydetme</div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="autoSaveCheckbox" />
+          <span>Oyun kapanınca oturumu otomatik kaydet ve bitir</span>
+        </label>
+        <p class="setting-hint">İşaretli ise, oyun kapandığında oturum sonlandırılır ve kaydedilir. İşaretsiz ise, oturum sadece duraklatılır.</p>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="settingsCancel">Vazgeç</button>
+        <button class="btn-modal-confirm" id="settingsSave">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ===== ADD GAME MODAL ===== -->
+  <div class="overlay" id="addGameOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">🎮 Oyun Ekle</h3>
+        <button class="modal-close" id="addGameClose">✕</button>
+      </div>
+
+      <div class="form-group">
+        <label>Oyun Adı</label>
+        <input type="text" id="newGameName" class="form-input" placeholder="Örn: Resident Evil 2" maxlength="50" />
+      </div>
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" data-tab="manual">✏️ Manuel EXE</button>
+        <button class="tab" data-tab="scan">🔍 Şu An Açık</button>
+      </div>
+
+      <!-- Manual Tab -->
+      <div class="tab-pane" id="paneManual">
+        <div class="form-group">
+          <label>Process Adı (.exe)</label>
+          <input type="text" id="newGameExe" class="form-input" placeholder="Örn: re2.exe, Minecraft.exe" />
+        </div>
+      </div>
+
+      <!-- Scan Tab -->
+      <div class="tab-pane hidden" id="paneScan">
+        <button class="btn-scan" id="scanBtn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          Çalışan Processleri Tara
+        </button>
+        <div class="scan-list" id="scanList">
+          <p class="scan-hint">Taramak için butona bas</p>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="addGameCancel">İptal</button>
+        <button class="btn-modal-confirm" id="addGameConfirm">Ekle</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== GENERIC CONFIRM MODAL ===== -->
+  <div class="overlay" id="confirmOverlay">
+    <div class="modal-box modal-sm">
+      <div class="modal-icon-lg" id="confirmIcon">⚠️</div>
+      <h3 class="modal-title" id="confirmTitle">Emin misin?</h3>
+      <p class="confirm-text" id="confirmText"></p>
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="confirmCancel">İptal</button>
+        <button class="btn-modal-confirm btn-danger" id="confirmOk">Evet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
+  <div class="toast" id="toast"></div>
+
+  <script src="app.js"></script>
+</body>
+</html>

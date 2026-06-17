@@ -1,0 +1,15 @@
+{
+  "name": "game-time-tracker",
+  "version": "1.0.0",
+  "description": "Track your gaming sessions automatically",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^42.1.0"
+  }
+}
