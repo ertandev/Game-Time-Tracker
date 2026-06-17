@@ -10,7 +10,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   updateTray:    (lbl)=> ipcRenderer.send('tray-update', lbl),
   setLanguage:   (lang)=> ipcRenderer.send('set-language', lang),
   getFileIcon:   (filePath) => ipcRenderer.invoke('get-file-icon', filePath),
-  findProcessPath:(exeName)  => ipcRenderer.invoke('find-process-path', exeName)
+  findProcessPath:(exeName)  => ipcRenderer.invoke('find-process-path', exeName),
+  setStartup:    (openAtLogin, startMinimized) => ipcRenderer.send('set-startup', { openAtLogin, startMinimized }),
+  openExternal:  (url) => ipcRenderer.send('open-external', url)
 });
 
 

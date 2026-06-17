@@ -1,6 +1,11 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell } = require('electron');
 const path  = require('path');
 const { exec, spawn } = require('child_process');
+
+app.name = 'GameTime Tracker';
+if (process.platform === 'win32') {
+  app.setAppUserModelId('com.ertandev.gametimetracker');
+}
 
 let mainWindow    = null;
 let tray          = null;
@@ -29,7 +34,12 @@ function createWindow() {
     show: false
   });
   mainWindow.loadFile('index.html');
-  mainWindow.once('ready-to-show', () => mainWindow.show());
+  mainWindow.once('ready-to-show', () => {
+    const shouldMinimize = process.argv.includes('--hidden') || process.argv.includes('--minimized');
+    if (!shouldMinimize) {
+      mainWindow.show();
+    }
+  });
   mainWindow.on('close', e => { e.preventDefault(); mainWindow.hide(); });
 }
 
@@ -180,6 +190,24 @@ ipcMain.on('tray-update',  (_, label) => tray?.setToolTip(label || (MAIN_TRANSLA
 ipcMain.on('set-language', (_, lang) => {
   currentLang = lang;
   if (tray) updateTrayMenu();
+});
+ipcMain.on('open-external', (_, url) => {
+  try {
+    shell.openExternal(url);
+  } catch (e) {
+    console.error('Failed to open external link:', e);
+  }
+});
+ipcMain.on('set-startup', (_, { openAtLogin, startMinimized }) => {
+  try {
+    app.setLoginItemSettings({
+      openAtLogin: openAtLogin,
+      path: app.getPath('exe'),
+      args: startMinimized ? ['--hidden'] : []
+    });
+  } catch (e) {
+    console.error('Failed to set login item settings:', e);
+  }
 });
 
 ipcMain.handle('get-file-icon', async (_, filePath) => {

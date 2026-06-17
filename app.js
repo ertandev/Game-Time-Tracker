@@ -37,6 +37,10 @@ const TRANSLATIONS = {
     settings_section_autosave: "Otomatik Kaydetme",
     settings_autosave_label: "Oyun kapanınca oturumu otomatik kaydet ve bitir",
     settings_autosave_hint: "İşaretli ise, oyun kapandığında oturum sonlandırılır ve kaydedilir. İşaretsiz ise, oturum sadece duraklatılır.",
+    settings_section_startup: "Sistem Başlangıcı",
+    settings_startup_label: "Sistem başlangıcında minimize olarak çalıştır",
+    settings_startup_hint: "Uygulama Windows açıldığında otomatik olarak arka planda (sistem tepsisinde) başlar.",
+    about_rights: "Tüm Hakları Saklıdır.",
     settings_section_lang: "Dil / Language",
     
     add_game_modal_title: "🎮 Oyun Ekle",
@@ -144,6 +148,10 @@ const TRANSLATIONS = {
     settings_section_autosave: "Auto-Save",
     settings_autosave_label: "Auto-save and end session when game closes",
     settings_autosave_hint: "If checked, closing the game will end and save the session. If unchecked, the session is paused.",
+    settings_section_startup: "System Startup",
+    settings_startup_label: "Run minimized on system startup",
+    settings_startup_hint: "The application starts automatically in the background (system tray) when Windows boots.",
+    about_rights: "All Rights Reserved.",
     settings_section_lang: "Language / Dil",
     
     add_game_modal_title: "🎮 Add Game",
@@ -234,6 +242,7 @@ let settings = {
   afkTimeout: 600,
   altTabTimeout: 120,
   autoSaveOnClose: true,
+  startMinimized: false,
   lang: navigator.language.startsWith('tr') ? 'tr' : 'en'
 };
 let selectedId   = null; // currently viewed game id
@@ -301,7 +310,7 @@ function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(sett
 function loadSettings() {
   try {
     const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-    if (s) settings = { afkTimeout: 600, altTabTimeout: 120, autoSaveOnClose: true, lang: navigator.language.startsWith('tr') ? 'tr' : 'en', ...s };
+    if (s) settings = { afkTimeout: 600, altTabTimeout: 120, autoSaveOnClose: true, startMinimized: false, lang: navigator.language.startsWith('tr') ? 'tr' : 'en', ...s };
   } catch {}
 }
 function saveState() {
@@ -700,11 +709,50 @@ function openSettingsModal() {
   afkSliderEl.value    = settings.afkTimeout;    afkValEl.textContent    = fmtSec(settings.afkTimeout);
   altTabSliderEl.value = settings.altTabTimeout; altTabValEl.textContent = fmtSec(settings.altTabTimeout);
   $('autoSaveCheckbox').checked = !!settings.autoSaveOnClose;
+  $('startupCheckbox').checked = !!settings.startMinimized;
   $('settingsOverlay').classList.add('open');
 }
 
 afkSliderEl.addEventListener('input',    () => { afkValEl.textContent    = fmtSec(parseInt(afkSliderEl.value)); });
 altTabSliderEl.addEventListener('input', () => { altTabValEl.textContent = fmtSec(parseInt(altTabSliderEl.value)); });
+
+function makeValEditable(valEl, sliderEl, maxVal) {
+  if (valEl.querySelector('input')) return;
+  const currentVal = parseInt(sliderEl.value);
+  valEl.style.borderBottom = 'none';
+  const oldText = valEl.textContent;
+  valEl.textContent = '';
+  const input = document.createElement('input');
+  input.type = 'number';
+  input.className = 'setting-num-input';
+  input.min = 0;
+  input.max = maxVal;
+  input.value = currentVal;
+  valEl.appendChild(input);
+  input.focus();
+  input.select();
+  function saveEdit() {
+    let newVal = parseInt(input.value);
+    if (isNaN(newVal) || newVal < 0) newVal = 0;
+    else if (newVal > maxVal) newVal = maxVal;
+    sliderEl.value = newVal;
+    valEl.innerHTML = '';
+    valEl.textContent = fmtSec(newVal);
+    valEl.style.borderBottom = '';
+    sliderEl.dispatchEvent(new Event('input'));
+  }
+  input.addEventListener('blur', saveEdit);
+  input.addEventListener('keydown', e => {
+    if (e.key === 'Enter') saveEdit();
+    else if (e.key === 'Escape') {
+      valEl.innerHTML = '';
+      valEl.textContent = oldText;
+      valEl.style.borderBottom = '';
+    }
+  });
+}
+afkValEl.addEventListener('click', () => makeValEditable(afkValEl, afkSliderEl, 3600));
+altTabValEl.addEventListener('click', () => makeValEditable(altTabValEl, altTabSliderEl, 600));
 
 $('globalSettingsBtn').addEventListener('click', openSettingsModal);
 $('settingsClose').addEventListener('click',  () => $('settingsOverlay').classList.remove('open'));
@@ -714,8 +762,12 @@ $('settingsSave').addEventListener('click', () => {
   settings.afkTimeout    = parseInt(afkSliderEl.value);
   settings.altTabTimeout = parseInt(altTabSliderEl.value);
   settings.autoSaveOnClose = $('autoSaveCheckbox').checked;
+  settings.startMinimized = $('startupCheckbox').checked;
   settings.lang = $('langSelect').value;
   saveSettings();
+  if (isElectron) {
+    window.electronAPI.setStartup(settings.startMinimized, settings.startMinimized);
+  }
   $('settingsOverlay').classList.remove('open');
   applyLanguage();
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -915,6 +967,22 @@ function applyLanguage() {
 function init() {
   loadSettings(); loadGames();
   applyLanguage();
+
+  // Sync startup settings on launch
+  if (isElectron && settings.startMinimized !== undefined) {
+    window.electronAPI.setStartup(settings.startMinimized, settings.startMinimized);
+  }
+
+  // Bind external links
+  const githubLink = $('githubLink');
+  if (githubLink) {
+    githubLink.addEventListener('click', () => {
+      const url = githubLink.dataset.url;
+      if (isElectron && url) {
+        window.electronAPI.openExternal(url);
+      }
+    });
+  }
 
   const hadState = loadState();
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;

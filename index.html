@@ -18,7 +18,7 @@
   <!-- TITLEBAR -->
   <div class="titlebar">
     <div class="tb-logo">
-      <span class="tb-icon">⚡</span>
+      <img src="icon.png" class="tb-icon-img" alt="logo" />
       <span>GameTime<span class="tb-accent">Tracker</span></span>
     </div>
     <div class="tb-controls">
@@ -187,6 +187,15 @@
         <p class="setting-hint" data-i18n="settings_autosave_hint">İşaretli ise, oyun kapandığında oturum sonlandırılır ve kaydedilir. İşaretsiz ise, oturum sadece duraklatılır.</p>
       </div>
 
+      <div class="settings-section-title" data-i18n="settings_section_startup">Sistem Başlangıcı</div>
+      <div class="form-group">
+        <label class="checkbox-label">
+          <input type="checkbox" id="startupCheckbox" />
+          <span data-i18n="settings_startup_label">Sistem başlangıcında minimize olarak çalıştır</span>
+        </label>
+        <p class="setting-hint" data-i18n="settings_startup_hint">Uygulama Windows açıldığında otomatik olarak arka planda (sistem tepsisinde) başlar.</p>
+      </div>
+
       <div class="settings-section-title" data-i18n="settings_section_lang">Dil / Language</div>
       <div class="form-group">
         <div class="setting-control">
@@ -195,6 +204,16 @@
             <option value="en">English</option>
           </select>
         </div>
+      </div>
+
+      <div class="settings-about">
+        <div class="about-title">GameTime Tracker</div>
+        <div class="about-details">
+          <span>Version 1.0.0</span> • 
+          <span>© 2026 ertandev</span>
+        </div>
+        <div class="about-rights" data-i18n="about_rights">Tüm Hakları Saklıdır.</div>
+        <span class="about-link" id="githubLink" data-url="https://github.com/ertandev/Game-Time-Tracker">GitHub Repository</span>
       </div>
 
       <div class="modal-actions">
