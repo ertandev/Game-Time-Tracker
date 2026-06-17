@@ -8,7 +8,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   onProcessList: (cb) => ipcRenderer.on('process-list', (_, list) => cb(list)),
   onWinStatus:   (cb) => ipcRenderer.on('win-status', (_, data) => cb(data)),
   updateTray:    (lbl)=> ipcRenderer.send('tray-update', lbl),
-  setLanguage:   (lang)=> ipcRenderer.send('set-language', lang)
+  setLanguage:   (lang)=> ipcRenderer.send('set-language', lang),
+  getFileIcon:   (filePath) => ipcRenderer.invoke('get-file-icon', filePath),
+  findProcessPath:(exeName)  => ipcRenderer.invoke('find-process-path', exeName)
 });
 
 

@@ -67,7 +67,7 @@ function parsePowerShellList(stdout) {
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i].trim();
     if (!line) continue;
-    const m = line.match(/^"([^"]+)","(\d+)"/);
+    const m = line.match(/^"([^"]+)","(\d+)",(?:"([^"]*)"|)/);
     if (!m) continue;
     let name = m[1];
     if (!name.toLowerCase().endsWith('.exe')) {
@@ -76,7 +76,7 @@ function parsePowerShellList(stdout) {
     const key = name.toLowerCase();
     if (seen.has(key) || SYSTEM_PROCS.has(key)) continue;
     seen.add(key);
-    list.push({ name, pid: parseInt(m[2]) });
+    list.push({ name, pid: parseInt(m[2]), path: m[3] || '' });
   }
   return list.sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -166,7 +166,7 @@ function startIdlePoller() {
 // One-shot scan (invokable)
 ipcMain.handle('scan-processes', () =>
   new Promise(resolve => {
-    exec('powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object MainWindowTitle | Select-Object -Property ProcessName, Id | ConvertTo-Csv -NoTypeInformation"', { windowsHide: true }, (err, stdout) => {
+    exec('powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object MainWindowTitle | Select-Object -Property ProcessName, Id, Path | ConvertTo-Csv -NoTypeInformation"', { windowsHide: true }, (err, stdout) => {
       resolve(err ? [] : parsePowerShellList(stdout));
     });
   })
@@ -181,6 +181,80 @@ ipcMain.on('set-language', (_, lang) => {
   currentLang = lang;
   if (tray) updateTrayMenu();
 });
+
+ipcMain.handle('get-file-icon', async (_, filePath) => {
+  try {
+    const icon = await app.getFileIcon(filePath, { size: 'normal' });
+    return icon.toDataURL();
+  } catch (e) {
+    return null;
+  }
+});
+
+ipcMain.handle('find-process-path', (_, exeName) =>
+  new Promise(resolve => {
+    const standardizedExe = exeName.toLowerCase().endsWith('.exe') ? exeName : exeName + '.exe';
+    const nameWithoutExt = standardizedExe.replace(/\.exe$/i, '');
+    const script = `
+$exeName = '${standardizedExe}'
+$nameNoExt = '${nameWithoutExt}'
+$directPath = (Get-Process -Name $nameNoExt -ErrorAction SilentlyContinue).Path
+if ($directPath) {
+    Write-Output $directPath
+    exit
+}
+
+$paths = @()
+$steamPath = (Get-ItemProperty -Path 'HKCU:\\Software\\Valve\\Steam' -ErrorAction SilentlyContinue).SteamPath
+if ($steamPath) {
+    $paths += $steamPath
+    $libFile = Join-Path $steamPath 'steamapps\\libraryfolders.vdf'
+    if (Test-Path $libFile) {
+        $libs = Get-Content $libFile | Select-String '"path"' | ForEach-Object { $_.Line.Split('"')[3].Replace('\\\\', '\\') }
+        $paths += $libs
+    }
+}
+
+$epicPath = "$env:ProgramData\\Epic\\EpicGamesLauncher\\Data\\Manifests"
+if (Test-Path $epicPath) {
+    Get-ChildItem -Path $epicPath -Filter '*.item' | ForEach-Object {
+        $json = Get-Content $_.FullName -Raw | ConvertFrom-Json -ErrorAction SilentlyContinue
+        if ($json -and $json.InstallLocation) {
+            $paths += $json.InstallLocation
+        }
+    }
+}
+
+$drives = Get-Volume | Where-Object DriveLetter | ForEach-Object { $_.DriveLetter + ':\\' }
+$commonDirs = @('Games', 'GOG Games', 'GOG Galaxy', 'SteamLibrary', 'Program Files', 'Program Files (x86)', 'Riot Games', 'XboxGames')
+foreach ($drive in $drives) {
+    foreach ($dir in $commonDirs) {
+        $fullDir = Join-Path $drive $dir
+        if (Test-Path $fullDir) {
+            $paths += $fullDir
+        }
+    }
+}
+
+$found = $null
+foreach ($p in ($paths | Select-Object -Unique)) {
+    if (Test-Path $p) {
+        $found = Get-ChildItem -Path $p -Filter $exeName -Recurse -Depth 3 -ErrorAction SilentlyContinue | Select-Object -ExpandProperty FullName -First 1
+        if ($found) { break }
+    }
+}
+
+if ($found) {
+    Write-Output $found
+}
+`;
+    const buffer = Buffer.from(script, 'utf16le');
+    const base64 = buffer.toString('base64');
+    exec(`powershell -NoProfile -NonInteractive -EncodedCommand ${base64}`, { windowsHide: true }, (err, stdout) => {
+      resolve(err ? null : stdout.trim());
+    });
+  })
+);
 
 // ─── Tray ─────────────────────────────────────────────────────────────────────
 function createTray() {

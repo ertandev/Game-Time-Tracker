@@ -244,6 +244,7 @@ let timerInterval    = null;
 let addTabActive     = 'manual';
 let scanSelectedExe  = null;
 let scanSelectedName = null;
+let scanSelectedPath = null;
 let lastGameFocusedMs = 0;
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -424,6 +425,27 @@ if (isElectron) window.electronAPI.onWinStatus(onWinStatus);
 
 
 
+async function checkAndFetchIcon(g) {
+  if (!isElectron || !g || !g.exe || g.icon || g.iconAttempted) return;
+  g.iconAttempted = true;
+  try {
+    const path = await window.electronAPI.findProcessPath(g.exe);
+    if (path) {
+      const iconDataUrl = await window.electronAPI.getFileIcon(path);
+      if (iconDataUrl) {
+        g.icon = iconDataUrl;
+        saveGames();
+        renderSidebar();
+        if (selectedId === g.id) {
+          renderGameHeader();
+        }
+      }
+    }
+  } catch (e) {
+    console.error('Failed to dynamically fetch icon for', g.name, e);
+  }
+}
+
 // ─── Session Logic ────────────────────────────────────────────────────────────
 function startSession(gameId) {
   if(activeState) return;
@@ -434,6 +456,9 @@ function startSession(gameId) {
   startTicking();
   renderControls(); renderTimer(); renderStatusPill(); renderGameHeader();
   renderSidebar(); saveState();
+  if (g.exe) {
+    checkAndFetchIcon(g);
+  }
 }
 function pauseSession() {
   if(!activeState||activeState.isPaused) return;
@@ -473,6 +498,9 @@ function onProcessList(procs) {
     const exeKey = g.exe.toLowerCase().replace(/\.exe$/,'');
     const running = procs.some(p => p.includes(exeKey));
     const myActive = activeGameId===g.id && activeState;
+    if (running && !g.icon && !g.iconAttempted) {
+      checkAndFetchIcon(g);
+    }
     if(running && !myActive && !activeState) {
       startSession(g.id);
       toast(dict.toast_game_opened.replace('NAME', g.name));
@@ -507,8 +535,11 @@ function renderSidebar() {
   el.innerHTML = games.map((g,i)=>{
     const ms = totalMs(g) + (activeGameId===g.id&&activeState?activeState.runningMs:0);
     const running = activeGameId===g.id&&activeState&&!activeState.isPaused&&!activeState.isAutoPaused;
+    const avatarHtml = g.icon
+      ? `<img src="${g.icon}" class="sg-avatar-img" />`
+      : `<div class="sg-avatar">${initials(g.name)}</div>`;
     return `<div class="sg-item${selectedId===g.id?' active':''}" data-gid="${g.id}" style="--game-color:${g.color}">
-      <div class="sg-avatar">${initials(g.name)}</div>
+      ${avatarHtml}
       <div class="sg-info">
         <div class="sg-name">${esc(g.name)}</div>
         <div class="sg-total">${fmtShort(ms)}</div>
@@ -534,7 +565,13 @@ function renderGameHeader() {
   const g = gameById(selectedId); if(!g) return;
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   const av = $('gameAvatar');
-  av.textContent = initials(g.name);
+  if (g.icon) {
+    av.textContent = '';
+    av.innerHTML = `<img src="${g.icon}" class="game-avatar-img" />`;
+  } else {
+    av.innerHTML = '';
+    av.textContent = initials(g.name);
+  }
   av.style.background = g.color;
   av.style.boxShadow  = `0 0 16px ${g.color}66`;
   $('gameNameTitle').textContent = g.name;
@@ -722,7 +759,7 @@ $('deleteGameBtn').addEventListener('click',()=>{
 function openAddModal(e) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   $('newGameName').value=''; $('newGameExe').value='';
-  scanSelectedExe=null; scanSelectedName=null;
+  scanSelectedExe=null; scanSelectedName=null; scanSelectedPath=null;
   $('scanList').innerHTML=`<p class="scan-hint">${dict.scan_hint}</p>`;
   
   if (e && e.shiftKey) {
@@ -759,20 +796,24 @@ function switchTab(tab) {
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
 
-$('addGameConfirm').addEventListener('click',()=>{
+$('addGameConfirm').addEventListener('click', async()=>{
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   const name=$('newGameName').value.trim();
   if(!name) { toast(dict.toast_err_game_name); return; }
   let exe='';
+  let iconDataUrl = null;
   if(addTabActive==='manual') {
     exe=$('newGameExe').value.trim();
     if(exe&&!exe.toLowerCase().endsWith('.exe')) exe+='.exe';
   } else {
     exe=scanSelectedExe||'';
     if(!scanSelectedExe&&!$('newGameName').value.trim()) { toast(dict.toast_err_select_list); return; }
+    if(isElectron && scanSelectedPath) {
+      iconDataUrl = await window.electronAPI.getFileIcon(scanSelectedPath);
+    }
   }
   const idx=games.length;
-  const g={ id:genId(), name, exe:exe.toLowerCase(), color:gameColor(idx), sessions:[] };
+  const g={ id:genId(), name, exe:exe.toLowerCase(), color:gameColor(idx), sessions:[], icon:iconDataUrl };
   games.push(g); saveGames();
   closeAddModal(); renderSidebar();
   selectGame(g.id);
@@ -792,7 +833,7 @@ $('scanBtn').addEventListener('click', async()=>{
     if(!procs.length) { $('scanList').innerHTML=`<p class="scan-hint">${dict.scan_no_procs}</p>`; return; }
     const el=$('scanList');
     el.innerHTML=procs.map(p=>`
-      <div class="scan-item" data-exe="${esc(p.name)}" data-name="${esc(p.name.replace(/\.exe$/i,''))}">
+      <div class="scan-item" data-exe="${esc(p.name)}" data-name="${esc(p.name.replace(/\.exe$/i,''))}" data-path="${esc(p.path || '')}">
         <span class="scan-item-name">${esc(p.name)}</span>
         <span class="scan-item-pid">PID ${p.pid}</span>
       </div>`).join('');
@@ -802,6 +843,7 @@ $('scanBtn').addEventListener('click', async()=>{
         item.classList.add('selected');
         scanSelectedExe  = item.dataset.exe;
         scanSelectedName = item.dataset.name;
+        scanSelectedPath = item.dataset.path;
         $('newGameName').value = formatProcessName(scanSelectedExe);
       });
     });
