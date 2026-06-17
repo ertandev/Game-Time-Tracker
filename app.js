@@ -39,9 +39,11 @@ const TRANSLATIONS = {
     settings_section_autosave: "Otomatik Kaydetme",
     settings_autosave_label: "Oyun kapanınca oturumu otomatik kaydet ve bitir",
     settings_autosave_hint: "İşaretli ise, oyun kapandığında oturum sonlandırılır ve kaydedilir. İşaretsiz ise, oturum sadece duraklatılır.",
-    settings_section_startup: "Sistem Başlangıcı",
+    settings_section_system: "Sistem",
     settings_startup_label: "Sistem başlangıcında minimize olarak çalıştır",
     settings_startup_hint: "Uygulama Windows açıldığında otomatik olarak arka planda (sistem tepsisinde) başlar.",
+    settings_closetotray_label: "Kapatıldığında sistem tepsisine küçült",
+    settings_closetotray_hint: "Kapat (✕) butonuna basıldığında uygulamayı tamamen kapatmak yerine sistem tepsisinde arka planda çalışır durumda tutar.",
     about_rights: "Tüm Hakları Saklıdır.",
     settings_section_lang: "Dil / Language",
     
@@ -159,9 +161,11 @@ const TRANSLATIONS = {
     settings_section_autosave: "Auto-Save",
     settings_autosave_label: "Auto-save and end session when game closes",
     settings_autosave_hint: "If checked, closing the game will end and save the session. If unchecked, the session is paused.",
-    settings_section_startup: "System Startup",
+    settings_section_system: "System",
     settings_startup_label: "Run minimized on system startup",
     settings_startup_hint: "The application starts automatically in the background (system tray) when Windows boots.",
+    settings_closetotray_label: "Minimize to system tray when closed",
+    settings_closetotray_hint: "Keep the application running in the background system tray when the close (✕) button is clicked, instead of exiting completely.",
     about_rights: "All Rights Reserved.",
     settings_section_lang: "Language / Dil",
     
@@ -263,6 +267,7 @@ let settings = {
   altTabTimeout: 120,
   autoSaveOnClose: true,
   startMinimized: false,
+  closeToTray: true,
   lang: navigator.language.startsWith('tr') ? 'tr' : 'en'
 };
 let selectedId   = null; // currently viewed game id
@@ -324,32 +329,106 @@ function todayMs(g)     { const k=todayKey(); return g.sessions.filter(s=>s.date
 function bestMs(g)      { return g.sessions.reduce((a,s)=>Math.max(a,s.durationMs),0); }
 
 // ─── Persist ─────────────────────────────────────────────────────────────────
-function saveGames()    { localStorage.setItem(GAMES_KEY, JSON.stringify(games)); }
-function loadGames()    { try { games = JSON.parse(localStorage.getItem(GAMES_KEY))||[]; } catch { games=[]; } }
-function saveSettings() { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); }
-function loadSettings() {
-  try {
-    const s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
-    if (s) settings = { afkTimeout: 600, altTabTimeout: 120, autoSaveOnClose: true, startMinimized: false, lang: navigator.language.startsWith('tr') ? 'tr' : 'en', ...s };
-  } catch {}
+async function saveGames() {
+  localStorage.setItem(GAMES_KEY, JSON.stringify(games));
+  if (isElectron) {
+    await window.electronAPI.storeWrite(GAMES_KEY, JSON.stringify(games));
+  }
 }
-function saveState() {
-  if(!activeState||!activeGameId) { localStorage.removeItem(STATE_KEY); return; }
-  localStorage.setItem(STATE_KEY, JSON.stringify({
+
+async function loadGames() {
+  if (isElectron) {
+    try {
+      const data = await window.electronAPI.storeRead(GAMES_KEY);
+      if (data) {
+        games = JSON.parse(data) || [];
+        return;
+      }
+    } catch (e) {
+      console.error('Failed to load games from disk:', e);
+    }
+  }
+  try {
+    games = JSON.parse(localStorage.getItem(GAMES_KEY)) || [];
+  } catch {
+    games = [];
+  }
+}
+
+async function saveSettings() {
+  localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings));
+  if (isElectron) {
+    await window.electronAPI.storeWrite(SETTINGS_KEY, JSON.stringify(settings));
+  }
+}
+
+async function loadSettings() {
+  let s = null;
+  if (isElectron) {
+    try {
+      const data = await window.electronAPI.storeRead(SETTINGS_KEY);
+      if (data) {
+        s = JSON.parse(data);
+      }
+    } catch (e) {
+      console.error('Failed to load settings from disk:', e);
+    }
+  }
+  if (!s) {
+    try {
+      s = JSON.parse(localStorage.getItem(SETTINGS_KEY));
+    } catch {}
+  }
+  if (s) {
+    settings = { afkTimeout: 600, altTabTimeout: 120, autoSaveOnClose: true, startMinimized: false, closeToTray: true, lang: navigator.language.startsWith('tr') ? 'tr' : 'en', ...s };
+  }
+  if (isElectron) {
+    window.electronAPI.setCloseToTray(settings.closeToTray !== false);
+  }
+}
+
+async function saveState() {
+  if (!activeState || !activeGameId) {
+    localStorage.removeItem(STATE_KEY);
+    if (isElectron) {
+      await window.electronAPI.storeWrite(STATE_KEY, '');
+    }
+    return;
+  }
+  const stateStr = JSON.stringify({
     ...activeState, activeGameId,
-    lastTickTs: (activeState.isPaused||activeState.isAutoPaused) ? null : Date.now()
-  }));
+    lastTickTs: (activeState.isPaused || activeState.isAutoPaused) ? null : Date.now()
+  });
+  localStorage.setItem(STATE_KEY, stateStr);
+  if (isElectron) {
+    await window.electronAPI.storeWrite(STATE_KEY, stateStr);
+  }
 }
-function loadState() {
+
+async function loadState() {
   try {
-    const d = JSON.parse(localStorage.getItem(STATE_KEY));
-    if(!d) return false;
+    let d = null;
+    if (isElectron) {
+      try {
+        const data = await window.electronAPI.storeRead(STATE_KEY);
+        if (data) d = JSON.parse(data);
+      } catch (e) {
+        console.error('Failed to load state from disk:', e);
+      }
+    }
+    if (!d) {
+      d = JSON.parse(localStorage.getItem(STATE_KEY));
+    }
+    if (!d) return false;
     activeGameId = d.activeGameId;
-    activeState  = { startTs:d.startTs, runningMs:d.runningMs||0, isPaused:d.isPaused||false, isAutoPaused:d.isAutoPaused||false };
-    if(!activeState.isPaused && !activeState.isAutoPaused && d.lastTickTs)
-      activeState.runningMs += Date.now()-d.lastTickTs;
+    activeState  = { startTs: d.startTs, runningMs: d.runningMs || 0, isPaused: d.isPaused || false, isAutoPaused: d.isAutoPaused || false };
+    if (!activeState.isPaused && !activeState.isAutoPaused && d.lastTickTs) {
+      activeState.runningMs += Date.now() - d.lastTickTs;
+    }
     return true;
-  } catch { return false; }
+  } catch {
+    return false;
+  }
 }
 
 // ─── Timer Engine ─────────────────────────────────────────────────────────────
@@ -734,6 +813,7 @@ function openSettingsModal() {
   altTabSliderEl.value = settings.altTabTimeout; altTabValEl.textContent = fmtSec(settings.altTabTimeout);
   $('autoSaveCheckbox').checked = !!settings.autoSaveOnClose;
   $('startupCheckbox').checked = !!settings.startMinimized;
+  $('closeToTrayCheckbox').checked = settings.closeToTray !== false;
   $('settingsOverlay').classList.add('open');
 }
 
@@ -787,10 +867,12 @@ $('settingsSave').addEventListener('click', () => {
   settings.altTabTimeout = parseInt(altTabSliderEl.value);
   settings.autoSaveOnClose = $('autoSaveCheckbox').checked;
   settings.startMinimized = $('startupCheckbox').checked;
+  settings.closeToTray = $('closeToTrayCheckbox').checked;
   settings.lang = $('langSelect').value;
   saveSettings();
   if (isElectron) {
     window.electronAPI.setStartup(settings.startMinimized, settings.startMinimized);
+    window.electronAPI.setCloseToTray(settings.closeToTray);
   }
   $('settingsOverlay').classList.remove('open');
   applyLanguage();
@@ -1044,8 +1126,9 @@ function renderUpdateStatus() {
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
-function init() {
-  loadSettings(); loadGames();
+async function init() {
+  await loadSettings();
+  await loadGames();
   applyLanguage();
 
   // Sync startup settings on launch
@@ -1064,7 +1147,7 @@ function init() {
     });
   }
 
-  const hadState = loadState();
+  const hadState = await loadState();
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   if (hadState && activeGameId && gameById(activeGameId)) {
     startTicking();

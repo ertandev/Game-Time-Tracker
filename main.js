@@ -2,6 +2,7 @@ const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell } = require(
 const path  = require('path');
 const { exec, spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
+const fs = require('fs');
 
 const gotTheLock = app.requestSingleInstanceLock();
 if (!gotTheLock) {
@@ -26,6 +27,7 @@ let processPoller = null;
 let idleProcess   = null;
 let currentLang   = 'tr';
 let isManualCheck = false;
+let closeToTray   = true;
 
 const MAIN_TRANSLATIONS = {
   tr: { open: 'Aç', exit: 'Çıkış', defaultToolTip: 'GameTime Tracker' },
@@ -54,7 +56,12 @@ function createWindow() {
       mainWindow.show();
     }
   });
-  mainWindow.on('close', e => { e.preventDefault(); mainWindow.hide(); });
+  mainWindow.on('close', e => {
+    if (closeToTray) {
+      e.preventDefault();
+      mainWindow.hide();
+    }
+  });
 }
 
 // ─── Process helpers ──────────────────────────────────────────────────────────
@@ -196,10 +203,39 @@ ipcMain.handle('scan-processes', () =>
   })
 );
 
+ipcMain.handle('store-read', async (event, key) => {
+  try {
+    const filePath = path.join(app.getPath('userData'), `${key}.json`);
+    if (fs.existsSync(filePath)) {
+      return fs.readFileSync(filePath, 'utf8');
+    }
+  } catch (e) {
+    console.error('Failed to read store from disk:', e);
+  }
+  return null;
+});
+
+ipcMain.handle('store-write', async (event, key, data) => {
+  try {
+    const filePath = path.join(app.getPath('userData'), `${key}.json`);
+    fs.writeFileSync(filePath, data, 'utf8');
+    return true;
+  } catch (e) {
+    console.error('Failed to write store to disk:', e);
+    return false;
+  }
+});
+
 // Window controls
-ipcMain.on('win-minimize', () => mainWindow?.minimize());
+ipcMain.on('win-minimize', () => mainWindow?.hide());
 ipcMain.on('win-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize());
-ipcMain.on('win-close',    () => mainWindow?.hide());
+ipcMain.on('win-close',    () => {
+  if (closeToTray) {
+    mainWindow?.hide();
+  } else {
+    mainWindow?.close();
+  }
+});
 ipcMain.on('tray-update',  (_, label) => tray?.setToolTip(label || (MAIN_TRANSLATIONS[currentLang] || MAIN_TRANSLATIONS.tr).defaultToolTip));
 ipcMain.on('set-language', (_, lang) => {
   currentLang = lang;
@@ -222,6 +258,10 @@ ipcMain.on('set-startup', (_, { openAtLogin, startMinimized }) => {
   } catch (e) {
     console.error('Failed to set login item settings:', e);
   }
+});
+
+ipcMain.on('set-close-to-tray', (_, value) => {
+  closeToTray = !!value;
 });
 
 ipcMain.handle('get-file-icon', async (_, filePath) => {
