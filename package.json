@@ -3,13 +3,47 @@
   "version": "1.0.0",
   "description": "Track your gaming sessions automatically",
   "main": "main.js",
+  "author": "ertandev",
+  "license": "ISC",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ertandev/Game-Time-Tracker.git"
+  },
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "dist": "electron-builder"
   },
   "keywords": [],
-  "author": "",
-  "license": "ISC",
   "devDependencies": {
-    "electron": "^42.1.0"
+    "electron": "^42.1.0",
+    "electron-builder": "^24.13.3"
+  },
+  "build": {
+    "appId": "com.ertandev.gametimetracker",
+    "productName": "GameTime Tracker",
+    "directories": {
+      "output": "dist"
+    },
+    "win": {
+      "target": [
+        "nsis"
+      ],
+      "icon": "icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "GameTime Tracker",
+      "license": "license.txt",
+      "installerSidebar": "installer_sidebar.bmp",
+      "runAfterFinish": true
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "ertandev",
+      "repo": "Game-Time-Tracker"
+    }
   }
 }
