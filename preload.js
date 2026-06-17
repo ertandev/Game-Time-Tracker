@@ -12,7 +12,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getFileIcon:   (filePath) => ipcRenderer.invoke('get-file-icon', filePath),
   findProcessPath:(exeName)  => ipcRenderer.invoke('find-process-path', exeName),
   setStartup:    (openAtLogin, startMinimized) => ipcRenderer.send('set-startup', { openAtLogin, startMinimized }),
-  openExternal:  (url) => ipcRenderer.send('open-external', url)
+  openExternal:  (url) => ipcRenderer.send('open-external', url),
+  checkForUpdates: () => ipcRenderer.send('check-for-updates-manual'),
+  quitAndInstall: () => ipcRenderer.send('quit-and-install'),
+  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_, data) => cb(data))
 });
 
 

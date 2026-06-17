@@ -4,6 +4,8 @@ const GAMES_KEY    = 'gtt_games_v4';
 const STATE_KEY    = 'gtt_state_v4';
 const SETTINGS_KEY = 'gtt_settings_v4';
 const isElectron   = !!window.electronAPI;
+let updateDownloadedState = false;
+let lastUpdateStatus = null;
 
 const TRANSLATIONS = {
   tr: {
@@ -115,7 +117,16 @@ const TRANSLATIONS = {
     start: "Başlat",
     pause: "Duraklat",
     resume: "Devam",
-    stop: "Bitir"
+    stop: "Bitir",
+    
+    check_updates: "Güncellemeleri Denetle",
+    update_checking: "Güncellemeler denetleniyor...",
+    update_available: "Yeni sürüm (vVERSION) mevcut. İndiriliyor...",
+    update_not_available: "Uygulama güncel. En son sürümü kullanıyorsunuz.",
+    update_downloading: "İndiriliyor: %PERCENT%",
+    update_downloaded: "Güncelleme hazır. Yüklemek için Yeniden Başlat.",
+    update_error: "Güncelleme hatası: MSG",
+    update_btn_restart: "Yeniden Başlat"
   },
   en: {
     my_games: "MY GAMES",
@@ -226,7 +237,16 @@ const TRANSLATIONS = {
     start: "Start",
     pause: "Pause",
     resume: "Resume",
-    stop: "Stop"
+    stop: "Stop",
+    
+    check_updates: "Check for Updates",
+    update_checking: "Checking for updates...",
+    update_available: "New version (vVERSION) is available. Downloading...",
+    update_not_available: "Application is up-to-date.",
+    update_downloading: "Downloading: %PERCENT%",
+    update_downloaded: "Update ready. Restart to install.",
+    update_error: "Update error: MSG",
+    update_btn_restart: "Restart Now"
   }
 };
 
@@ -961,6 +981,61 @@ function applyLanguage() {
   if (isElectron && window.electronAPI.setLanguage) {
     window.electronAPI.setLanguage(lang);
   }
+
+  const btnCheckUpdate = $('btnCheckUpdate');
+  if (btnCheckUpdate) {
+    if (updateDownloadedState) {
+      btnCheckUpdate.innerHTML = dict.update_btn_restart;
+    } else {
+      btnCheckUpdate.innerHTML = dict.check_updates;
+    }
+  }
+
+  renderUpdateStatus();
+}
+
+function renderUpdateStatus() {
+  const btnCheckUpdate = $('btnCheckUpdate');
+  const updateStatusText = $('updateStatusText');
+  if (!updateStatusText || !lastUpdateStatus) return;
+
+  const lang = settings.lang || 'tr';
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.tr;
+
+  switch (lastUpdateStatus.status) {
+    case 'checking':
+      updateStatusText.textContent = dict.update_checking;
+      if (btnCheckUpdate) btnCheckUpdate.disabled = true;
+      break;
+    case 'available':
+      updateStatusText.textContent = dict.update_available.replace('vVERSION', lastUpdateStatus.version);
+      if (btnCheckUpdate) btnCheckUpdate.disabled = true;
+      break;
+    case 'not-available':
+      updateStatusText.textContent = dict.update_not_available;
+      if (btnCheckUpdate) btnCheckUpdate.disabled = false;
+      break;
+    case 'downloading':
+      updateStatusText.textContent = dict.update_downloading.replace('%PERCENT%', lastUpdateStatus.percent + '%');
+      if (btnCheckUpdate) btnCheckUpdate.disabled = true;
+      break;
+    case 'downloaded':
+      updateDownloadedState = true;
+      updateStatusText.textContent = dict.update_downloaded;
+      if (btnCheckUpdate) {
+        btnCheckUpdate.disabled = false;
+        btnCheckUpdate.textContent = dict.update_btn_restart;
+      }
+      break;
+    case 'error':
+      // Strip out complex error messages to keep it user friendly
+      updateStatusText.textContent = dict.update_error.replace('MSG', lastUpdateStatus.message ? lastUpdateStatus.message.split('\n')[0] : 'Unknown error');
+      if (btnCheckUpdate) {
+        btnCheckUpdate.disabled = false;
+        btnCheckUpdate.textContent = dict.check_updates;
+      }
+      break;
+  }
 }
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
@@ -993,6 +1068,29 @@ function init() {
   } else {
     renderSidebar();
     if (games.length) selectGame(games[0].id);
+  }
+
+  // Auto Updater event binding & click listener
+  if (isElectron) {
+    const btnCheckUpdate = $('btnCheckUpdate');
+
+    if (btnCheckUpdate) {
+      btnCheckUpdate.addEventListener('click', () => {
+        if (updateDownloadedState) {
+          window.electronAPI.quitAndInstall();
+          return;
+        }
+        btnCheckUpdate.disabled = true;
+        lastUpdateStatus = { status: 'checking' };
+        renderUpdateStatus();
+        window.electronAPI.checkForUpdates();
+      });
+    }
+
+    window.electronAPI.onUpdateStatus((data) => {
+      lastUpdateStatus = data;
+      renderUpdateStatus();
+    });
   }
 }
 init();

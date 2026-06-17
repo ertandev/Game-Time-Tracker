@@ -1,6 +1,7 @@
 const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell } = require('electron');
 const path  = require('path');
 const { exec, spawn } = require('child_process');
+const { autoUpdater } = require('electron-updater');
 
 app.name = 'GameTime Tracker';
 if (process.platform === 'win32') {
@@ -12,6 +13,7 @@ let tray          = null;
 let processPoller = null;
 let idleProcess   = null;
 let currentLang   = 'tr';
+let isManualCheck = false;
 
 const MAIN_TRANSLATIONS = {
   tr: { open: 'Aç', exit: 'Çıkış', defaultToolTip: 'GameTime Tracker' },
@@ -305,7 +307,21 @@ function updateTrayMenu() {
 }
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
-app.whenReady().then(() => { createWindow(); createTray(); startPoller(); startIdlePoller(); });
+app.whenReady().then(() => {
+  createWindow();
+  createTray();
+  startPoller();
+  startIdlePoller();
+  
+  // Auto check for updates on startup (delay to let app load) - silent
+  setTimeout(() => {
+    isManualCheck = false;
+    autoUpdater.checkForUpdatesAndNotify().catch(err => {
+      console.log('Silent auto-update check failed:', err.message);
+    });
+  }, 5000);
+});
+
 app.on('before-quit', () => {
   app.isQuitting = true;
   clearInterval(processPoller);
@@ -313,3 +329,60 @@ app.on('before-quit', () => {
   mainWindow?.removeAllListeners('close');
 });
 app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+
+// ─── Auto Updater Events & IPC ────────────────────────────────────────────────
+autoUpdater.autoDownload = true;
+
+autoUpdater.on('checking-for-update', () => {
+  if (isManualCheck) {
+    mainWindow?.webContents.send('update-status', { status: 'checking' });
+  }
+});
+
+autoUpdater.on('update-available', (info) => {
+  mainWindow?.webContents.send('update-status', { status: 'available', version: info.version });
+});
+
+autoUpdater.on('update-not-available', () => {
+  if (isManualCheck) {
+    mainWindow?.webContents.send('update-status', { status: 'not-available' });
+  }
+});
+
+autoUpdater.on('error', (err) => {
+  if (isManualCheck) {
+    mainWindow?.webContents.send('update-status', { status: 'error', message: err.message || 'Unknown error' });
+  }
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  mainWindow?.webContents.send('update-status', { status: 'downloading', percent: Math.round(progressObj.percent) });
+});
+
+autoUpdater.on('update-downloaded', () => {
+  mainWindow?.webContents.send('update-status', { status: 'downloaded' });
+});
+
+ipcMain.on('check-for-updates-manual', () => {
+  isManualCheck = true;
+  autoUpdater.checkForUpdatesAndNotify().then((result) => {
+    // If check succeeds and the remote version matches current app version, force send 'not-available'
+    // to prevent UI from getting stuck if electron-updater caches and skips emitting the event.
+    if (result && result.updateInfo) {
+      const currentVersion = app.getVersion();
+      if (result.updateInfo.version === currentVersion) {
+        mainWindow?.webContents.send('update-status', { status: 'not-available' });
+      }
+    } else {
+      // Fallback if result is empty
+      mainWindow?.webContents.send('update-status', { status: 'not-available' });
+    }
+  }).catch(err => {
+    mainWindow?.webContents.send('update-status', { status: 'error', message: err.message || 'Unknown error' });
+  });
+});
+
+ipcMain.on('quit-and-install', () => {
+  autoUpdater.quitAndInstall(true, true);
+});
+

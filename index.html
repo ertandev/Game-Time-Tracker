@@ -158,62 +158,69 @@
         <button class="modal-close" id="settingsClose" data-i18n-title="cancel">✕</button>
       </div>
 
-      <div class="settings-section-title" data-i18n="settings_section_afk">Oyun İçi AFK</div>
-      <div class="form-group">
-        <label data-i18n="settings_afk_label">Oyun açıkken hiç input olmayınca ne kadar sonra dursun?</label>
-        <div class="setting-control">
-          <input type="range" id="afkSlider" min="0" max="3600" step="30" value="600" />
-          <span class="setting-val" id="afkVal">10dk</span>
+      <div class="modal-body">
+        <div class="settings-section-title" data-i18n="settings_section_afk">Oyun İçi AFK</div>
+        <div class="form-group">
+          <label data-i18n="settings_afk_label">Oyun açıkken hiç input olmayınca ne kadar sonra dursun?</label>
+          <div class="setting-control">
+            <input type="range" id="afkSlider" min="0" max="3600" step="30" value="600" />
+            <span class="setting-val" id="afkVal">10dk</span>
+          </div>
+          <p class="setting-hint" data-i18n="settings_afk_hint">Grafik ayarlarında, menüde mouse/klavye yoksa. <strong>0 = kapalı</strong></p>
         </div>
-        <p class="setting-hint" data-i18n="settings_afk_hint">Grafik ayarlarında, menüde mouse/klavye yoksa. <strong>0 = kapalı</strong></p>
-      </div>
 
-      <div class="settings-section-title" data-i18n="settings_section_alttab">Alt-Tab Toleransı</div>
-      <div class="form-group">
-        <label data-i18n="settings_alttab_label">Oyun arka planda kaç saniye kalabilsin?</label>
-        <div class="setting-control">
-          <input type="range" id="altTabSlider" min="0" max="600" step="15" value="120" />
-          <span class="setting-val" id="altTabVal">2dk</span>
+        <div class="settings-section-title" data-i18n="settings_section_alttab">Alt-Tab Toleransı</div>
+        <div class="form-group">
+          <label data-i18n="settings_alttab_label">Oyun arka planda kaç saniye kalabilsin?</label>
+          <div class="setting-control">
+            <input type="range" id="altTabSlider" min="0" max="600" step="15" value="120" />
+            <span class="setting-val" id="altTabVal">2dk</span>
+          </div>
+          <p class="setting-hint" data-i18n="settings_alttab_hint">Bu süre geçince oyun alt-tab'dayken sayaç durur. <strong>0 = hiç durma</strong></p>
         </div>
-        <p class="setting-hint" data-i18n="settings_alttab_hint">Bu süre geçince oyun alt-tab'dayken sayaç durur. <strong>0 = hiç durma</strong></p>
-      </div>
 
-      <div class="settings-section-title" data-i18n="settings_section_autosave">Otomatik Kaydetme</div>
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="autoSaveCheckbox" />
-          <span data-i18n="settings_autosave_label">Oyun kapanınca oturumu otomatik kaydet ve bitir</span>
-        </label>
-        <p class="setting-hint" data-i18n="settings_autosave_hint">İşaretli ise, oyun kapandığında oturum sonlandırılır ve kaydedilir. İşaretsiz ise, oturum sadece duraklatılır.</p>
-      </div>
-
-      <div class="settings-section-title" data-i18n="settings_section_startup">Sistem Başlangıcı</div>
-      <div class="form-group">
-        <label class="checkbox-label">
-          <input type="checkbox" id="startupCheckbox" />
-          <span data-i18n="settings_startup_label">Sistem başlangıcında minimize olarak çalıştır</span>
-        </label>
-        <p class="setting-hint" data-i18n="settings_startup_hint">Uygulama Windows açıldığında otomatik olarak arka planda (sistem tepsisinde) başlar.</p>
-      </div>
-
-      <div class="settings-section-title" data-i18n="settings_section_lang">Dil / Language</div>
-      <div class="form-group">
-        <div class="setting-control">
-          <select id="langSelect" class="form-input">
-            <option value="tr">Türkçe</option>
-            <option value="en">English</option>
-          </select>
+        <div class="settings-section-title" data-i18n="settings_section_autosave">Otomatik Kaydetme</div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="autoSaveCheckbox" />
+            <span data-i18n="settings_autosave_label">Oyun kapanınca oturumu otomatik kaydet ve bitir</span>
+          </label>
+          <p class="setting-hint" data-i18n="settings_autosave_hint">İşaretli ise, oyun kapandığında oturum sonlandırılır ve kaydedilir. İşaretsiz ise, oturum sadece duraklatılır.</p>
         </div>
-      </div>
 
-      <div class="settings-about">
-        <div class="about-title">GameTime Tracker</div>
-        <div class="about-details">
-          <span>Version 1.0.0</span> • 
-          <span>© 2026 ertandev</span>
+        <div class="settings-section-title" data-i18n="settings_section_startup">Sistem Başlangıcı</div>
+        <div class="form-group">
+          <label class="checkbox-label">
+            <input type="checkbox" id="startupCheckbox" />
+            <span data-i18n="settings_startup_label">Sistem başlangıcında minimize olarak çalıştır</span>
+          </label>
+          <p class="setting-hint" data-i18n="settings_startup_hint">Uygulama Windows açıldığında otomatik olarak arka planda (sistem tepsisinde) başlar.</p>
         </div>
-        <div class="about-rights" data-i18n="about_rights">Tüm Hakları Saklıdır.</div>
-        <span class="about-link" id="githubLink" data-url="https://github.com/ertandev/Game-Time-Tracker">GitHub Repository</span>
+
+        <div class="settings-section-title" data-i18n="settings_section_lang">Dil / Language</div>
+        <div class="form-group">
+          <div class="setting-control">
+            <select id="langSelect" class="form-input">
+              <option value="tr">Türkçe</option>
+              <option value="en">English</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="settings-about">
+          <div class="about-title">GameTime Tracker</div>
+          <div class="about-details">
+            <span>Version 1.0.0</span> • 
+            <span>© 2026 ertandev</span>
+          </div>
+          <div class="about-rights" data-i18n="about_rights">Tüm Hakları Saklıdır.</div>
+          <span class="about-link" id="githubLink" data-url="https://github.com/ertandev/Game-Time-Tracker">GitHub Repository</span>
+          
+          <div class="about-update-section">
+            <button id="btnCheckUpdate" class="btn-check-update" data-i18n="check_updates">Güncellemeleri Denetle</button>
+            <div id="updateStatusText" class="update-status-text"></div>
+          </div>
+        </div>
       </div>
 
       <div class="modal-actions">
@@ -232,35 +239,37 @@
         <button class="modal-close" id="addGameClose" data-i18n-title="cancel">✕</button>
       </div>
 
-      <div class="form-group">
-        <label data-i18n="game_name_label">Oyun Adı</label>
-        <input type="text" id="newGameName" class="form-input" placeholder="Örn: Resident Evil 2" maxlength="50" data-i18n-placeholder="game_name_placeholder" />
-      </div>
-
-      <!-- Tabs -->
-      <div class="tabs">
-        <button class="tab active" data-tab="manual" id="tabManualBtn">✏️ Manuel EXE</button>
-        <button class="tab" data-tab="scan" id="tabScanBtn">🔍 Şu An Açık</button>
-      </div>
-
-      <!-- Manual Tab -->
-      <div class="tab-pane" id="paneManual">
+      <div class="modal-body">
         <div class="form-group">
-          <label data-i18n="process_name_label">Process Adı (.exe)</label>
-          <input type="text" id="newGameExe" class="form-input" placeholder="Örn: re2.exe, Minecraft.exe" data-i18n-placeholder="process_name_placeholder" />
+          <label data-i18n="game_name_label">Oyun Adı</label>
+          <input type="text" id="newGameName" class="form-input" placeholder="Örn: Resident Evil 2" maxlength="50" data-i18n-placeholder="game_name_placeholder" />
         </div>
-      </div>
 
-      <!-- Scan Tab -->
-      <div class="tab-pane hidden" id="paneScan">
-        <button class="btn-scan" id="scanBtn">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-            <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <span data-i18n="scan_btn_idle">Çalışan Processleri Tara</span>
-        </button>
-        <div class="scan-list" id="scanList">
-          <p class="scan-hint" data-i18n="scan_hint">Taramak için butona bas</p>
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab active" data-tab="manual" id="tabManualBtn">✏️ Manuel EXE</button>
+          <button class="tab" data-tab="scan" id="tabScanBtn">🔍 Şu An Açık</button>
+        </div>
+
+        <!-- Manual Tab -->
+        <div class="tab-pane" id="paneManual">
+          <div class="form-group">
+            <label data-i18n="process_name_label">Process Adı (.exe)</label>
+            <input type="text" id="newGameExe" class="form-input" placeholder="Örn: re2.exe, Minecraft.exe" data-i18n-placeholder="process_name_placeholder" />
+          </div>
+        </div>
+
+        <!-- Scan Tab -->
+        <div class="tab-pane hidden" id="paneScan">
+          <button class="btn-scan" id="scanBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+            <span data-i18n="scan_btn_idle">Çalışan Processleri Tara</span>
+          </button>
+          <div class="scan-list" id="scanList">
+            <p class="scan-hint" data-i18n="scan_hint">Taramak için butona bas</p>
+          </div>
         </div>
       </div>
 

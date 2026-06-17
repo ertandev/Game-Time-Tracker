@@ -33,19 +33,25 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
-      "createDesktopShortcut": true,
-      "createStartMenuShortcut": true,
+      "createDesktopShortcut": false,
+      "createStartMenuShortcut": false,
       "shortcutName": "GameTime Tracker",
       "license": "license.txt",
       "installerSidebar": "installer_sidebar.bmp",
       "runAfterFinish": true,
-      "languages": ["en"],
-      "include": "installer.nsh"
+      "installerLanguages": [
+        "en"
+      ],
+      "include": "installer.nsh",
+      "artifactName": "GameTime-Tracker-Setup-${version}.${ext}"
     },
     "publish": {
       "provider": "github",
       "owner": "ertandev",
       "repo": "Game-Time-Tracker"
     }
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.9"
   }
 }
