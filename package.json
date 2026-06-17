@@ -38,7 +38,9 @@
       "shortcutName": "GameTime Tracker",
       "license": "license.txt",
       "installerSidebar": "installer_sidebar.bmp",
-      "runAfterFinish": true
+      "runAfterFinish": true,
+      "languages": ["en"],
+      "include": "installer.nsh"
     },
     "publish": {
       "provider": "github",
