@@ -669,7 +669,11 @@ function renderSessionList() {
   const el=$('sessionList');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   if(!g.sessions.length) {
-    el.innerHTML=''; el.appendChild($('emptyState')); return;
+    el.innerHTML=`<div class="empty-state" id="emptyState">
+      <div class="empty-icon">📭</div>
+      <p data-i18n="no_sessions">${dict.no_sessions}</p>
+    </div>`;
+    return;
   }
   el.innerHTML='';
   g.sessions.forEach((s,i)=>{
@@ -850,6 +854,7 @@ function closeAddModal() { $('addGameOverlay').classList.remove('open'); }
 
 $('addGameBtn').addEventListener('click', e => openAddModal(e));
 $('welcomeAddBtn').addEventListener('click', e => openAddModal(e));
+$('welcomeIcon').addEventListener('click', e => openAddModal(e));
 $('addGameClose').addEventListener('click',closeAddModal);
 $('addGameCancel').addEventListener('click',closeAddModal);
 $('addGameOverlay').addEventListener('click',e=>{ if(e.target===$('addGameOverlay')) closeAddModal(); });

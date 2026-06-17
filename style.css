@@ -33,6 +33,7 @@ body{font-family:var(--fb);background:var(--bg);color:var(--text);height:100vh;o
 .tc{width:26px;height:26px;border-radius:6px;border:none;background:transparent;color:var(--muted);font-size:.7rem;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center}
 .tc:hover{background:var(--s3);color:var(--text)}
 .tc-x:hover{background:hsl(0,80%,55%,0.2);color:var(--danger)}
+.tc-settings{font-size:1.1rem}
 .tc-settings:hover{background:hsl(162,100%,50%,0.12);color:var(--accent)}
 
 /* LAYOUT */
@@ -70,8 +71,9 @@ body{font-family:var(--fb);background:var(--bg);color:var(--text);height:100vh;o
 
 /* WELCOME */
 .welcome-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;text-align:center;gap:14px;position:relative}
-.welcome-glow{position:absolute;width:400px;height:400px;border-radius:50%;background:hsl(162,100%,50%,0.04);filter:blur(80px)}
-.welcome-icon{font-size:4rem;filter:drop-shadow(0 0 20px hsl(162,100%,50%,0.3))}
+.welcome-glow{position:absolute;width:400px;height:400px;border-radius:50%;background:hsl(162,100%,50%,0.04);filter:blur(80px);pointer-events:none;z-index:0}
+.welcome-icon{font-size:4rem;filter:drop-shadow(0 0 20px hsl(162,100%,50%,0.3));cursor:pointer;transition:transform .2s ease, filter .2s ease;user-select:none}
+.welcome-icon:hover{transform:scale(1.1);filter:drop-shadow(0 0 30px var(--accent))}
 .welcome-title{font-family:var(--fd);font-size:1.8rem;font-weight:900;color:var(--text)}
 .welcome-sub{color:var(--muted);font-size:.9rem;max-width:300px;line-height:1.5}
 .btn-welcome-add{background:linear-gradient(135deg,var(--accent-dim),var(--accent));color:hsl(220,20%,8%);border:none;border-radius:var(--r);padding:12px 28px;font-family:var(--fd);font-size:.75rem;font-weight:700;letter-spacing:.1em;cursor:pointer;transition:all .2s;box-shadow:0 4px 20px var(--accent-glow);margin-top:8px}

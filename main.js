@@ -3,10 +3,22 @@ const path  = require('path');
 const { exec, spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
 
-app.name = 'GameTime Tracker';
-if (process.platform === 'win32') {
-  app.setAppUserModelId('com.ertandev.gametimetracker');
-}
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+  app.quit();
+} else {
+  app.on('second-instance', (event, commandLine, workingDirectory) => {
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+
+  app.name = 'GameTime Tracker';
+  if (process.platform === 'win32') {
+    app.setAppUserModelId('com.ertandev.gametimetracker');
+  }
 
 let mainWindow    = null;
 let tray          = null;
@@ -385,4 +397,5 @@ ipcMain.on('check-for-updates-manual', () => {
 ipcMain.on('quit-and-install', () => {
   autoUpdater.quitAndInstall(true, true);
 });
+}
 
