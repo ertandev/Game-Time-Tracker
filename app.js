@@ -42,8 +42,8 @@ const TRANSLATIONS = {
     settings_section_system: "Sistem",
     settings_startup_label: "Sistem başlangıcında minimize olarak çalıştır",
     settings_startup_hint: "Uygulama Windows açıldığında otomatik olarak arka planda (sistem tepsisinde) başlar.",
-    settings_closetotray_label: "Kapatıldığında sistem tepsisine küçült",
-    settings_closetotray_hint: "Kapat (✕) butonuna basıldığında uygulamayı tamamen kapatmak yerine sistem tepsisinde arka planda çalışır durumda tutar.",
+    settings_closetotray_label: "Sistem tepsisine küçült",
+    settings_closetotray_hint: "Pencereyi kapatırken, çıkış yapmak yerine uygulamayı sistem tepsisine küçült",
     about_rights: "Tüm Hakları Saklıdır.",
     settings_section_lang: "Dil / Language",
     
@@ -164,8 +164,8 @@ const TRANSLATIONS = {
     settings_section_system: "System",
     settings_startup_label: "Run minimized on system startup",
     settings_startup_hint: "The application starts automatically in the background (system tray) when Windows boots.",
-    settings_closetotray_label: "Minimize to system tray when closed",
-    settings_closetotray_hint: "Keep the application running in the background system tray when the close (✕) button is clicked, instead of exiting completely.",
+    settings_closetotray_label: "Minimize to system tray",
+    settings_closetotray_hint: "When closing the window, minimize the application to the system tray instead of exiting",
     about_rights: "All Rights Reserved.",
     settings_section_lang: "Language / Dil",
     
