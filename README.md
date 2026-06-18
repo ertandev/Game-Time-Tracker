@@ -2,6 +2,8 @@
 
 Game-Time Tracker is a modern, high-performance desktop application built with **Electron** and vanilla JavaScript/CSS that automatically tracks your gaming sessions. It runs silently in the background, monitors your active game processes on Windows, and dynamically handles idle time and Alt-Tab detection to ensure your recorded playtimes are 100% accurate.
 
+Featuring a premium **"Liquid Glass" (glassmorphic)** user interface, customizable sidebar context menus, and native Windows integrations, it is the ultimate tool for keeping track of your gaming history.
+
 ---
 
 ## 🌟 Key Features
@@ -11,23 +13,30 @@ Game-Time Tracker is a modern, high-performance desktop application built with *
 - **Alt-Tab / Background Window Detection:** Monitors which window currently has focus. If you Alt-Tab out of your game for more than a set time limit (default: 2 minutes), the session is paused until you click back into the game.
 - **System Tray Integration:** Minimize the app to the system tray. The tray tooltip dynamically updates to show which game is running and how long you've been playing.
 - **Detailed History & Statistics:** View historical sessions with timestamps, durations, daily playtimes, personal records, and session count statistics.
-- **Modern Premium Design:** Built with a clean, responsive dark-mode dashboard featuring vibrant colors, smooth transitions, custom visual indicators, and a custom frameless window titlebar.
+- **Liquid Glass UI & Design:** A state-of-the-art dark-mode interface featuring vibrant gradients, glassmorphism blur effects (`backdrop-filter`), smooth hover animations, and custom-designed inline SVG icons replacing standard emojis.
+- **Custom HTML Context Menu:** Right-click any game card in the sidebar to open a premium context menu to launch the game, open its folder, change its accent color, rename it, reset its icon, or delete it.
+- **Auto Game-Executable Detection (Scan List):** The app automatically scans currently running processes. Adding games directly from this list automatically saves their executable paths, enabling instant launching and file location tracking.
+- **Native Game Icon Extraction:** Automatically extracts the high-resolution original icon of the game executable (`.exe`) via the Windows shell to display in the dashboard.
+- **Anti-Cheat Compatibility (Shell Launching):** Spawns games directly via Windows Shell (`explorer.exe`) to detach processes from the Node.js/Electron tree, ensuring compatibility with modern anti-cheat systems (e.g., Easy Anti-Cheat, BattlEye).
+- **Single-Instance Application Lock:** Prevents multiple instances of the app from running simultaneously. Launching a new instance focuses the already running dashboard.
 
 ---
 
 ## 🛠️ How It Works Under the Hood
 
-The application relies on two core tracking mechanisms to monitor games and system activity on Windows:
+The application relies on several core tracking mechanisms to monitor games and system activity on Windows:
 
 1. **Process List Scanning (`tasklist`):**
    Every **3 seconds**, Electron scans running processes using the Windows utility `tasklist`. This determines whether any of your added game executable files (e.g., `cyberpunk2077.exe`) are currently active.
+   - *CPU Optimization:* If no games are currently set to be watched, process scanning is dynamically paused to save CPU cycles.
 
 2. **PowerShell Window & Idle Watcher:**
    A lightweight, persistent PowerShell script runs in the background. Using `.NET / PInvoke` calls to native Windows DLLs (`user32.dll`), it checks the system state every **1 second**:
    - `GetForegroundWindow` & `GetWindowThreadProcessId`: Retrieves the process name of the active foreground window.
    - `GetLastInputInfo`: Measures the duration (in milliseconds) since the last keyboard or mouse event across the entire system.
-   
-   This enables the application to react instantly to Alt-Tab actions and user inactivity.
+
+3. **Immediate Session Saving:**
+   When a game is launched, a 30-second launch grace period is active to accommodate startup times. Once the game process is detected running, the grace period is instantly skipped, allowing the tracker to save/pause the session within 3 seconds of closing or ALT+TAB.
 
 ---
 
@@ -35,7 +44,7 @@ The application relies on two core tracking mechanisms to monitor games and syst
 
 ### Prerequisites
 
-- **Operating System:** Windows (required for PowerShell/Win32 API components)
+- **Operating System:** Windows 10/11 (required for PowerShell/Win32 API components)
 - **Runtime:** [Node.js](https://nodejs.org/) (v16.0.0 or higher recommended)
 
 ### Installation
@@ -58,6 +67,14 @@ Start the development server:
 npm start
 ```
 
+### Packaging / Building Yükleyici (Installer)
+
+To build a standalone, offline English-only NSIS Windows installer:
+```bash
+npm run dist
+```
+The compiled setup executable (`GameTime-Tracker-Setup-1.0.0.exe`) will be generated inside the `dist` directory.
+
 ---
 
 ## ⚙️ Configuration & Customization
@@ -74,17 +91,24 @@ You can fine-tune tracking behaviors via the **Global Settings** modal inside th
 
 ## 📁 Project Structure
 
+The project has been refactored into modular, clean scripts to separate concerns and prevent monolithic file growth:
+
 ```text
 Game-Time-Tracker/
-├── node_modules/         # Package dependencies (ignored in git)
-├── index.html            # Core frontend UI structure
-├── style.css             # Main styling, layout, custom scrollbars and dark theme
-├── app.js                # Core frontend client-side application logic (state, UI rendering, event listeners)
-├── main.js               # Electron main process (OS integrations, tray menu, background PowerShell watcher)
-├── preload.js            # Electron IPC gateway for secure front-to-back communication
-├── package.json          # Node dependencies & launch scripts
-├── package-lock.json     # Locked dependency versions
-└── .gitignore            # Files excluded from git tracking
+├── dist/                 # Compiled distribution files and setup installer
+├── index.html            # Main frontend HTML5 view & structure
+├── style.css             # Main styling, layouts, custom scrollbars, animations, context menu styles
+├── main.js               # Electron main process (OS integration, process launcher, tray menu, single-instance lock)
+├── preload.js            # Secure IPC gateway connecting frontend and main process
+├── app.js                # Application bootstrapper (init, event binding, modal overlays)
+├── i18n.js               # Localization dictionary (English & Turkish) and translation utilities
+├── state.js              # State manager (LocalStorage read/write, game lists, historical logs)
+├── timer.js              # Stopwatch, active session tracker, grace period handling
+├── renderer.js           # UI drawer (sidebar lists, stats cards, active session render, custom context menu)
+├── settings.js           # Settings manager & layout updates
+├── installer.nsh         # Custom NSIS script containing Windows registry and shortcut configs
+├── package.json          # Node scripts, dependency versions, electron-builder setup
+└── .gitignore            # Files excluded from git
 ```
 
 ---
@@ -92,8 +116,9 @@ Game-Time-Tracker/
 ## 🔒 Technologies Used
 
 - **Framework:** Electron (v42+)
-- **Frontend:** Vanilla HTML5, CSS3, JavaScript (ES6+)
-- **System Integration:** Windows PowerShell Scripting (System-wide Hooking)
+- **Frontend:** Vanilla HTML5, CSS3, JavaScript (ES6 Modules)
+- **System Integration:** Windows PowerShell Scripting (System-wide Hooking & PInvoke)
+- **Packaging:** electron-builder with NSIS Custom Scripting
 
 ---
 
