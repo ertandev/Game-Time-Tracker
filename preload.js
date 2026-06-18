@@ -18,7 +18,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openExternal:  (url) => ipcRenderer.send('open-external', url),
   checkForUpdates: () => ipcRenderer.send('check-for-updates-manual'),
   quitAndInstall: () => ipcRenderer.send('quit-and-install'),
-  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_, data) => cb(data))
+  onUpdateStatus: (cb) => ipcRenderer.on('update-status', (_, data) => cb(data)),
+  setWatchableGames: (val) => ipcRenderer.send('set-watchable-games', val),
+  showGameContextMenu: (gameId) => ipcRenderer.send('show-game-context-menu', gameId),
+  onGameMenuAction: (cb) => ipcRenderer.on('game-menu-action', (_, data) => cb(data)),
+  selectCustomIcon: () => ipcRenderer.invoke('select-custom-icon'),
+  selectExePath: () => ipcRenderer.invoke('select-exe-path'),
+  launchGame: (filePath) => ipcRenderer.invoke('launch-game', filePath),
+  openFileLocation: (filePath) => ipcRenderer.invoke('open-file-location', filePath)
 });
 
 

@@ -94,12 +94,27 @@
 !macroend
 
 !macro customInstall
+  # If this is an update, read shortcut preferences from registry
+  ${If} ${isUpdated}
+    ReadRegStr $Checkbox_Desktop_State HKCU "Software\GameTime Tracker" "CreateDesktopShortcut"
+    ReadRegStr $Checkbox_StartMenu_State HKCU "Software\GameTime Tracker" "CreateStartMenuShortcut"
+    
+    # Fallback for upgrading from versions that didn't write registry keys:
+    # Always ensure Start Menu shortcut is created, but Desktop is optional.
+    ${If} $Checkbox_StartMenu_State == ""
+      StrCpy $Checkbox_StartMenu_State ${BST_CHECKED}
+    ${EndIf}
+  ${Else}
+    # For clean install, save shortcut preferences to registry
+    WriteRegStr HKCU "Software\GameTime Tracker" "CreateDesktopShortcut" "$Checkbox_Desktop_State"
+    WriteRegStr HKCU "Software\GameTime Tracker" "CreateStartMenuShortcut" "$Checkbox_StartMenu_State"
+  ${EndIf}
+
   # Create Desktop Shortcut if checked
   ${If} $Checkbox_Desktop_State == ${BST_CHECKED}
     CreateShortCut "$newDesktopLink" "$appExe" "" "$appExe" 0 "" "" "${APP_DESCRIPTION}"
     ClearErrors
     WinShell::SetLnkAUMI "$newDesktopLink" "${APP_ID}"
-    System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
   ${EndIf}
 
   # Create Start Menu Shortcut if checked
@@ -112,6 +127,9 @@
     ClearErrors
     WinShell::SetLnkAUMI "$newStartMenuLink" "${APP_ID}"
   ${EndIf}
+
+  # Refresh shell icons to prevent blank or broken shortcut icons
+  System::Call 'Shell32::SHChangeNotify(i 0x8000000, i 0, i 0, i 0)'
 !macroend
 
 !macro customUnInstall
@@ -128,4 +146,7 @@
   ${ifNot} $R1 == ""
     RMDir "$SMPROGRAMS\$R1"
   ${endIf}
+
+  # Clean up registry keys
+  DeleteRegKey HKCU "Software\GameTime Tracker"
 !macroend

@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell, dialog } = require('electron');
 const path  = require('path');
 const { exec, spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
@@ -115,13 +115,22 @@ function parsePowerShellList(stdout) {
 // ─── Polling (auto detect open/close) ────────────────────────────────────────
 function startPoller() {
   if (processPoller) return;
-  processPoller = setInterval(() => {
+  const checkProcesses = () => {
     exec('tasklist /fo csv /nh', { windowsHide: true }, (err, stdout) => {
       if (err || !mainWindow) return;
       const names = parseTasklist(stdout).map(p => p.name.toLowerCase());
       mainWindow.webContents.send('process-list', names);
     });
-  }, 3000);
+  };
+  checkProcesses();
+  processPoller = setInterval(checkProcesses, 3000);
+}
+
+function stopPoller() {
+  if (processPoller) {
+    clearInterval(processPoller);
+    processPoller = null;
+  }
 }
 
 // ─── Foreground Window + Idle Time Poller ───────────────────────────────
@@ -264,6 +273,137 @@ ipcMain.on('set-close-to-tray', (_, value) => {
   closeToTray = !!value;
 });
 
+let isWatchingProcesses = false;
+ipcMain.on('set-watchable-games', (_, val) => {
+  const shouldWatch = !!val;
+  if (shouldWatch && !isWatchingProcesses) {
+    isWatchingProcesses = true;
+    startPoller();
+  } else if (!shouldWatch && isWatchingProcesses) {
+    isWatchingProcesses = false;
+    stopPoller();
+  }
+});
+
+const CONTEXT_TRANSLATIONS = {
+  tr: {
+    launch: '🚀 Oyunu Başlat',
+    openLocation: '📂 Dosya Konumunu Aç',
+    changeIcon: '🎨 Özel Simge Seç...',
+    resetIcon: '🔄 Simgeyi Sıfırla',
+    changeColor: '🖌️ Accent Rengini Değiştir',
+    rename: '✏️ Oyunu Yeniden Adlandır',
+    clearSessions: '🗑️ Oturum Geçmişini Temizle',
+    deleteGame: '❌ Oyunu Sil'
+  },
+  en: {
+    launch: '🚀 Launch Game',
+    openLocation: '📂 Open File Location',
+    changeIcon: '🎨 Choose Custom Icon...',
+    resetIcon: '🔄 Reset Icon',
+    changeColor: '🖌️ Change Accent Color',
+    rename: '✏️ Rename Game',
+    clearSessions: '🗑️ Clear Session History',
+    deleteGame: '❌ Delete Game'
+  }
+};
+
+ipcMain.handle('launch-game', async (_, filePath) => {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return false;
+    const gameDir = path.dirname(filePath);
+    
+    // Spawn explorer.exe to launch the game. We use spawn instead of exec to avoid
+    // error callbacks triggered by explorer.exe exiting with code 1.
+    const child = spawn('explorer.exe', [filePath], {
+      cwd: gameDir,
+      detached: true,
+      stdio: 'ignore'
+    });
+    child.unref();
+    return true;
+  } catch (e) {
+    console.error('Failed to launch game via explorer.exe:', e);
+    try {
+      shell.openPath(filePath);
+      return true;
+    } catch (err2) {
+      return false;
+    }
+  }
+});
+
+ipcMain.handle('open-file-location', async (_, filePath) => {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) return false;
+    shell.showItemInFolder(filePath);
+    return true;
+  } catch (e) {
+    console.error('Failed to open file location:', e);
+    return false;
+  }
+});
+
+ipcMain.handle('select-custom-icon', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Simge Dosyaları', extensions: ['png', 'jpg', 'jpeg', 'ico', 'exe'] }
+      ]
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    const filePath = result.filePaths[0];
+    const ext = path.extname(filePath).toLowerCase();
+    
+    if (ext === '.exe') {
+      const icon = await app.getFileIcon(filePath, { size: 'normal' });
+      return { icon: icon.toDataURL(), path: filePath };
+    } else {
+      const buffer = fs.readFileSync(filePath);
+      const mimeType = ext === '.png' ? 'image/png' : ext === '.ico' ? 'image/x-icon' : 'image/jpeg';
+      const dataUrl = `data:${mimeType};base64,${buffer.toString('base64')}`;
+      return { icon: dataUrl, path: filePath };
+    }
+  } catch (e) {
+    console.error('Failed to select custom icon:', e);
+    return null;
+  }
+});
+
+ipcMain.handle('select-exe-path', async () => {
+  try {
+    const result = await dialog.showOpenDialog(mainWindow, {
+      properties: ['openFile'],
+      filters: [
+        { name: 'Oyun Çalıştırılabilir Dosyası', extensions: ['exe'] }
+      ]
+    });
+    if (result.canceled || result.filePaths.length === 0) return null;
+    return result.filePaths[0];
+  } catch (e) {
+    console.error('Failed to select exe path:', e);
+    return null;
+  }
+});
+
+ipcMain.on('show-game-context-menu', (event, gameId) => {
+  const dict = CONTEXT_TRANSLATIONS[currentLang] || CONTEXT_TRANSLATIONS.tr;
+  const menu = Menu.buildFromTemplate([
+    { label: dict.launch, click: () => event.sender.send('game-menu-action', { action: 'launch', gameId }) },
+    { label: dict.openLocation, click: () => event.sender.send('game-menu-action', { action: 'open-location', gameId }) },
+    { type: 'separator' },
+    { label: dict.changeIcon, click: () => event.sender.send('game-menu-action', { action: 'change-icon', gameId }) },
+    { label: dict.resetIcon, click: () => event.sender.send('game-menu-action', { action: 'reset-icon', gameId }) },
+    { label: dict.changeColor, click: () => event.sender.send('game-menu-action', { action: 'change-color', gameId }) },
+    { type: 'separator' },
+    { label: dict.rename, click: () => event.sender.send('game-menu-action', { action: 'rename', gameId }) },
+    { label: dict.clearSessions, click: () => event.sender.send('game-menu-action', { action: 'clear-sessions', gameId }) },
+    { label: dict.deleteGame, click: () => event.sender.send('game-menu-action', { action: 'delete', gameId }) }
+  ]);
+  menu.popup({ window: BrowserWindow.fromWebContents(event.sender) });
+});
+
 ipcMain.handle('get-file-icon', async (_, filePath) => {
   try {
     const icon = await app.getFileIcon(filePath, { size: 'normal' });
@@ -275,7 +415,9 @@ ipcMain.handle('get-file-icon', async (_, filePath) => {
 
 ipcMain.handle('find-process-path', (_, exeName) =>
   new Promise(resolve => {
-    const standardizedExe = exeName.toLowerCase().endsWith('.exe') ? exeName : exeName + '.exe';
+    const safeExe = exeName.replace(/[^a-zA-Z0-9._-]/g, '');
+    if (!safeExe) return resolve(null);
+    const standardizedExe = safeExe.toLowerCase().endsWith('.exe') ? safeExe : safeExe + '.exe';
     const nameWithoutExt = standardizedExe.replace(/\.exe$/i, '');
     const script = `
 $exeName = '${standardizedExe}'
@@ -362,7 +504,6 @@ function updateTrayMenu() {
 app.whenReady().then(() => {
   createWindow();
   createTray();
-  startPoller();
   startIdlePoller();
   
   // Auto check for updates on startup (delay to let app load) - silent
