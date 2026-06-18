@@ -144,7 +144,7 @@ function resumeSession() {
   renderControls(); renderTimer(); renderStatusPill();
   saveState();
 }
-function stopSession() {
+async function stopSession() {
   if(!activeState) return;
   const g = gameById(activeGameId); if(!g) return;
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -155,7 +155,7 @@ function stopSession() {
   saveGames();
   activeState=null; activeGameId=null;
   stopTicking(); clearInact();
-  localStorage.removeItem(STATE_KEY);
+  await saveState();
   renderControls(); renderTimer(); renderStatusPill(); renderGameHeader();
   renderSessionList(); renderStats(); renderSidebar();
   toast(dict.toast_session_saved);
