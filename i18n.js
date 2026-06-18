@@ -131,7 +131,16 @@ const TRANSLATIONS = {
     menu_change_color: "Accent Rengini Değiştir",
     menu_rename: "Oyunu Yeniden Adlandır",
     menu_clear_sessions: "Oturum Geçmişini Temizle",
-    menu_delete: "Oyunu Sil"
+    menu_delete: "Oyunu Sil",
+    
+    settings_reset_btn: "Ayarları Sıfırla",
+    settings_delete_all_data_btn: "Tüm Verileri Temizle (Oyunlar & Oturumlar)",
+    confirm_reset_settings_title: "Ayarları Sıfırla",
+    confirm_reset_settings_text: "Tüm ayarlar varsayılan değerlerine sıfırlanacak. Devam etmek istiyor musunuz?",
+    confirm_delete_all_data_title: "Tüm Verileri Sil",
+    confirm_delete_all_data_text: "DİKKAT: Kayıtlı tüm oyunlarınız ve oturum geçmişleriniz kalıcı olarak silinecek! Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
+    toast_settings_reset: "🔄 Ayarlar varsayılana sıfırlandı",
+    toast_all_data_deleted: "🗑 Tüm oyunlar ve oturum geçmişleri silindi"
   },
   en: {
     my_games: "MY GAMES",
@@ -263,7 +272,16 @@ const TRANSLATIONS = {
     menu_change_color: "Change Accent Color",
     menu_rename: "Rename Game",
     menu_clear_sessions: "Clear Session History",
-    menu_delete: "Delete Game"
+    menu_delete: "Delete Game",
+    
+    settings_reset_btn: "Reset Settings",
+    settings_delete_all_data_btn: "Delete All Data (Games & Sessions)",
+    confirm_reset_settings_title: "Reset Settings",
+    confirm_reset_settings_text: "All settings will be reset to their default values. Do you want to continue?",
+    confirm_delete_all_data_title: "Delete All Data",
+    confirm_delete_all_data_text: "WARNING: All your games and session history will be permanently deleted! This action cannot be undone. Do you want to continue?",
+    toast_settings_reset: "🔄 Settings reset to defaults",
+    toast_all_data_deleted: "🗑 All games and session history deleted"
   }
 };
 

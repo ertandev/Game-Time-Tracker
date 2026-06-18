@@ -139,13 +139,50 @@ body{font-family:var(--fb);background:var(--bg);color:var(--text);height:100vh;o
 .settings-panel.open{max-height:200px;opacity:1;padding:18px 20px}
 .settings-row label{display:block;font-size:.78rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px;font-weight:500}
 .setting-control{display:flex;align-items:center;gap:12px}
-input[type=range]{flex:1;-webkit-appearance:none;appearance:none;height:4px;border-radius:2px;background:var(--s3);outline:none;cursor:pointer}
-input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow);cursor:pointer;transition:transform .15s}
-input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
-.setting-val{font-family:var(--fd);font-size:.82rem;color:var(--accent);min-width:44px;cursor:pointer;border-bottom:1px dashed var(--accent-dim);transition:all .15s}
+input[type=range]{
+  flex:1;
+  -webkit-appearance:none;
+  appearance:none;
+  height:4px;
+  border-radius:2px;
+  background:var(--s3);
+  outline:none;
+  cursor:pointer;
+  transition: background-color 0.2s;
+}
+input[type=range]:hover {
+  background: var(--border);
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:var(--accent);
+  box-shadow:0 0 8px var(--accent-glow);
+  cursor:pointer;
+  transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1), background-color 0.15s, box-shadow 0.15s;
+}
+input[type=range]::-webkit-slider-thumb:hover{
+  transform:scale(1.2);
+  background: #fff;
+  box-shadow: 0 0 14px var(--accent);
+}
+.setting-val{
+  font-family:var(--fd);
+  font-size:.82rem;
+  color:var(--accent);
+  width:68px;
+  text-align:right;
+  flex-shrink:0;
+  cursor:pointer;
+  border-bottom:1px dashed var(--accent-dim);
+  transition:all .15s;
+  font-variant-numeric: tabular-nums;
+}
 .setting-val:hover{color:var(--text);border-color:var(--accent)}
 .setting-num-input {
-  width: 58px;
+  width: 100%;
   background: var(--s1);
   border: 1px solid var(--border);
   border-radius: 4px;
@@ -154,7 +191,7 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
   font-size: 0.82rem;
   padding: 2px 4px;
   outline: none;
-  text-align: center;
+  text-align: right;
   box-shadow: 0 0 6px var(--accent-glow);
 }
 .setting-num-input::-webkit-outer-spin-button,
@@ -389,6 +426,17 @@ input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.2)}
   color: hsl(220, 20%, 6%);
   border-color: var(--accent);
   box-shadow: 0 0 10px var(--accent-glow);
+}
+.btn-danger-action {
+  border-color: rgba(255, 50, 50, 0.35) !important;
+  color: hsl(0, 90%, 75%);
+  background: rgba(255, 40, 40, 0.05);
+}
+.btn-danger-action:hover {
+  background: var(--danger) !important;
+  color: hsl(220, 20%, 6%) !important;
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 10px rgba(255, 50, 50, 0.35) !important;
 }
 .update-status-text {
   font-size: 0.68rem;

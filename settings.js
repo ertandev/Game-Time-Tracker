@@ -6,9 +6,7 @@ const altTabSliderEl = $('altTabSlider'), altTabValEl = $('altTabVal');
 function fmtSec(v) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   if (v === 0) return settings.lang === 'tr' ? 'Kapalı' : 'Off';
-  if (v < 60)  return `${v}${dict.dur_sec}`;
-  const m = Math.floor(v/60), s = v%60;
-  return s ? `${m}${dict.dur_min} ${s}${dict.dur_sec}` : `${m}${dict.dur_min}`;
+  return `${v}${dict.dur_sec}`;
 }
 
 function openSettingsModal() {
@@ -20,8 +18,29 @@ function openSettingsModal() {
   $('settingsOverlay').classList.add('open');
 }
 
-afkSliderEl.addEventListener('input',    () => { afkValEl.textContent    = fmtSec(parseInt(afkSliderEl.value)); });
-altTabSliderEl.addEventListener('input', () => { altTabValEl.textContent = fmtSec(parseInt(altTabSliderEl.value)); });
+let isManualChange = false;
+
+afkSliderEl.addEventListener('input', () => {
+  if (!isManualChange) {
+    const val = parseInt(afkSliderEl.value) || 0;
+    const snapped = Math.round(val / 30) * 30;
+    if (snapped !== val) {
+      afkSliderEl.value = snapped;
+    }
+  }
+  afkValEl.textContent = fmtSec(parseInt(afkSliderEl.value));
+});
+
+altTabSliderEl.addEventListener('input', () => {
+  if (!isManualChange) {
+    const val = parseInt(altTabSliderEl.value) || 0;
+    const snapped = Math.round(val / 15) * 15;
+    if (snapped !== val) {
+      altTabSliderEl.value = snapped;
+    }
+  }
+  altTabValEl.textContent = fmtSec(parseInt(altTabSliderEl.value));
+});
 
 function makeValEditable(valEl, sliderEl, maxVal) {
   if (valEl.querySelector('input')) return;
@@ -42,11 +61,13 @@ function makeValEditable(valEl, sliderEl, maxVal) {
     let newVal = parseInt(input.value);
     if (isNaN(newVal) || newVal < 0) newVal = 0;
     else if (newVal > maxVal) newVal = maxVal;
+    isManualChange = true;
     sliderEl.value = newVal;
     valEl.innerHTML = '';
     valEl.textContent = fmtSec(newVal);
     valEl.style.borderBottom = '';
     sliderEl.dispatchEvent(new Event('input'));
+    isManualChange = false;
   }
   input.addEventListener('blur', saveEdit);
   input.addEventListener('keydown', e => {
@@ -57,7 +78,41 @@ function makeValEditable(valEl, sliderEl, maxVal) {
       valEl.style.borderBottom = '';
     }
   });
+
+  // Prevent page scroll and manually adjust input value on wheel scroll
+  input.addEventListener('wheel', e => {
+    e.preventDefault();
+    const step = 1;
+    let val = parseInt(input.value) || 0;
+    if (e.deltaY < 0) {
+      val = Math.min(maxVal, val + step);
+    } else if (e.deltaY > 0) {
+      val = Math.max(0, val - step);
+    }
+    input.value = val;
+  }, { passive: false });
 }
+
+// Add mouse wheel adjust support for range sliders while preventing page scroll
+function bindSliderWheel(sliderEl, maxVal, step) {
+  sliderEl.addEventListener('wheel', e => {
+    e.preventDefault();
+    let val = parseInt(sliderEl.value) || 0;
+    if (e.deltaY < 0) {
+      val = Math.min(maxVal, val + step);
+    } else if (e.deltaY > 0) {
+      val = Math.max(0, val - step);
+    }
+    isManualChange = true;
+    sliderEl.value = val;
+    sliderEl.dispatchEvent(new Event('input'));
+    isManualChange = false;
+  }, { passive: false });
+}
+
+bindSliderWheel(afkSliderEl, 3600, 1);
+bindSliderWheel(altTabSliderEl, 600, 1);
+
 afkValEl.addEventListener('click', () => makeValEditable(afkValEl, afkSliderEl, 3600));
 altTabValEl.addEventListener('click', () => makeValEditable(altTabValEl, altTabSliderEl, 600));
 
@@ -92,4 +147,52 @@ $('settingsSave').addEventListener('click', () => {
     }
   }
 });
+
+$('resetSettingsBtn').addEventListener('click', () => {
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  showConfirm(dict.confirm_reset_settings_title, dict.confirm_reset_settings_text, () => {
+    settings = {
+      afkTimeout: 600,
+      altTabTimeout: 120,
+      autoSaveOnClose: true,
+      startMinimized: false,
+      closeToTray: true,
+      lang: navigator.language.startsWith('tr') ? 'tr' : 'en'
+    };
+    saveSettings();
+    afkSliderEl.value = settings.afkTimeout;
+    afkValEl.textContent = fmtSec(settings.afkTimeout);
+    altTabSliderEl.value = settings.altTabTimeout;
+    altTabValEl.textContent = fmtSec(settings.altTabTimeout);
+    $('autoSaveCheckbox').checked = !!settings.autoSaveOnClose;
+    $('startupCheckbox').checked = !!settings.startMinimized;
+    $('closeToTrayCheckbox').checked = settings.closeToTray !== false;
+    $('langSelect').value = settings.lang;
+    
+    if (isElectron) {
+      window.electronAPI.setStartup(settings.startMinimized, settings.startMinimized);
+      window.electronAPI.setCloseToTray(settings.closeToTray);
+    }
+    applyLanguage();
+    toast(TRANSLATIONS[settings.lang || 'tr']?.toast_settings_reset || '🔄 Settings reset to defaults');
+  });
+});
+
+$('deleteAllDataBtn').addEventListener('click', () => {
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  showConfirm(dict.confirm_delete_all_data_title, dict.confirm_delete_all_data_text, async () => {
+    if (activeState) {
+      await stopSession();
+    }
+    games = [];
+    await saveGames();
+    selectedId = null;
+    $('gamePage').classList.add('hidden');
+    $('welcomeScreen').classList.remove('hidden');
+    renderSidebar();
+    $('settingsOverlay').classList.remove('open');
+    toast(TRANSLATIONS[settings.lang || 'tr']?.toast_all_data_deleted || '🗑 All games and session history deleted');
+  });
+});
+
 $('settingsOverlay').addEventListener('click', e => { if (e.target === $('settingsOverlay')) $('settingsOverlay').classList.remove('open'); });

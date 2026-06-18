@@ -217,6 +217,19 @@ async function init() {
   await loadSettings();
   await loadGames();
   applyLanguage();
+  
+  // Fetch and display dynamic app version in settings
+  if (isElectron) {
+    try {
+      const version = await window.electronAPI.getAppVersion();
+      if (version) {
+        const versionEl = $('appVersion');
+        if (versionEl) versionEl.textContent = version;
+      }
+    } catch (e) {
+      console.error('Failed to get app version:', e);
+    }
+  }
 
   // Sync startup settings on launch
   if (isElectron && settings.startMinimized !== undefined) {

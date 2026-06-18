@@ -203,6 +203,8 @@ function startIdlePoller() {
 }
 
 // ─── IPC ──────────────────────────────────────────────────────────────────────
+ipcMain.handle('get-app-version', () => app.getVersion());
+
 // One-shot scan (invokable)
 ipcMain.handle('scan-processes', () =>
   new Promise(resolve => {
