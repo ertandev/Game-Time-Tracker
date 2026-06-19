@@ -103,6 +103,7 @@ async function checkAndFetchIcon(g) {
   try {
     const path = await window.electronAPI.findProcessPath(g.exe);
     if (path) {
+      g.path = path;
       const iconDataUrl = await window.electronAPI.getFileIcon(path);
       if (iconDataUrl) {
         g.icon = iconDataUrl;
@@ -111,6 +112,8 @@ async function checkAndFetchIcon(g) {
         if (selectedId === g.id) {
           renderGameHeader();
         }
+      } else {
+        saveGames();
       }
     }
   } catch (e) {

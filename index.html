@@ -195,9 +195,25 @@
               </div>
               <span data-i18n="session_history">Oturum Geçmişi</span>
             </h2>
-            <button class="btn-clear-sessions" id="clearSessionsBtn" data-i18n="clear">Temizle</button>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-clear-sessions" id="selectSessionsBtn" data-i18n="select">Seç</button>
+              <button class="btn-clear-sessions" id="clearSessionsBtn" data-i18n="clear">Temizle</button>
+            </div>
           </div>
           <div class="sessions-tabs-bar" id="sessionsTabBar"></div>
+          <div class="sessions-edit-bar" id="sessionsEditBar">
+            <div class="edit-bar-left">
+              <label class="checkbox-label" style="margin-bottom: 0;">
+                <input type="checkbox" id="selectAllSessionsCheckbox" />
+                <span data-i18n="select_all">Tümünü Seç</span>
+              </label>
+              <span class="select-count" id="selectCountText">0 seçildi</span>
+            </div>
+            <div class="edit-bar-right" style="display: flex; gap: 8px;">
+              <button class="btn-clear-sessions btn-danger-action" id="deleteSelectedSessionsBtn" data-i18n="confirm_delete_selected_title">Sil</button>
+              <button class="btn-clear-sessions" id="cancelSelectBtn" data-i18n="cancel">İptal</button>
+            </div>
+          </div>
           <div class="session-list" id="sessionList">
             <div class="empty-state" id="emptyState">
               <div class="empty-icon">📭</div>

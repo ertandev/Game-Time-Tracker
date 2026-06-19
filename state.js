@@ -257,7 +257,9 @@ async function updateGameIcon(gameId, iconDataUrl, filePath) {
   const g = gameById(gameId);
   if (!g) return;
   g.icon = iconDataUrl;
-  if (filePath) g.path = filePath;
+  if (filePath && filePath.toLowerCase().endsWith('.exe') && !g.path) {
+    g.path = filePath;
+  }
   await saveGames();
 }
 

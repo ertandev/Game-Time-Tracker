@@ -153,7 +153,16 @@ const TRANSLATIONS = {
     confirm_delete_dlc_text: "Bu DLC silinecek. Mevcut oturumları silinmeyecek fakat etiketsiz kalacaktır. Devam etmek istiyor musunuz?",
     toast_dlc_added: '✅ "NAME" eklendi',
     toast_dlc_deleted: '🗑 DLC silindi',
-    toast_err_dlc_name: "⚠️ DLC adı gir"
+    toast_err_dlc_name: "⚠️ DLC adı gir",
+    
+    // Multi-select sessions
+    select: "Seç",
+    selected_count: "COUNT seçildi",
+    select_all: "Tümünü Seç",
+    confirm_delete_selected_title: "Seçilenleri Sil",
+    confirm_delete_selected_text: "Seçilen COUNT oturum kalıcı olarak silinecek. Devam etmek istiyor musunuz?",
+    toast_selected_deleted: "🗑 Seçilen oturumlar silindi",
+    toast_err_no_selected: "⚠️ Hiç oturum seçilmedi"
   },
   en: {
     my_games: "MY GAMES",
@@ -307,7 +316,16 @@ const TRANSLATIONS = {
     confirm_delete_dlc_text: "This DLC will be deleted. Existing sessions will not be deleted but will lose their tag. Do you want to continue?",
     toast_dlc_added: '✅ "NAME" added',
     toast_dlc_deleted: '🗑 DLC deleted',
-    toast_err_dlc_name: "⚠️ Please enter DLC name"
+    toast_err_dlc_name: "⚠️ Please enter DLC name",
+    
+    // Multi-select sessions
+    select: "Select",
+    selected_count: "COUNT selected",
+    select_all: "Select All",
+    confirm_delete_selected_title: "Delete Selected",
+    confirm_delete_selected_text: "Selected COUNT sessions will be permanently deleted. Do you want to continue?",
+    toast_selected_deleted: "🗑 Selected sessions deleted",
+    toast_err_no_selected: "⚠️ No sessions selected"
   }
 };
 

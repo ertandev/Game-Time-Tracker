@@ -51,6 +51,8 @@ if(isElectron) window.electronAPI.onProcessList(onProcessList);
 
 // ─── Render ───────────────────────────────────────────────────────────────────
 let sessionFilterTab = 'overall';
+let isMultiSelectMode = false;
+let selectedSessionIds = new Set();
 function renderSidebar() {
   const el = $('sidebarGames');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -125,6 +127,15 @@ function selectGame(id) {
   selectedId = id;
   const g = gameById(id); if(!g) return;
   sessionFilterTab = 'overall';
+  isMultiSelectMode = false;
+  selectedSessionIds.clear();
+  const editBar = $('sessionsEditBar');
+  if (editBar) editBar.classList.remove('open');
+  const selectBtn = $('selectSessionsBtn');
+  if (selectBtn) {
+    const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+    selectBtn.textContent = dict.select;
+  }
   document.documentElement.style.setProperty('--game-color',g.color);
   $('welcomeScreen').classList.add('hidden');
   $('gamePage').classList.remove('hidden');
@@ -250,6 +261,27 @@ function renderSessionTabs(g) {
   });
 }
 
+function updateSelectCount() {
+  const countEl = $('selectCountText'); if (!countEl) return;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  countEl.textContent = dict.selected_count.replace('COUNT', selectedSessionIds.size);
+  
+  const selectAllCb = $('selectAllSessionsCheckbox');
+  if (selectAllCb) {
+    const g = gameById(selectedId);
+    if (g) {
+      const target = sessionFilterTab;
+      const sessionsToRender = g.sessions.filter(s => {
+        if (target === 'overall') return true;
+        if (target === null) return !s.dlcId;
+        return s.dlcId === target;
+      });
+      const allSelected = sessionsToRender.length > 0 && sessionsToRender.every(s => selectedSessionIds.has(s.id));
+      selectAllCb.checked = allSelected;
+    }
+  }
+}
+
 function renderSessionList() {
   const g = gameById(selectedId); if(!g) return;
   const el=$('sessionList');
@@ -284,12 +316,16 @@ function renderSessionList() {
     emptyState.appendChild(emptyIcon);
     emptyState.appendChild(p);
     el.appendChild(emptyState);
+    updateSelectCount();
     return;
   }
   
   sessionsToRender.forEach((s,i)=>{
     const div=document.createElement('div');
     div.className='session-item';
+    if (isMultiSelectMode) {
+      div.style.cursor = 'pointer';
+    }
     
     const num = document.createElement('div');
     num.className = 's-num';
@@ -336,13 +372,35 @@ function renderSessionList() {
         toast(dict.toast_session_deleted);
       });
     });
+
+    if (isMultiSelectMode) {
+      const checkboxWrapper = document.createElement('div');
+      checkboxWrapper.className = 'session-item-checkbox-wrapper';
+      const checkbox = document.createElement('div');
+      checkbox.className = 'session-item-checkbox' + (selectedSessionIds.has(s.id) ? ' checked' : '');
+      checkboxWrapper.appendChild(checkbox);
+      div.prepend(checkboxWrapper);
+
+      div.addEventListener('click', e => {
+        if (selectedSessionIds.has(s.id)) {
+          selectedSessionIds.delete(s.id);
+        } else {
+          selectedSessionIds.add(s.id);
+        }
+        renderSessionList();
+        updateSelectCount();
+      });
+    }
     
     div.appendChild(num);
     div.appendChild(info);
     div.appendChild(dur);
-    div.appendChild(del);
+    if (!isMultiSelectMode) {
+      div.appendChild(del);
+    }
     el.appendChild(div);
   });
+  updateSelectCount();
 }
 
 function renderDlcSection() {
@@ -377,8 +435,11 @@ function renderDlcSection() {
       return;
     }
     await setActiveDlc(g.id, null);
+    sessionFilterTab = null;
     renderDlcSection();
     renderSessionList();
+    renderStats();
+    renderSidebar();
   });
 
   el.appendChild(mainItem);
@@ -438,8 +499,11 @@ function renderDlcSection() {
           return;
         }
         await setActiveDlc(g.id, d.id);
+        sessionFilterTab = d.id;
         renderDlcSection();
         renderSessionList();
+        renderStats();
+        renderSidebar();
       });
 
       el.appendChild(item);
@@ -652,6 +716,13 @@ async function handleChangeIcon(g) {
 
 async function handleResetIcon(g) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  
+  // If the path is an image file (corrupted by the custom icon bug), clear it
+  if (g.path && /\.(png|jpg|jpeg|gif|ico|bmp|webp)$/i.test(g.path)) {
+    g.path = '';
+    await saveGames();
+  }
+
   let success = false;
   let exePath = g.path;
   

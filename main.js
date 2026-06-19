@@ -408,6 +408,7 @@ ipcMain.on('show-game-context-menu', (event, gameId) => {
 
 ipcMain.handle('get-file-icon', async (_, filePath) => {
   try {
+    if (!filePath || !fs.existsSync(filePath)) return null;
     const icon = await app.getFileIcon(filePath, { size: 'normal' });
     return icon.toDataURL();
   } catch (e) {

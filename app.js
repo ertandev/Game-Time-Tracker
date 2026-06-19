@@ -13,12 +13,110 @@ $('stopBtn').addEventListener('click',()=>{
 });
 
 $('clearSessionsBtn').addEventListener('click',()=>{
-  const g=gameById(selectedId); if(!g||!g.sessions.length) return;
+  const g=gameById(selectedId); if(!g) return;
+  const target = sessionFilterTab;
+  const sessionsToClear = g.sessions.filter(s => {
+    if (target === 'overall') return true;
+    if (target === null) return !s.dlcId;
+    return s.dlcId === target;
+  });
+  if(!sessionsToClear.length) return;
+
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
-  showConfirm(dict.confirm_clear_sessions_title, dict.confirm_clear_sessions_text.replace('COUNT', g.sessions.length),()=>{
-    g.sessions=[]; saveGames(); renderSessionList(); renderStats(); renderSidebar();
+  showConfirm(dict.confirm_clear_sessions_title, dict.confirm_clear_sessions_text.replace('COUNT', sessionsToClear.length),()=>{
+    g.sessions = g.sessions.filter(s => {
+      if (target === 'overall') return false;
+      if (target === null) return !!s.dlcId;
+      return s.dlcId !== target;
+    });
+    saveGames(); renderSessionList(); renderStats(); renderSidebar();
     toast(dict.toast_sessions_cleared);
   });
+});
+
+$('selectSessionsBtn').addEventListener('click', () => {
+  if (!selectedId) return;
+  isMultiSelectMode = true;
+  selectedSessionIds.clear();
+  
+  const editBar = $('sessionsEditBar');
+  const selectBtn = $('selectSessionsBtn');
+  
+  if (editBar) editBar.classList.add('open');
+  if (selectBtn) selectBtn.classList.add('hidden');
+  
+  updateSelectCount();
+  renderSessionList();
+});
+
+$('cancelSelectBtn').addEventListener('click', () => {
+  isMultiSelectMode = false;
+  selectedSessionIds.clear();
+  
+  const editBar = $('sessionsEditBar');
+  if (editBar) editBar.classList.remove('open');
+  
+  const selectBtn = $('selectSessionsBtn');
+  if (selectBtn) selectBtn.classList.remove('hidden');
+  
+  updateSelectCount();
+  renderSessionList();
+});
+
+$('selectAllSessionsCheckbox').addEventListener('change', (e) => {
+  const g = gameById(selectedId);
+  if (!g) return;
+  
+  const target = sessionFilterTab;
+  const sessionsToRender = g.sessions.filter(s => {
+    if (target === 'overall') return true;
+    if (target === null) return !s.dlcId;
+    return s.dlcId === target;
+  });
+  
+  if (e.target.checked) {
+    sessionsToRender.forEach(s => selectedSessionIds.add(s.id));
+  } else {
+    sessionsToRender.forEach(s => selectedSessionIds.delete(s.id));
+  }
+  
+  renderSessionList();
+  updateSelectCount();
+});
+
+$('deleteSelectedSessionsBtn').addEventListener('click', () => {
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  if (selectedSessionIds.size === 0) {
+    toast(dict.toast_err_no_selected);
+    return;
+  }
+  
+  showConfirm(
+    dict.confirm_delete_selected_title,
+    dict.confirm_delete_selected_text.replace('COUNT', selectedSessionIds.size),
+    () => {
+      const g = gameById(selectedId);
+      if (!g) return;
+      
+      g.sessions = g.sessions.filter(s => !selectedSessionIds.has(s.id));
+      saveGames();
+      
+      isMultiSelectMode = false;
+      selectedSessionIds.clear();
+      
+      const editBar = $('sessionsEditBar');
+      if (editBar) editBar.classList.remove('open');
+      
+      const selectBtn = $('selectSessionsBtn');
+      if (selectBtn) selectBtn.classList.remove('hidden');
+      
+      updateSelectCount();
+      renderSessionList();
+      renderStats();
+      renderSidebar();
+      toast(dict.toast_selected_deleted);
+    }
+  );
 });
 
 $('deleteGameBtn').addEventListener('click',()=>{
