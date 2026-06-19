@@ -67,7 +67,8 @@ function renderSidebar() {
   }
   
   games.forEach((g, i) => {
-    const ms = totalMs(g) + (activeGameId===g.id&&activeState?activeState.runningMs:0);
+    const target = (selectedId === g.id) ? sessionFilterTab : 'overall';
+    const ms = filteredTotalMs(g, target);
     const running = activeGameId===g.id&&activeState&&!activeState.isPaused&&!activeState.isAutoPaused;
     
     const item = document.createElement('div');
@@ -202,10 +203,11 @@ function renderControls() {
 
 function renderStats() {
   const g = gameById(selectedId); if(!g) return;
-  const ms = filteredTotalMs(g, 'overall');
-  const tod = filteredTodayMs(g, 'overall');
-  const best = filteredBestMs(g, 'overall');
-  const count = filteredSessionCount(g, 'overall');
+  const target = sessionFilterTab;
+  const ms = filteredTotalMs(g, target);
+  const tod = filteredTodayMs(g, target);
+  const best = filteredBestMs(g, target);
+  const count = filteredSessionCount(g, target);
   $('statToday').textContent = fmtDur(tod);
   $('statTotal').textContent = fmtDur(ms);
   $('statBest').textContent  = fmtDur(best);
@@ -241,6 +243,8 @@ function renderSessionTabs(g) {
     tab.addEventListener('click', () => {
       sessionFilterTab = t.id;
       renderSessionList();
+      renderStats();
+      renderSidebar();
     });
     bar.appendChild(tab);
   });
@@ -421,6 +425,8 @@ function renderDlcSection() {
           }
           renderDlcSection();
           renderSessionList();
+          renderStats();
+          renderSidebar();
           toast(dict.toast_dlc_deleted);
         });
       });
