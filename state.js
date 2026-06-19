@@ -351,3 +351,17 @@ function getDlcTotalMs(g, dlcId) {
     .reduce((a, s) => a + s.durationMs, 0) + activeSessionMs;
 }
 
+async function updateGameHltbData(gameId, hltbData) {
+  const g = gameById(gameId);
+  if (!g) return;
+  g.hltbData = hltbData;
+  await saveGames();
+}
+
+async function unlinkGameHltbData(gameId) {
+  const g = gameById(gameId);
+  if (!g) return;
+  delete g.hltbData;
+  await saveGames();
+}
+

@@ -174,6 +174,18 @@ function openAddModal(e) {
 }
 function closeAddModal() { $('addGameOverlay').classList.remove('open'); }
 
+function openHltbModal() {
+  const g = gameById(selectedId); if(!g) return;
+  $('hltbSearchInput').value = g.name;
+  $('hltbResultList').textContent = '';
+  $('hltbOverlay').classList.add('open');
+  setTimeout(() => $('hltbSearchInput').focus(), 50);
+}
+function closeHltbModal() {
+  $('hltbOverlay').classList.remove('open');
+}
+window.closeHltbModal = closeHltbModal;
+
 $('addGameBtn').addEventListener('click', e => openAddModal(e));
 $('welcomeAddBtn').addEventListener('click', e => openAddModal(e));
 $('welcomeIcon').addEventListener('click', e => openAddModal(e));
@@ -213,6 +225,42 @@ $('addGameConfirm').addEventListener('click', async()=>{
   }
   const idx=games.length;
   const g={ id:genId(), name, exe:exe.toLowerCase(), path:(addTabActive==='scan' && scanSelectedPath) ? scanSelectedPath : '', color:gameColor(idx), sessions:[], icon:iconDataUrl };
+  
+  if (isElectron) {
+    try {
+      const hltbResults = await window.electronAPI.fetchHltbTime(name);
+      if (hltbResults && hltbResults.length > 0) {
+        const match = hltbResults[0];
+        g.hltbData = {
+          id: match.game_id,
+          name: match.game_name,
+          main: match.comp_main,
+          plus: match.comp_plus,
+          completionist: match.comp_100,
+          image: match.game_image
+        };
+
+        try {
+          const dlcNames = await window.electronAPI.fetchHltbDlcs(match.game_id);
+          if (dlcNames && dlcNames.length > 0) {
+            if (!g.dlcs) g.dlcs = [];
+            dlcNames.forEach(dlcName => {
+              g.dlcs.push({
+                id: genId(),
+                name: dlcName.trim(),
+                createdTs: new Date().toISOString()
+              });
+            });
+          }
+        } catch (de) {
+          console.error('Failed to auto fetch HLTB DLCs on addition:', de);
+        }
+      }
+    } catch (e) {
+      console.error('Failed to auto-fetch HLTB times on game addition:', e);
+    }
+  }
+
   games.push(g); saveGames();
   closeAddModal(); renderSidebar();
   selectGame(g.id);
@@ -323,6 +371,58 @@ if(isElectron) {
   $('btnMax').addEventListener('click',()=>window.electronAPI.maximize());
   $('btnClose').addEventListener('click',()=>window.electronAPI.close());
 }
+
+// ─── HowLongToBeat Events ──────────────────────────────────────────────────────
+$('hltbLinkBtn').addEventListener('click', openHltbModal);
+$('hltbUnlinkBtn').addEventListener('click', () => {
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  showConfirm(
+    settings.lang === 'tr' ? 'Eşleşmeyi Kaldır' : 'Unlink Game',
+    settings.lang === 'tr' ? 'HowLongToBeat eşleşmesi kaldırılacak. Emin misiniz?' : 'HowLongToBeat link will be removed. Are you sure?',
+    async () => {
+      await unlinkGameHltbData(selectedId);
+      renderHltbSection();
+      toast(dict.toast_hltb_unlinked);
+    }
+  );
+});
+
+$('hltbClose').addEventListener('click', closeHltbModal);
+$('hltbCancel').addEventListener('click', closeHltbModal);
+$('hltbOverlay').addEventListener('click', e => {
+  if (e.target === $('hltbOverlay')) closeHltbModal();
+});
+
+async function handleHltbSearch() {
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  const query = $('hltbSearchInput').value.trim();
+  if (!query) return;
+
+  const btn = $('hltbSearchBtn');
+  btn.disabled = true;
+  btn.textContent = dict.hltb_fetching;
+  
+  const el = $('hltbResultList');
+  el.innerHTML = `<p class="scan-hint">${dict.hltb_fetching}</p>`;
+
+  try {
+    const results = await window.electronAPI.fetchHltbTime(query);
+    btn.disabled = false;
+    btn.textContent = dict.hltb_button_search;
+    renderHltbSearchResults(results);
+  } catch (e) {
+    btn.disabled = false;
+    btn.textContent = dict.hltb_button_search;
+    el.innerHTML = `<p class="scan-hint">${dict.toast_hltb_fetch_failed}</p>`;
+  }
+}
+
+$('hltbSearchBtn').addEventListener('click', handleHltbSearch);
+$('hltbSearchInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter') {
+    handleHltbSearch();
+  }
+});
 
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {

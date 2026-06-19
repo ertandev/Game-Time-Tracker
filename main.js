@@ -483,6 +483,113 @@ if ($found) {
   })
 );
 
+ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
+  const HLTB_BASE_URL = 'https://howlongtobeat.com';
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': HLTB_BASE_URL,
+    'Origin': HLTB_BASE_URL
+  };
+
+  try {
+    const initUrl = `${HLTB_BASE_URL}/api/bleed/init?t=${Date.now()}`;
+    const initRes = await fetch(initUrl, { headers });
+    if (!initRes.ok) {
+      throw new Error(`Init failed with status ${initRes.status}`);
+    }
+    const initData = await initRes.json();
+    const { token, hpKey, hpVal } = initData;
+    if (!token || !hpKey || !hpVal) {
+      throw new Error('Invalid HLTB init token data');
+    }
+
+    const searchTerms = gameName.trim().split(/\s+/);
+    const payload = {
+      searchType: "games",
+      searchTerms: searchTerms,
+      searchPage: 1,
+      size: 20,
+      searchOptions: {
+        games: {
+          userId: 0,
+          platform: "",
+          sortCategory: "popular",
+          rangeCategory: "main",
+          rangeTime: { min: null, max: null },
+          gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
+          rangeYear: { min: null, max: null },
+          modifier: ""
+        },
+        users: { sortCategory: "postcount" },
+        lists: { sortCategory: "follows" },
+        filter: "",
+        sort: 0,
+        randomizer: 0
+      },
+      useCache: true
+    };
+
+    payload[hpKey] = hpVal;
+
+    const searchHeaders = {
+      ...headers,
+      'Content-Type': 'application/json',
+      'x-auth-token': token,
+      'x-hp-key': hpKey,
+      'x-hp-val': hpVal
+    };
+
+    const searchRes = await fetch(`${HLTB_BASE_URL}/api/bleed`, {
+      method: 'POST',
+      headers: searchHeaders,
+      body: JSON.stringify(payload)
+    });
+
+    if (!searchRes.ok) {
+      throw new Error(`Search failed with status ${searchRes.status}`);
+    }
+
+    const result = await searchRes.json();
+    return result.data || [];
+  } catch (e) {
+    console.error('Error fetching from HLTB:', e);
+    return null;
+  }
+});
+
+ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
+  const HLTB_BASE_URL = 'https://howlongtobeat.com';
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Referer': HLTB_BASE_URL,
+    'Origin': HLTB_BASE_URL
+  };
+
+  try {
+    const url = `${HLTB_BASE_URL}/game/${gameId}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+      throw new Error(`Failed to fetch game details with status ${res.status}`);
+    }
+    const html = await res.text();
+    const nextDataPattern = /<script id="__NEXT_DATA__" type="application\/json">([^<]+)<\/script>/;
+    const match = html.match(nextDataPattern);
+    if (!match) {
+      throw new Error('Could not find __NEXT_DATA__ script in HTML');
+    }
+    const data = JSON.parse(match[1]);
+    const gameObj = data.props?.pageProps?.game?.data;
+    if (gameObj && gameObj.relationships) {
+      const dlcs = gameObj.relationships.filter(r => r.game_type === 'dlc');
+      return dlcs.map(d => d.game_name);
+    }
+    return [];
+  } catch (e) {
+    console.error('Error fetching game details/DLCs from HLTB:', e);
+    return [];
+  }
+});
+
 // ─── Tray ─────────────────────────────────────────────────────────────────────
 function createTray() {
   const iconPath = path.join(__dirname, 'icon.png');

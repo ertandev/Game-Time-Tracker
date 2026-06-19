@@ -162,7 +162,23 @@ const TRANSLATIONS = {
     confirm_delete_selected_title: "Seçilenleri Sil",
     confirm_delete_selected_text: "Seçilen COUNT oturum kalıcı olarak silinecek. Devam etmek istiyor musunuz?",
     toast_selected_deleted: "🗑 Seçilen oturumlar silindi",
-    toast_err_no_selected: "⚠️ Hiç oturum seçilmedi"
+    toast_err_no_selected: "⚠️ Hiç oturum seçilmedi",
+    
+    // HLTB
+    hltb_main_story: "Ana Hikaye",
+    hltb_main_extras: "Ana + Ekstralar",
+    hltb_completionist: "%100 / Tamamlayıcı",
+    hltb_search_title: "HowLongToBeat Eşleştirme",
+    hltb_search_placeholder: "Oyun adı...",
+    hltb_button_search: "Ara",
+    hltb_link_manually: "HLTB Eşleştir",
+    hltb_unlink: "Eşleşmeyi Kaldır",
+    hltb_fetching: "Aranıyor...",
+    hltb_no_results: "Eşleşen oyun bulunamadı.",
+    hltb_not_matched: "HowLongToBeat verisi eşleştirilmemiş.",
+    toast_hltb_linked: "✅ HowLongToBeat verisi eşleştirildi!",
+    toast_hltb_unlinked: "🗑 Eşleşme kaldırıldı",
+    toast_hltb_fetch_failed: "⚠️ HLTB verileri alınamadı"
   },
   en: {
     my_games: "MY GAMES",
@@ -325,7 +341,23 @@ const TRANSLATIONS = {
     confirm_delete_selected_title: "Delete Selected",
     confirm_delete_selected_text: "Selected COUNT sessions will be permanently deleted. Do you want to continue?",
     toast_selected_deleted: "🗑 Selected sessions deleted",
-    toast_err_no_selected: "⚠️ No sessions selected"
+    toast_err_no_selected: "⚠️ No sessions selected",
+    
+    // HLTB
+    hltb_main_story: "Main Story",
+    hltb_main_extras: "Main + Extra",
+    hltb_completionist: "Completionist",
+    hltb_search_title: "HowLongToBeat Match",
+    hltb_search_placeholder: "Game name...",
+    hltb_button_search: "Search",
+    hltb_link_manually: "Match HLTB",
+    hltb_unlink: "Unlink",
+    hltb_fetching: "Searching...",
+    hltb_no_results: "No matching games found.",
+    hltb_not_matched: "HowLongToBeat data is not matched.",
+    toast_hltb_linked: "✅ HowLongToBeat data matched!",
+    toast_hltb_unlinked: "🗑 Match unlinked",
+    toast_hltb_fetch_failed: "⚠️ Failed to fetch HLTB data"
   }
 };
 

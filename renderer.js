@@ -140,7 +140,7 @@ function selectGame(id) {
   $('welcomeScreen').classList.add('hidden');
   $('gamePage').classList.remove('hidden');
   renderGameHeader(); renderTimer(); renderControls(); renderStatusPill();
-  renderStats(); renderSessionList(); renderDlcSection();
+  renderStats(); renderSessionList(); renderDlcSection(); renderHltbSection();
   renderSidebar();
 }
 
@@ -509,6 +509,142 @@ function renderDlcSection() {
       el.appendChild(item);
     });
   }
+}
+
+function renderHltbSection() {
+  const g = gameById(selectedId); if(!g) return;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  const container = $('hltbTimesContainer');
+  const emptyState = $('hltbEmptyState');
+  const unlinkBtn = $('hltbUnlinkBtn');
+
+  if (g.hltbData) {
+    container.style.display = 'grid';
+    emptyState.style.display = 'none';
+    unlinkBtn.style.display = 'inline-flex';
+    $('hltbLinkBtn').innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+      </svg>
+      <span>${settings.lang === 'tr' ? 'Güncelle' : 'Update'}</span>
+    `;
+
+    const formatHltbSeconds = (seconds) => {
+      if (!seconds) return '--';
+      const hours = Math.floor(seconds / 3600);
+      const mins = Math.round((seconds % 3600) / 60);
+      if (hours > 0 && mins > 0) {
+        return `${hours}${dict.dur_hour} ${mins}${dict.dur_min}`;
+      } else if (hours > 0) {
+        return `${hours}${dict.dur_hour}`;
+      } else {
+        return `${mins}${dict.dur_min}`;
+      }
+    };
+
+    $('hltbMainTime').textContent = formatHltbSeconds(g.hltbData.main);
+    $('hltbPlusTime').textContent = formatHltbSeconds(g.hltbData.plus);
+    $('hltb100Time').textContent = formatHltbSeconds(g.hltbData.completionist);
+  } else {
+    container.style.display = 'none';
+    emptyState.style.display = 'flex';
+    unlinkBtn.style.display = 'none';
+    $('hltbLinkBtn').innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+      </svg>
+      <span>${dict.hltb_link_manually || (settings.lang === 'tr' ? 'HLTB Eşleştir' : 'Match HLTB')}</span>
+    `;
+  }
+}
+
+function renderHltbSearchResults(results) {
+  const el = $('hltbResultList');
+  el.textContent = '';
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+
+  if (!results || !results.length) {
+    const p = document.createElement('p');
+    p.className = 'scan-hint';
+    p.dataset.i18n = 'hltb_no_results';
+    p.textContent = dict.hltb_no_results;
+    el.appendChild(p);
+    return;
+  }
+
+  results.forEach(res => {
+    const item = document.createElement('div');
+    item.className = 'hltb-result-item';
+    
+    const info = document.createElement('div');
+    info.className = 'hltb-result-info';
+    
+    const title = document.createElement('span');
+    title.className = 'hltb-result-title';
+    title.textContent = res.game_name;
+    info.appendChild(title);
+    
+    const subtitle = document.createElement('span');
+    subtitle.className = 'hltb-result-subtitle';
+    const release = res.release_world ? `, ${res.release_world}` : '';
+    const platform = res.profile_platform ? ` (${res.profile_platform})` : '';
+    subtitle.textContent = `${res.game_type}${release}${platform}`;
+    info.appendChild(subtitle);
+    
+    item.appendChild(info);
+    
+    const btn = document.createElement('button');
+    btn.className = 'hltb-result-btn';
+    btn.textContent = dict.yes || 'Seç';
+    item.appendChild(btn);
+    
+    item.addEventListener('click', async () => {
+      const hltbData = {
+        id: res.game_id,
+        name: res.game_name,
+        main: res.comp_main,
+        plus: res.comp_plus,
+        completionist: res.comp_100,
+        image: res.game_image
+      };
+      await updateGameHltbData(selectedId, hltbData);
+      
+      try {
+        const dlcNames = await window.electronAPI.fetchHltbDlcs(hltbData.id);
+        if (dlcNames && dlcNames.length > 0) {
+          const g = gameById(selectedId);
+          if (g) {
+            if (!g.dlcs) g.dlcs = [];
+            const existingNames = new Set(g.dlcs.map(d => d.name.toLowerCase().trim()));
+            let addedCount = 0;
+            dlcNames.forEach(dlcName => {
+              if (!existingNames.has(dlcName.toLowerCase().trim())) {
+                g.dlcs.push({
+                  id: genId(),
+                  name: dlcName.trim(),
+                  createdTs: new Date().toISOString()
+                });
+                addedCount++;
+              }
+            });
+            if (addedCount > 0) {
+              await saveGames();
+              renderDlcSection();
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed to populate DLCs on manual link:', e);
+      }
+
+      closeHltbModal();
+      renderHltbSection();
+      toast(dict.toast_hltb_linked);
+    });
+    
+    el.appendChild(item);
+  });
 }
 
 function renderScanList(procs) {

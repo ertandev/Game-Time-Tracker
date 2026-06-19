@@ -26,7 +26,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   selectCustomIcon: () => ipcRenderer.invoke('select-custom-icon'),
   selectExePath: () => ipcRenderer.invoke('select-exe-path'),
   launchGame: (filePath) => ipcRenderer.invoke('launch-game', filePath),
-  openFileLocation: (filePath) => ipcRenderer.invoke('open-file-location', filePath)
+  openFileLocation: (filePath) => ipcRenderer.invoke('open-file-location', filePath),
+  fetchHltbTime: (gameName) => ipcRenderer.invoke('fetch-hltb-time', gameName),
+  fetchHltbDlcs: (gameId) => ipcRenderer.invoke('fetch-hltb-dlcs', gameId)
 });
 
 

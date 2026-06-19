@@ -912,5 +912,161 @@ input[type=range]::-webkit-slider-thumb:hover{
   to { opacity: 1; transform: scale(1); }
 }
 
+/* === HLTB SECTION STYLES === */
+.hltb-section {
+  margin-top: 14px;
+}
+.hltb-times-container {
+  padding: 16px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+.hltb-time-card {
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 6px;
+  transition: all .2s ease-in-out;
+  position: relative;
+  overflow: hidden;
+}
+.hltb-time-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: transparent;
+  transition: background 0.2s;
+}
+.hltb-time-card:nth-child(1):hover::before {
+  background: var(--accent); /* main story green/teal */
+}
+.hltb-time-card:nth-child(2):hover::before {
+  background: hsl(200, 100%, 55%); /* main+extra blue */
+}
+.hltb-time-card:nth-child(3):hover::before {
+  background: hsl(40, 100%, 52%); /* completionist gold */
+}
+.hltb-time-card:hover {
+  transform: translateY(-2px);
+  border-color: hsl(220,15%,30%);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  background: var(--s3);
+}
+.hltb-label {
+  font-size: 0.65rem;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.hltb-value {
+  font-family: var(--fd);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--text);
+}
+.hltb-empty-state {
+  padding: 24px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.hltb-empty-text {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+/* HLTB Modal styles */
+.hltb-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  margin-bottom: 8px;
+  transition: all .15s;
+}
+.hltb-result-item:hover {
+  background: var(--s3);
+  border-color: var(--accent);
+}
+.hltb-result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  text-align: left;
+}
+.hltb-result-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--text);
+}
+.hltb-result-subtitle {
+  font-size: 0.68rem;
+  color: var(--muted);
+}
+.hltb-result-btn {
+  background: transparent;
+  border: 1px solid var(--accent-dim);
+  color: var(--accent);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 0.7rem;
+  font-family: var(--fd);
+  cursor: pointer;
+  transition: all .2s;
+}
+.hltb-result-item:hover .hltb-result-btn {
+  background: var(--accent);
+  color: hsl(220, 20%, 8%);
+  border-color: var(--accent);
+}
+
+@media(max-width:700px){
+  .hltb-times-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+.btn-hltb-action {
+  background: transparent;
+  border: 1px solid rgba(255, 90, 0, 0.25);
+  color: #ff7f00;
+  border-radius: 7px;
+  padding: 5px 12px;
+  font-size: .72rem;
+  font-family: var(--fd);
+  cursor: pointer;
+  transition: all .2s;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.btn-hltb-action:hover {
+  background: rgba(255, 90, 0, 0.1);
+  border-color: #ff7f00;
+  box-shadow: 0 0 8px rgba(255, 90, 0, 0.15);
+}
+.btn-hltb-action svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 2.2px;
+}
+
 
 

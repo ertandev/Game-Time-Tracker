@@ -180,6 +180,55 @@
           </div>
         </div>
 
+        <!-- HowLongToBeat Section -->
+        <div class="dlc-section hltb-section" id="hltbSection">
+          <div class="dlc-header">
+            <h2 class="dlc-title-container">
+              <div class="icon-wrapper glass-orange">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                  <circle cx="12" cy="14" r="8"></circle>
+                  <polyline points="12 10 12 14 15 15"></polyline>
+                  <line x1="10" y1="2" x2="14" y2="2"></line>
+                  <line x1="12" y1="2" x2="12" y2="6"></line>
+                </svg>
+              </div>
+              <span>HowLongToBeat</span>
+            </h2>
+            <div style="display: flex; gap: 8px; align-items: center;">
+              <button class="btn-hltb-action" id="hltbLinkBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                  <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                </svg>
+                <span data-i18n="hltb_link_manually">HLTB Eşleştir</span>
+              </button>
+              <button class="dlc-item-del" id="hltbUnlinkBtn" style="display: none;" title="Eşleşmeyi Kaldır" data-i18n-title="hltb_unlink">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="3 6 5 6 21 6"></polyline>
+                  <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+          <div class="hltb-times-container" id="hltbTimesContainer" style="display: none;">
+            <div class="hltb-time-card">
+              <span class="hltb-label" data-i18n="hltb_main_story">Ana Hikaye</span>
+              <span class="hltb-value" id="hltbMainTime">--</span>
+            </div>
+            <div class="hltb-time-card">
+              <span class="hltb-label" data-i18n="hltb_main_extras">Ana + Ekstralar</span>
+              <span class="hltb-value" id="hltbPlusTime">--</span>
+            </div>
+            <div class="hltb-time-card">
+              <span class="hltb-label" data-i18n="hltb_completionist">%100 / Tamamlayıcı</span>
+              <span class="hltb-value" id="hltb100Time">--</span>
+            </div>
+          </div>
+          <div class="hltb-empty-state" id="hltbEmptyState">
+            <span class="hltb-empty-text" data-i18n="hltb_not_matched">HowLongToBeat verisi eşleştirilmemiş.</span>
+          </div>
+        </div>
+
         <!-- Sessions -->
         <div class="sessions-section">
           <div class="sessions-header">
@@ -394,6 +443,34 @@
       <div class="modal-actions">
         <button class="btn-modal-cancel" id="promptCancel" data-i18n="cancel">İptal</button>
         <button class="btn-modal-confirm" id="promptOk" data-i18n="save">Kaydet</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== HLTB MATCH MODAL ===== -->
+  <div class="overlay" id="hltbOverlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title" id="hltbModalTitle" data-i18n="hltb_search_title">HowLongToBeat Eşleştirme</h3>
+        <button class="modal-close" id="hltbClose" data-i18n-title="cancel">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="form-group">
+          <label data-i18n="game_name_label">Oyun Adı</label>
+          <div style="display: flex; gap: 8px;">
+            <input type="text" id="hltbSearchInput" class="form-input" placeholder="Oyun adı..." data-i18n-placeholder="hltb_search_placeholder" style="flex: 1;" />
+            <button class="btn-scan" id="hltbSearchBtn" style="margin-top: 0; width: auto; white-space: nowrap; padding: 0 16px;" data-i18n="hltb_button_search">Ara</button>
+          </div>
+        </div>
+        
+        <div class="scan-list" id="hltbResultList" style="max-height: 250px; overflow-y: auto; margin-top: 12px;">
+          <!-- Search results injected here -->
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-modal-cancel" id="hltbCancel" data-i18n="cancel">İptal</button>
       </div>
     </div>
   </div>
