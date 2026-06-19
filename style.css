@@ -801,3 +801,42 @@ input[type=range]::-webkit-slider-thumb:hover{
   background: rgba(255, 255, 255, 0.02);
 }
 
+/* === SESSIONS TABS === */
+.sessions-tabs-bar {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px 10px;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+}
+.sessions-tabs-bar::-webkit-scrollbar {
+  height: 4px;
+}
+.sessions-tabs-bar::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+.session-tab {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: .72rem;
+  font-family: var(--fd);
+  color: var(--muted);
+  cursor: pointer;
+  transition: all .18s;
+  white-space: nowrap;
+}
+.session-tab:hover {
+  color: var(--text);
+  background: var(--s2);
+}
+.session-tab.active {
+  color: var(--game-color, var(--accent));
+  background: rgba(255, 255, 255, 0.03);
+  border-color: var(--game-color, var(--accent));
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+
+

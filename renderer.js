@@ -50,6 +50,7 @@ function onProcessList(procs) {
 if(isElectron) window.electronAPI.onProcessList(onProcessList);
 
 // ─── Render ───────────────────────────────────────────────────────────────────
+let sessionFilterTab = 'overall';
 function renderSidebar() {
   const el = $('sidebarGames');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -122,6 +123,7 @@ function renderSidebar() {
 function selectGame(id) {
   selectedId = id;
   const g = gameById(id); if(!g) return;
+  sessionFilterTab = 'overall';
   document.documentElement.style.setProperty('--game-color',g.color);
   $('welcomeScreen').classList.add('hidden');
   $('gamePage').classList.remove('hidden');
@@ -200,15 +202,48 @@ function renderControls() {
 
 function renderStats() {
   const g = gameById(selectedId); if(!g) return;
-  const target = g.activeDlcId === undefined ? 'overall' : g.activeDlcId;
-  const ms = filteredTotalMs(g, target);
-  const tod = filteredTodayMs(g, target);
-  const best = filteredBestMs(g, target);
-  const count = filteredSessionCount(g, target);
+  const ms = filteredTotalMs(g, 'overall');
+  const tod = filteredTodayMs(g, 'overall');
+  const best = filteredBestMs(g, 'overall');
+  const count = filteredSessionCount(g, 'overall');
   $('statToday').textContent = fmtDur(tod);
   $('statTotal').textContent = fmtDur(ms);
   $('statBest').textContent  = fmtDur(best);
   $('statCount').textContent = count;
+}
+
+function renderSessionTabs(g) {
+  const bar = $('sessionsTabBar'); if(!bar) return;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  bar.textContent = '';
+
+  const targets = [
+    { id: 'overall', name: dict.dlc_overall },
+    { id: null, name: dict.dlc_main_game }
+  ];
+  if (g.dlcs && g.dlcs.length) {
+    g.dlcs.forEach(d => {
+      targets.push({ id: d.id, name: d.name });
+    });
+  }
+
+  targets.forEach(t => {
+    const tab = document.createElement('button');
+    tab.className = 'session-tab' + (sessionFilterTab === t.id ? ' active' : '');
+    
+    const count = g.sessions.filter(s => {
+      if (t.id === 'overall') return true;
+      if (t.id === null) return !s.dlcId;
+      return s.dlcId === t.id;
+    }).length;
+
+    tab.textContent = `${t.name} (${count})`;
+    tab.addEventListener('click', () => {
+      sessionFilterTab = t.id;
+      renderSessionList();
+    });
+    bar.appendChild(tab);
+  });
 }
 
 function renderSessionList() {
@@ -217,11 +252,12 @@ function renderSessionList() {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   el.textContent = '';
 
-  const target = g.activeDlcId === undefined ? 'overall' : g.activeDlcId;
+  renderSessionTabs(g);
+
   const sessionsToRender = g.sessions.filter(s => {
-    if (target === 'overall') return true;
-    if (target === null) return !s.dlcId;
-    return s.dlcId === target;
+    if (sessionFilterTab === 'overall') return true;
+    if (sessionFilterTab === null) return !s.dlcId;
+    return s.dlcId === sessionFilterTab;
   });
 
   if(!sessionsToRender.length) {
@@ -311,40 +347,9 @@ function renderDlcSection() {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   el.textContent = '';
 
-  const activeDlc = g.activeDlcId === undefined ? 'overall' : g.activeDlcId;
+  const activeDlc = g.activeDlcId || null;
 
-  // 1. Overall View Target
-  const overallItem = document.createElement('div');
-  overallItem.className = 'dlc-item' + (activeDlc === 'overall' ? ' active' : '');
-  
-  const overallRadio = document.createElement('div');
-  overallRadio.className = 'dlc-item-radio';
-  overallItem.appendChild(overallRadio);
-
-  const overallName = document.createElement('div');
-  overallName.className = 'dlc-item-name';
-  overallName.textContent = dict.dlc_overall;
-  overallItem.appendChild(overallName);
-
-  const overallTotal = document.createElement('div');
-  overallTotal.className = 'dlc-item-total';
-  overallTotal.textContent = fmtDur(filteredTotalMs(g, 'overall'));
-  overallItem.appendChild(overallTotal);
-
-  overallItem.addEventListener('click', async () => {
-    if (activeGameId === g.id && activeState) {
-      toast(settings.lang === 'tr' ? 'Oturum çalışırken hedef değiştirilemez!' : 'Cannot change target during a running session!');
-      return;
-    }
-    await setActiveDlc(g.id, 'overall');
-    renderDlcSection();
-    renderStats();
-    renderSessionList();
-  });
-
-  el.appendChild(overallItem);
-
-  // 2. Main Game Target
+  // 1. Main Game Target
   const mainItem = document.createElement('div');
   mainItem.className = 'dlc-item' + (activeDlc === null ? ' active' : '');
   
@@ -369,13 +374,12 @@ function renderDlcSection() {
     }
     await setActiveDlc(g.id, null);
     renderDlcSection();
-    renderStats();
     renderSessionList();
   });
 
   el.appendChild(mainItem);
 
-  // 3. Custom DLCs
+  // 2. Custom DLCs
   if (g.dlcs && g.dlcs.length) {
     g.dlcs.forEach(d => {
       const item = document.createElement('div');
@@ -412,8 +416,10 @@ function renderDlcSection() {
         }
         showConfirm(dict.confirm_delete_dlc_title, dict.confirm_delete_dlc_text, async () => {
           await deleteDlc(g.id, d.id);
+          if (sessionFilterTab === d.id) {
+            sessionFilterTab = 'overall';
+          }
           renderDlcSection();
-          renderStats();
           renderSessionList();
           toast(dict.toast_dlc_deleted);
         });
@@ -427,7 +433,6 @@ function renderDlcSection() {
         }
         await setActiveDlc(g.id, d.id);
         renderDlcSection();
-        renderStats();
         renderSessionList();
       });
 
