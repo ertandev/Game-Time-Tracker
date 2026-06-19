@@ -122,6 +122,10 @@ async function checkAndFetchIcon(g) {
 function startSession(gameId) {
   if(activeState) return;
   const g = gameById(gameId); if(!g) return;
+  if (g.activeDlcId === undefined || g.activeDlcId === 'overall') {
+    g.activeDlcId = null;
+    saveGames();
+  }
   activeGameId = gameId;
   activeState  = { startTs: new Date().toISOString(), runningMs:0, isPaused:false, isAutoPaused:false };
   lastGameFocusedMs = Date.now();
@@ -150,7 +154,8 @@ async function stopSession() {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   g.sessions.unshift({
     id: genId(), startTs: activeState.startTs, endTs: new Date().toISOString(),
-    durationMs: activeState.runningMs, dateKey: todayKey()
+    durationMs: activeState.runningMs, dateKey: todayKey(),
+    dlcId: g.activeDlcId || null
   });
   saveGames();
   activeState=null; activeGameId=null;

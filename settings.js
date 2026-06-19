@@ -58,6 +58,7 @@ function makeValEditable(valEl, sliderEl, maxVal) {
   input.focus();
   input.select();
   function saveEdit() {
+    input.removeEventListener('blur', saveEdit);
     let newVal = parseInt(input.value);
     if (isNaN(newVal) || newVal < 0) newVal = 0;
     else if (newVal > maxVal) newVal = maxVal;

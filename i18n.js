@@ -140,7 +140,20 @@ const TRANSLATIONS = {
     confirm_delete_all_data_title: "Tüm Verileri Sil",
     confirm_delete_all_data_text: "DİKKAT: Kayıtlı tüm oyunlarınız ve oturum geçmişleriniz kalıcı olarak silinecek! Bu işlem geri alınamaz. Devam etmek istiyor musunuz?",
     toast_settings_reset: "🔄 Ayarlar varsayılana sıfırlandı",
-    toast_all_data_deleted: "🗑 Tüm oyunlar ve oturum geçmişleri silindi"
+    toast_all_data_deleted: "🗑 Tüm oyunlar ve oturum geçmişleri silindi",
+    
+    // DLC / Sub-timers
+    dlc_title: "DLC'ler & Alt Hedefler",
+    dlc_overall: "Tümü / Genel",
+    dlc_main_game: "Ana Oyun",
+    dlc_add_btn: "＋ DLC Ekle",
+    dlc_add_prompt_title: "DLC Ekle",
+    dlc_add_prompt_label: "DLC veya Alt Hedef Adı:",
+    confirm_delete_dlc_title: "DLC'yi Sil",
+    confirm_delete_dlc_text: "Bu DLC silinecek. Mevcut oturumları silinmeyecek fakat etiketsiz kalacaktır. Devam etmek istiyor musunuz?",
+    toast_dlc_added: '✅ "NAME" eklendi',
+    toast_dlc_deleted: '🗑 DLC silindi',
+    toast_err_dlc_name: "⚠️ DLC adı gir"
   },
   en: {
     my_games: "MY GAMES",
@@ -281,7 +294,20 @@ const TRANSLATIONS = {
     confirm_delete_all_data_title: "Delete All Data",
     confirm_delete_all_data_text: "WARNING: All your games and session history will be permanently deleted! This action cannot be undone. Do you want to continue?",
     toast_settings_reset: "🔄 Settings reset to defaults",
-    toast_all_data_deleted: "🗑 All games and session history deleted"
+    toast_all_data_deleted: "🗑 All games and session history deleted",
+    
+    // DLC / Sub-timers
+    dlc_title: "DLCs & Sub-targets",
+    dlc_overall: "Overall",
+    dlc_main_game: "Main Game",
+    dlc_add_btn: "＋ Add DLC",
+    dlc_add_prompt_title: "Add DLC",
+    dlc_add_prompt_label: "DLC or Sub-target Name:",
+    confirm_delete_dlc_title: "Delete DLC",
+    confirm_delete_dlc_text: "This DLC will be deleted. Existing sessions will not be deleted but will lose their tag. Do you want to continue?",
+    toast_dlc_added: '✅ "NAME" added',
+    toast_dlc_deleted: '🗑 DLC deleted',
+    toast_err_dlc_name: "⚠️ Please enter DLC name"
   }
 };
 

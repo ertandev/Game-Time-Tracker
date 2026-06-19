@@ -82,6 +82,51 @@ function totalMs(g)     { return g.sessions.reduce((a,s)=>a+s.durationMs,0); }
 function todayMs(g)     { const k=todayKey(); return g.sessions.filter(s=>s.dateKey===k).reduce((a,s)=>a+s.durationMs,0); }
 function bestMs(g)      { return g.sessions.reduce((a,s)=>Math.max(a,s.durationMs),0); }
 
+function filteredTotalMs(g, target) {
+  if (target === 'overall') {
+    return totalMs(g) + (activeGameId === g.id && activeState ? activeState.runningMs : 0);
+  }
+  return getDlcTotalMs(g, target);
+}
+
+function filteredTodayMs(g, target) {
+  const k = todayKey();
+  let activeSessionMs = 0;
+  if (activeGameId === g.id && activeState) {
+    const currentTarget = g.activeDlcId || null;
+    if (target === 'overall' || currentTarget === target) {
+      activeSessionMs = activeState.runningMs;
+    }
+  }
+  const sessions = g.sessions.filter(s => s.dateKey === k && (target === 'overall' || (target === null ? !s.dlcId : s.dlcId === target)));
+  return sessions.reduce((a, s) => a + s.durationMs, 0) + activeSessionMs;
+}
+
+function filteredBestMs(g, target) {
+  let activeSessionMs = 0;
+  if (activeGameId === g.id && activeState) {
+    const currentTarget = g.activeDlcId || null;
+    if (target === 'overall' || currentTarget === target) {
+      activeSessionMs = activeState.runningMs;
+    }
+  }
+  const sessions = g.sessions.filter(s => target === 'overall' || (target === null ? !s.dlcId : s.dlcId === target));
+  const bestPrev = sessions.reduce((a, s) => Math.max(a, s.durationMs), 0);
+  return Math.max(bestPrev, activeSessionMs);
+}
+
+function filteredSessionCount(g, target) {
+  let activeCount = 0;
+  if (activeGameId === g.id && activeState) {
+    const currentTarget = g.activeDlcId || null;
+    if (target === 'overall' || currentTarget === target) {
+      activeCount = 1;
+    }
+  }
+  const count = g.sessions.filter(s => target === 'overall' || (target === null ? !s.dlcId : s.dlcId === target)).length;
+  return count + activeCount;
+}
+
 // ─── Polling Control sync ───────────────────────────────────────────────────
 function updateWatchState() {
   if (isElectron) {
@@ -246,3 +291,61 @@ async function clearGameSessions(gameId) {
   g.sessions = [];
   await saveGames();
 }
+
+async function addDlc(gameId, name) {
+  const g = gameById(gameId);
+  if (!g) return null;
+  if (!g.dlcs) g.dlcs = [];
+  const newDlc = {
+    id: genId(),
+    name: name,
+    createdTs: new Date().toISOString()
+  };
+  g.dlcs.push(newDlc);
+  await saveGames();
+  return newDlc;
+}
+
+async function deleteDlc(gameId, dlcId) {
+  const g = gameById(gameId);
+  if (!g) return;
+  if (g.dlcs) {
+    g.dlcs = g.dlcs.filter(d => d.id !== dlcId);
+  }
+  if (g.activeDlcId === dlcId) {
+    g.activeDlcId = null;
+  }
+  g.sessions.forEach(s => {
+    if (s.dlcId === dlcId) {
+      s.dlcId = null;
+    }
+  });
+  await saveGames();
+}
+
+async function setActiveDlc(gameId, dlcId) {
+  const g = gameById(gameId);
+  if (!g) return;
+  g.activeDlcId = dlcId;
+  await saveGames();
+}
+
+function getDlcTotalMs(g, dlcId) {
+  if (!g) return 0;
+  let activeSessionMs = 0;
+  if (activeGameId === g.id && activeState) {
+    const currentTarget = g.activeDlcId || null;
+    if (currentTarget === dlcId) {
+      activeSessionMs = activeState.runningMs;
+    }
+  }
+  return g.sessions
+    .filter(s => {
+      if (dlcId === null) {
+        return !s.dlcId;
+      }
+      return s.dlcId === dlcId;
+    })
+    .reduce((a, s) => a + s.durationMs, 0) + activeSessionMs;
+}
+

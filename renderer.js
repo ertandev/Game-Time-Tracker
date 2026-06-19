@@ -126,7 +126,7 @@ function selectGame(id) {
   $('welcomeScreen').classList.add('hidden');
   $('gamePage').classList.remove('hidden');
   renderGameHeader(); renderTimer(); renderControls(); renderStatusPill();
-  renderStats(); renderSessionList();
+  renderStats(); renderSessionList(); renderDlcSection();
   renderSidebar();
 }
 
@@ -160,6 +160,7 @@ function renderTimer() {
     $('timerDisplay').className='timer-display';
     document.querySelectorAll('.blink').forEach(c=>c.classList.remove('on'));
     $('sessionBadge').textContent=dict.badge_waiting;
+    renderDlcSection();
     return;
   }
   const {h,m,s}=msToHMS(activeState.runningMs);
@@ -169,6 +170,7 @@ function renderTimer() {
   document.querySelectorAll('.blink').forEach(c=>c.classList.toggle('on',!st));
   $('sessionBadge').textContent = st ? dict.badge_paused : dict.badge_running;
   if(isElectron) window.electronAPI.updateTray(`▶ ${gameById(activeGameId)?.name} — ${fmtShort(activeState.runningMs)}`);
+  renderDlcSection();
 }
 
 function renderStatusPill() {
@@ -198,13 +200,15 @@ function renderControls() {
 
 function renderStats() {
   const g = gameById(selectedId); if(!g) return;
-  const ms = totalMs(g)+(activeGameId===g.id&&activeState?activeState.runningMs:0);
-  const tod= todayMs(g)+(activeGameId===g.id&&activeState&&g.sessions[0]?.dateKey===todayKey()?activeState.runningMs:0);
-  const best=Math.max(bestMs(g), activeGameId===g.id&&activeState?activeState.runningMs:0);
+  const target = g.activeDlcId === undefined ? 'overall' : g.activeDlcId;
+  const ms = filteredTotalMs(g, target);
+  const tod = filteredTodayMs(g, target);
+  const best = filteredBestMs(g, target);
+  const count = filteredSessionCount(g, target);
   $('statToday').textContent = fmtDur(tod);
   $('statTotal').textContent = fmtDur(ms);
   $('statBest').textContent  = fmtDur(best);
-  $('statCount').textContent = g.sessions.length+(activeState&&activeGameId===g.id?' (+1)':'');
+  $('statCount').textContent = count;
 }
 
 function renderSessionList() {
@@ -212,7 +216,15 @@ function renderSessionList() {
   const el=$('sessionList');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   el.textContent = '';
-  if(!g.sessions.length) {
+
+  const target = g.activeDlcId === undefined ? 'overall' : g.activeDlcId;
+  const sessionsToRender = g.sessions.filter(s => {
+    if (target === 'overall') return true;
+    if (target === null) return !s.dlcId;
+    return s.dlcId === target;
+  });
+
+  if(!sessionsToRender.length) {
     const emptyState = document.createElement('div');
     emptyState.className = 'empty-state';
     emptyState.id = 'emptyState';
@@ -235,13 +247,13 @@ function renderSessionList() {
     return;
   }
   
-  g.sessions.forEach((s,i)=>{
+  sessionsToRender.forEach((s,i)=>{
     const div=document.createElement('div');
     div.className='session-item';
     
     const num = document.createElement('div');
     num.className = 's-num';
-    num.textContent = `#${g.sessions.length-i}`;
+    num.textContent = `#${sessionsToRender.length-i}`;
     
     const info = document.createElement('div');
     info.className = 's-info';
@@ -249,6 +261,15 @@ function renderSessionList() {
     const date = document.createElement('div');
     date.className = 's-date';
     date.textContent = fmtDate(s.startTs);
+    if (s.dlcId) {
+      const dlc = g.dlcs && g.dlcs.find(d => d.id === s.dlcId);
+      if (dlc) {
+        const badge = document.createElement('span');
+        badge.className = 's-dlc-badge';
+        badge.textContent = dlc.name;
+        date.appendChild(badge);
+      }
+    }
     info.appendChild(date);
     
     const dur = document.createElement('div');
@@ -282,6 +303,137 @@ function renderSessionList() {
     div.appendChild(del);
     el.appendChild(div);
   });
+}
+
+function renderDlcSection() {
+  const g = gameById(selectedId); if(!g) return;
+  const el = $('dlcList'); if(!el) return;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  el.textContent = '';
+
+  const activeDlc = g.activeDlcId === undefined ? 'overall' : g.activeDlcId;
+
+  // 1. Overall View Target
+  const overallItem = document.createElement('div');
+  overallItem.className = 'dlc-item' + (activeDlc === 'overall' ? ' active' : '');
+  
+  const overallRadio = document.createElement('div');
+  overallRadio.className = 'dlc-item-radio';
+  overallItem.appendChild(overallRadio);
+
+  const overallName = document.createElement('div');
+  overallName.className = 'dlc-item-name';
+  overallName.textContent = dict.dlc_overall;
+  overallItem.appendChild(overallName);
+
+  const overallTotal = document.createElement('div');
+  overallTotal.className = 'dlc-item-total';
+  overallTotal.textContent = fmtDur(filteredTotalMs(g, 'overall'));
+  overallItem.appendChild(overallTotal);
+
+  overallItem.addEventListener('click', async () => {
+    if (activeGameId === g.id && activeState) {
+      toast(settings.lang === 'tr' ? 'Oturum çalışırken hedef değiştirilemez!' : 'Cannot change target during a running session!');
+      return;
+    }
+    await setActiveDlc(g.id, 'overall');
+    renderDlcSection();
+    renderStats();
+    renderSessionList();
+  });
+
+  el.appendChild(overallItem);
+
+  // 2. Main Game Target
+  const mainItem = document.createElement('div');
+  mainItem.className = 'dlc-item' + (activeDlc === null ? ' active' : '');
+  
+  const mainRadio = document.createElement('div');
+  mainRadio.className = 'dlc-item-radio';
+  mainItem.appendChild(mainRadio);
+
+  const mainName = document.createElement('div');
+  mainName.className = 'dlc-item-name';
+  mainName.textContent = dict.dlc_main_game;
+  mainItem.appendChild(mainName);
+
+  const mainTotal = document.createElement('div');
+  mainTotal.className = 'dlc-item-total';
+  mainTotal.textContent = fmtDur(filteredTotalMs(g, null));
+  mainItem.appendChild(mainTotal);
+
+  mainItem.addEventListener('click', async () => {
+    if (activeGameId === g.id && activeState) {
+      toast(settings.lang === 'tr' ? 'Oturum çalışırken hedef değiştirilemez!' : 'Cannot change target during a running session!');
+      return;
+    }
+    await setActiveDlc(g.id, null);
+    renderDlcSection();
+    renderStats();
+    renderSessionList();
+  });
+
+  el.appendChild(mainItem);
+
+  // 3. Custom DLCs
+  if (g.dlcs && g.dlcs.length) {
+    g.dlcs.forEach(d => {
+      const item = document.createElement('div');
+      item.className = 'dlc-item' + (activeDlc === d.id ? ' active' : '');
+
+      const radio = document.createElement('div');
+      radio.className = 'dlc-item-radio';
+      item.appendChild(radio);
+
+      const name = document.createElement('div');
+      name.className = 'dlc-item-name';
+      name.textContent = d.name;
+      item.appendChild(name);
+
+      const total = document.createElement('div');
+      total.className = 'dlc-item-total';
+      total.textContent = fmtDur(filteredTotalMs(g, d.id));
+      item.appendChild(total);
+
+      const del = document.createElement('button');
+      del.className = 'dlc-item-del';
+      del.title = dict.confirm_delete_dlc_title;
+      del.innerHTML = `
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/>
+          <path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/>
+        </svg>`;
+
+      del.addEventListener('click', e => {
+        e.stopPropagation();
+        if (activeGameId === g.id && activeState) {
+          toast(settings.lang === 'tr' ? 'Oturum çalışırken DLC silinemez!' : 'Cannot delete DLC during a running session!');
+          return;
+        }
+        showConfirm(dict.confirm_delete_dlc_title, dict.confirm_delete_dlc_text, async () => {
+          await deleteDlc(g.id, d.id);
+          renderDlcSection();
+          renderStats();
+          renderSessionList();
+          toast(dict.toast_dlc_deleted);
+        });
+      });
+      item.appendChild(del);
+
+      item.addEventListener('click', async () => {
+        if (activeGameId === g.id && activeState) {
+          toast(settings.lang === 'tr' ? 'Oturum çalışırken hedef değiştirilemez!' : 'Cannot change target during a running session!');
+          return;
+        }
+        await setActiveDlc(g.id, d.id);
+        renderDlcSection();
+        renderStats();
+        renderSessionList();
+      });
+
+      el.appendChild(item);
+    });
+  }
 }
 
 function renderScanList(procs) {

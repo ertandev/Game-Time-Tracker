@@ -34,6 +34,20 @@ $('deleteGameBtn').addEventListener('click',()=>{
   });
 });
 
+$('addDlcBtn').addEventListener('click', () => {
+  if (!selectedId) return;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  showPrompt(dict.dlc_add_prompt_title, dict.dlc_add_prompt_label, '', async (name) => {
+    if (!name || !name.trim()) {
+      toast(dict.toast_err_dlc_name);
+      return;
+    }
+    await addDlc(selectedId, name.trim());
+    renderDlcSection();
+    toast(dict.toast_dlc_added.replace('NAME', name.trim()));
+  });
+});
+
 // ─── Add Game Modal ───────────────────────────────────────────────────────────
 function openAddModal(e) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
