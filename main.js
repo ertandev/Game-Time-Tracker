@@ -805,7 +805,7 @@ app.whenReady().then(() => {
   // Auto check for updates on startup (delay to let app load) - silent
   setTimeout(() => {
     isManualCheck = false;
-    autoUpdater.checkForUpdatesAndNotify().catch(err => {
+    autoUpdater.checkForUpdates().catch(err => {
       console.log('Silent auto-update check failed:', err.message);
     });
   }, 5000);
@@ -854,7 +854,7 @@ autoUpdater.on('update-downloaded', () => {
 
 ipcMain.on('check-for-updates-manual', () => {
   isManualCheck = true;
-  autoUpdater.checkForUpdatesAndNotify().then((result) => {
+  autoUpdater.checkForUpdates().then((result) => {
     // If check succeeds and the remote version matches current app version, force send 'not-available'
     // to prevent UI from getting stuck if electron-updater caches and skips emitting the event.
     if (result && result.updateInfo) {
