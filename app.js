@@ -269,6 +269,7 @@ async function searchAddGameHltb(query) {
   if (!query || !isElectron) {
     $('newGameHltbGroup').style.display = 'none';
     $('newGameHltbResults').textContent = '';
+    $('addGameConfirm').disabled = false;
     return;
   }
 
@@ -278,12 +279,14 @@ async function searchAddGameHltb(query) {
   
   const container = $('newGameHltbResults');
   container.innerHTML = `<p class="scan-hint">${dict.hltb_searching}</p>`;
+  $('addGameConfirm').disabled = true;
 
   try {
     const results = await window.electronAPI.fetchHltbTime(query);
     if (!results || results.length === 0) {
       $('newGameHltbStatus').style.display = 'none';
       container.innerHTML = `<p class="scan-hint">${dict.hltb_no_results}</p>`;
+      $('addGameConfirm').disabled = false;
       return;
     }
     
@@ -383,10 +386,12 @@ async function searchAddGameHltb(query) {
       
       container.appendChild(item);
     });
+    $('addGameConfirm').disabled = false;
   } catch (err) {
     console.error('Failed to search HLTB in modal:', err);
     $('newGameHltbStatus').style.display = 'none';
     container.innerHTML = `<p class="scan-hint">${dict.toast_hltb_fetch_failed}</p>`;
+    $('addGameConfirm').disabled = false;
   }
 }
 
@@ -398,6 +403,7 @@ function openAddModal(e) {
   manualSelectedPath = null;
   manualSelectedIcon = null;
   isNameManuallyEdited = false;
+  $('addGameConfirm').disabled = false;
   
   if ($('newGameHltbGroup')) $('newGameHltbGroup').style.display = 'none';
   if ($('newGameHltbResults')) $('newGameHltbResults').textContent = '';
@@ -450,6 +456,13 @@ $('newGameName').addEventListener('input', (e) => {
   }
   const nameVal = $('newGameName').value.trim();
   clearTimeout(addGameHltbTimeout);
+  
+  if (nameVal) {
+    $('addGameConfirm').disabled = true;
+  } else {
+    $('addGameConfirm').disabled = false;
+  }
+  
   addGameHltbTimeout = setTimeout(() => {
     if (selectedHltbData && selectedHltbData.name.toLowerCase() !== nameVal.toLowerCase()) {
       selectedHltbData = null;
