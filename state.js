@@ -71,9 +71,15 @@ function formatProcessName(procName) {
   if (!procName) return '';
   let name = procName.replace(/\.exe$/i, '');
   name = name.replace(/[_-]+/g, ' ');
+  name = name.replace(/([a-z])([A-Z])/g, '$1 $2');
+  name = name.replace(/([a-zA-Z])([0-9])/g, '$1 $2');
+  name = name.replace(/([0-9])([a-zA-Z])/g, '$1 $2');
+  name = name.replace(/([A-Z]+)([A-Z][a-z])/g, '$1 $2');
+  name = name.replace(/\s+/g, ' ');
   return name.split(' ')
              .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-             .join(' ');
+             .join(' ')
+             .trim();
 }
 function initials(name) { return name.split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase()||'??'; }
 function gameColor(idx) { return PALETTE[idx % PALETTE.length]; }
@@ -377,6 +383,7 @@ async function updateGameHltbData(gameId, hltbData) {
   const g = gameById(gameId);
   if (!g) return;
   g.hltbData = hltbData;
+  delete g.ratings;
   await saveGames();
 }
 
@@ -384,6 +391,7 @@ async function unlinkGameHltbData(gameId) {
   const g = gameById(gameId);
   if (!g) return;
   delete g.hltbData;
+  delete g.ratings;
   await saveGames();
 }
 

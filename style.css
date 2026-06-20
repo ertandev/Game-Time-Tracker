@@ -109,6 +109,40 @@ body{font-family:var(--fb);background:var(--bg);color:var(--text);height:100vh;o
 .game-header-info{flex:1}
 .game-name{font-family:var(--fd);font-size:1.2rem;font-weight:900;letter-spacing:.04em}
 .game-exe-badge{display:inline-block;background:var(--s3);border:1px solid var(--border);border-radius:20px;padding:2px 10px;font-size:.7rem;color:var(--muted);margin-top:4px;font-family:var(--fd)}
+.game-rating-badge {
+  display: inline-block;
+  border-radius: 20px;
+  padding: 2px 10px;
+  font-size: .7rem;
+  font-family: var(--fd);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all .2s;
+  user-select: none;
+  margin-top: 4px;
+}
+.game-rating-badge:hover {
+  transform: scale(1.05);
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.15);
+}
+.rating-high {
+  background: rgba(0, 200, 100, 0.15);
+  border: 1px solid rgba(0, 200, 100, 0.4);
+  color: #00ff7f;
+}
+.rating-mid {
+  background: rgba(255, 170, 0, 0.15);
+  border: 1px solid rgba(255, 170, 0, 0.4);
+  color: #ffaa00;
+}
+.rating-low {
+  background: rgba(255, 50, 50, 0.15);
+  border: 1px solid rgba(255, 50, 50, 0.4);
+  color: #ff5555;
+}
+#hltbRatingCard {
+  cursor: pointer;
+}
 .game-header-right{display:flex;align-items:center;gap:10px;margin-left:auto}
 .game-auto-status{display:inline-flex;align-items:center;gap:6px;background:var(--s2);border:1px solid var(--border);border-radius:20px;padding:5px 12px;font-size:.72rem;color:var(--muted)}
 .auto-dot{width:7px;height:7px;border-radius:50%;background:var(--muted);transition:background .3s}
@@ -977,6 +1011,41 @@ input[type=range]::-webkit-slider-thumb:hover{
   border-bottom: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.015);
 }
+.hltb-ratings-container {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-shrink: 0;
+}
+.hltb-rating-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 4px 8px;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  user-select: none;
+  font-family: var(--fd);
+  font-weight: 700;
+  font-size: 0.78rem;
+}
+.hltb-rating-item:hover {
+  transform: translateY(-2px);
+  background: var(--s3);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+.hltb-rating-item .rating-logo {
+  display: block;
+  flex-shrink: 0;
+}
+.hltb-rating-item .rating-val {
+  font-family: var(--fd);
+  font-weight: 800;
+}
 .hltb-game-image {
   width: 42px;
   height: 56px;
@@ -1011,7 +1080,7 @@ input[type=range]::-webkit-slider-thumb:hover{
 .hltb-times-container {
   padding: 16px;
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 12px;
 }
 .hltb-time-card {

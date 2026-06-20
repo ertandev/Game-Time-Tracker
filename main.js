@@ -557,6 +557,192 @@ ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
   }
 });
 
+ipcMain.handle('fetch-game-ratings', async (event, gameName) => {
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8'
+  };
+
+  const getMetacriticSlug = (name) => {
+    return name.toLowerCase()
+               .replace(/[^a-z0-9\s-]/g, '')
+               .trim()
+               .replace(/\s+/g, '-')
+               .replace(/-+/g, '-');
+  };
+
+  try {
+    const slug = getMetacriticSlug(gameName);
+    let url = `https://www.metacritic.com/game/${slug}/`;
+    let res = await fetch(url, { headers });
+    
+    if (res.status === 404) {
+      const searchUrl = `https://www.metacritic.com/search/game/${encodeURIComponent(gameName)}/results`;
+      const searchRes = await fetch(searchUrl, { headers });
+      if (searchRes.ok) {
+        const searchHtml = await searchRes.text();
+        const match = searchHtml.match(/href="(\/game\/[^"]+)"/i);
+        if (match) {
+          url = `https://www.metacritic.com${match[1]}`;
+          res = await fetch(url, { headers });
+        }
+      }
+    }
+
+    if (!res.ok) return null;
+    const html = await res.text();
+
+    // 1. Extract metascore
+    let metascore = null;
+    const ldMatch = html.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/i);
+    if (ldMatch) {
+      try {
+        const data = JSON.parse(ldMatch[1]);
+        if (data.aggregateRating && data.aggregateRating.ratingValue) {
+          metascore = parseInt(data.aggregateRating.ratingValue);
+        }
+      } catch (e) {}
+    }
+    if (!metascore) {
+      const metaBlock = html.match(/data-testid="global-score-header">Metascore[\s\S]*?data-testid="global-score-value">([\d.]+)/i);
+      if (metaBlock) metascore = parseInt(metaBlock[1]);
+    }
+
+    // 2. Extract user score
+    let userscore = null;
+    const userBlock = html.match(/data-testid="global-score-header">User score[\s\S]*?data-testid="global-score-value">([\d.]+)/i);
+    if (userBlock) userscore = parseFloat(userBlock[1]);
+
+    // 3. Extract IGN score and direct review URL (Try direct IGN game page first)
+    let ignscore = null;
+    let ignUrl = null;
+    let ignFetchedDirect = false;
+
+    const getIgnSlugs = (name) => {
+      const slugs = [];
+      const cleaned = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').trim();
+      
+      // 1. Standard slug: spaces replaced by hyphens
+      slugs.push(cleaned.replace(/\s+/g, '-').replace(/-+/g, '-'));
+      
+      // 2. F1 games optimization: "f 1" or "f-1" to "f1"
+      const f1Cleaned = cleaned.replace(/f\s*1/gi, 'f1');
+      slugs.push(f1Cleaned.replace(/\s+/g, '-').replace(/-+/g, '-'));
+      
+      // 3. Completely compressed: no spaces/hyphens
+      slugs.push(cleaned.replace(/[\s-]+/g, ''));
+
+      return [...new Set(slugs)];
+    };
+
+    try {
+      const ignSlugs = getIgnSlugs(gameName);
+      for (const ignSlug of ignSlugs) {
+        const ignDirectUrl = `https://www.ign.com/games/${ignSlug}`;
+        const ignRes = await fetch(ignDirectUrl, { headers });
+        if (ignRes.ok) {
+          const ignHtml = await ignRes.text();
+          const ldMatch = ignHtml.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/i);
+          if (ldMatch) {
+            const ldData = JSON.parse(ldMatch[1]);
+            if (ldData.review) {
+              if (ldData.review.reviewRating && ldData.review.reviewRating.ratingValue !== undefined) {
+                ignscore = Math.round(parseFloat(ldData.review.reviewRating.ratingValue) * 10);
+              }
+              if (ldData.review.url) {
+                ignUrl = ldData.review.url.replace(/^https?:\/\/(?:www\.)?ign\.comhttps?:\/\/(?:www\.)?ign\.com/i, 'https://www.ign.com');
+              }
+              ignFetchedDirect = true;
+              break;
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch direct IGN rating:', e);
+    }
+
+    // Fall back to Metacritic critic reviews if direct IGN page did not succeed
+    if (!ignFetchedDirect) {
+      const criticUrl = url.endsWith('/') ? url + 'critic-reviews/' : url + '/critic-reviews/';
+      try {
+        const criticRes = await fetch(criticUrl, { headers });
+        if (criticRes.ok) {
+          const criticHtml = await criticRes.text();
+          const ignMatch = criticHtml.match(/<span>(\d+)<\/span><\/div><\/div>\s*IGN/i);
+          if (ignMatch) ignscore = parseInt(ignMatch[1]);
+
+          const ignUrlMatch = criticHtml.match(/"(https?:\/\/(?:www\.)?ign\.com\/[^"]+)"/i);
+          if (ignUrlMatch) ignUrl = ignUrlMatch[1];
+        }
+      } catch (e) {
+        console.error('Failed to fetch critic reviews in IPC:', e);
+      }
+    }
+
+    // 4. Extract OpenCritic ratings (score, recommended percent, and game reviews page URL)
+    let opencriticScore = null;
+    let opencriticPercent = null;
+    let opencriticUrl = null;
+
+    try {
+      const ocQueryUrl = `https://search.yahoo.com/search?q=site:opencritic.com/game+${encodeURIComponent(gameName)}`;
+      const ocSearchRes = await fetch(ocQueryUrl, { headers });
+      if (ocSearchRes.ok) {
+        const ocSearchHtml = await ocSearchRes.text();
+        // Match both normal and URL-encoded versions
+        const ocMatch = ocSearchHtml.match(/opencritic\.com%2fgame%2f(\d+)%2f([a-zA-Z0-9-]+)/i) ||
+                        ocSearchHtml.match(/opencritic\.com\/game\/(\d+)\/([a-zA-Z0-9-]+)/i);
+        if (ocMatch) {
+          opencriticUrl = `https://opencritic.com/game/${ocMatch[1]}/${ocMatch[2]}`;
+          const ocRes = await fetch(opencriticUrl, { headers });
+          if (ocRes.ok) {
+            const ocHtml = await ocRes.text();
+            
+            // 4.1 Parse score from JSON-LD
+            const ocLdMatches = ocHtml.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/gi);
+            if (ocLdMatches) {
+              for (const ldBlock of ocLdMatches) {
+                try {
+                  const cleanJson = ldBlock.replace(/<\/?script[^>]*>/gi, '').trim();
+                  const data = JSON.parse(cleanJson);
+                  if (data['@type'] === 'VideoGame' && data.aggregateRating && data.aggregateRating.ratingValue !== undefined) {
+                    opencriticScore = parseInt(data.aggregateRating.ratingValue);
+                  }
+                } catch (e) {}
+              }
+            }
+            
+            // Fallback for score to description
+            if (!opencriticScore) {
+              const ocOgDescMatch = ocHtml.match(/<meta\s+property="og:description"\s+content="([^"]*)"/i) ||
+                                  ocHtml.match(/<meta\s+name="description"\s+content="([^"]*)"/i);
+              if (ocOgDescMatch) {
+                const desc = ocOgDescMatch[1];
+                const scoreMatch = desc.match(/overall average score of (\d+)/i) || desc.match(/average score of (\d+)/i);
+                if (scoreMatch) opencriticScore = parseInt(scoreMatch[1]);
+              }
+            }
+
+            // 4.2 Parse recommended percentage
+            const ocRecommendMatch = ocHtml.match(/recommended by (\d+)%/i);
+            if (ocRecommendMatch) {
+              opencriticPercent = parseInt(ocRecommendMatch[1]);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error('Failed to fetch OpenCritic rating:', e);
+    }
+
+    return { metascore, userscore, ignscore, url, ignUrl, opencriticScore, opencriticPercent, opencriticUrl };
+  } catch (err) {
+    console.error('Error fetching game ratings in IPC:', err);
+    return null;
+  }
+});
+
 ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
   const HLTB_BASE_URL = 'https://howlongtobeat.com';
   const headers = {

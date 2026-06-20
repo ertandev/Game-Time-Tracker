@@ -191,6 +191,11 @@ const TRANSLATIONS = {
     hltb_searching: "Aranıyor...",
     hltb_select_hint: "Eşleştirmek için bir oyuna tıklayın.",
     hltb_status_matched: "Eşleşti",
+    hltb_rating: "Puan",
+    tt_rating_badge: "İnceleme Puanı (Tıkla ve İncelemeleri Gör)",
+    tt_metacritic: "Metacritic Puanları (Metascore / Kullanıcı Puanı) - Tıkla ve Metacritic Sayfasına Git",
+    tt_ign: "IGN Puanı (Tıkla ve IGN İncelemesine Git)",
+    tt_opencritic: "OpenCritic Puanı (Ortalama / Tavsiye Etme Oranı) - Tıkla ve OpenCritic Sayfasına Git",
     
     // Tooltips
     tt_settings: "Global ayarları ve tercihleri yapılandır",
@@ -401,6 +406,11 @@ const TRANSLATIONS = {
     hltb_searching: "Searching...",
     hltb_select_hint: "Click a game to match it.",
     hltb_status_matched: "Matched",
+    hltb_rating: "Rating",
+    tt_rating_badge: "Review Score (Click to View Reviews)",
+    tt_metacritic: "Metacritic Ratings (Metascore / User Score) - Click to open Metacritic page",
+    tt_ign: "IGN Score (Click to open IGN review search)",
+    tt_opencritic: "OpenCritic Score (Average / Recommended Percent) - Click to open OpenCritic page",
     
     // Tooltips
     tt_settings: "Configure global settings and preferences",

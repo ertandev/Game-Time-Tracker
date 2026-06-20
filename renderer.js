@@ -96,10 +96,7 @@ function renderSidebar() {
     if (iconUrl) {
       const img = document.createElement('img');
       img.src = iconUrl;
-      img.className = 'sg-avatar-img';
-      if (g.hltbData && g.hltbData.image && !g.isCustomIcon) {
-        img.classList.add('cover-fit');
-      }
+      img.className = 'sg-avatar-img cover-fit';
       img.alt = g.name;
       item.appendChild(img);
     } else {
@@ -179,10 +176,7 @@ function renderGameHeader() {
   if (iconUrl) {
     const img = document.createElement('img');
     img.src = iconUrl;
-    img.className = 'game-avatar-img';
-    if (g.hltbData && g.hltbData.image && !g.isCustomIcon) {
-      img.classList.add('cover-fit');
-    }
+    img.className = 'game-avatar-img cover-fit';
     img.alt = g.name;
     av.appendChild(img);
   } else {
@@ -192,6 +186,7 @@ function renderGameHeader() {
   av.style.boxShadow  = `0 0 16px ${g.color}66`;
   $('gameNameTitle').textContent = g.name;
   $('gameExeBadge').textContent  = g.exe || dict.exe_not_assigned;
+
   const dot = $('autoStatusDot'), txt = $('autoStatusText');
   dot.className='auto-dot'+(g.exe?' watching':'');
   txt.textContent = g.exe ? dict.exe_watching : dict.exe_manual_mode;
@@ -588,6 +583,143 @@ function renderDlcSection() {
   updateDlcSelectCount();
 }
 
+async function renderRatings(g) {
+  const container = $('hltbRatingsContainer');
+  if (!container) return;
+
+  const mItem = $('ratingMetacritic');
+  const iItem = $('ratingIgn');
+  const ocItem = $('ratingOpencritic');
+  
+  const mVal = $('valMetacritic');
+  const iVal = $('valIgn');
+  const ocVal = $('valOpencritic');
+
+  if (!g.hltbData) {
+    container.style.display = 'none';
+    return;
+  }
+  container.style.display = 'flex';
+
+  const updateMetacriticBadge = (item, valEl, metascore, userscore) => {
+    if ((metascore === null || metascore === undefined) && (userscore === null || userscore === undefined)) {
+      item.style.display = 'none';
+      return;
+    }
+    item.style.display = 'flex';
+    
+    let text = '';
+    let scoreForColor = null;
+    let isUserScoreForColor = false;
+    
+    if (metascore !== null && metascore !== undefined) {
+      text += metascore;
+      scoreForColor = metascore;
+    }
+    if (userscore !== null && userscore !== undefined) {
+      if (text) text += ' / ';
+      text += userscore.toFixed(1);
+      if (scoreForColor === null) {
+        scoreForColor = userscore;
+        isUserScoreForColor = true;
+      }
+    }
+    
+    valEl.textContent = text;
+    
+    let percent = 0;
+    if (scoreForColor !== null) {
+      percent = isUserScoreForColor ? scoreForColor * 10 : scoreForColor;
+    }
+    
+    item.style.borderColor = percent >= 75 ? 'rgba(0, 200, 100, 0.4)' : percent >= 50 ? 'rgba(255, 170, 0, 0.4)' : 'rgba(255, 50, 50, 0.4)';
+    valEl.style.color = percent >= 75 ? '#00ff7f' : percent >= 50 ? '#ffaa00' : '#ff5555';
+  };
+
+  const updateIgnBadge = (item, valEl, score) => {
+    if (score === null || score === undefined) {
+      item.style.display = 'none';
+      return;
+    }
+    item.style.display = 'flex';
+    valEl.textContent = score;
+    item.style.borderColor = score >= 75 ? 'rgba(0, 200, 100, 0.4)' : score >= 50 ? 'rgba(255, 170, 0, 0.4)' : 'rgba(255, 50, 50, 0.4)';
+    valEl.style.color = score >= 75 ? '#00ff7f' : score >= 50 ? '#ffaa00' : '#ff5555';
+  };
+
+  const updateOpencriticBadge = (item, valEl, score, percent) => {
+    if (score === null || score === undefined) {
+      item.style.display = 'none';
+      return;
+    }
+    item.style.display = 'flex';
+    let text = score.toString();
+    if (percent !== null && percent !== undefined) {
+      text += ` / ${percent}%`;
+    }
+    valEl.textContent = text;
+    item.style.borderColor = score >= 75 ? 'rgba(0, 200, 100, 0.4)' : score >= 50 ? 'rgba(255, 170, 0, 0.4)' : 'rgba(255, 50, 50, 0.4)';
+    valEl.style.color = score >= 75 ? '#00ff7f' : score >= 50 ? '#ffaa00' : '#ff5555';
+  };
+
+  mItem.onclick = () => {
+    if (g.ratings && g.ratings.url) {
+      if (isElectron) window.electronAPI.openExternal(g.ratings.url);
+    } else {
+      const url = `https://www.metacritic.com/search/game/${encodeURIComponent(g.hltbData.name || g.name)}/results`;
+      if (isElectron) window.electronAPI.openExternal(url);
+    }
+  };
+  
+  iItem.onclick = () => {
+    if (g.ratings && g.ratings.ignUrl) {
+      if (isElectron) window.electronAPI.openExternal(g.ratings.ignUrl);
+    } else {
+      const url = `https://www.google.com/search?q=${encodeURIComponent((g.hltbData.name || g.name) + ' IGN review')}`;
+      if (isElectron) window.electronAPI.openExternal(url);
+    }
+  };
+
+  ocItem.onclick = () => {
+    if (g.ratings && g.ratings.opencriticUrl) {
+      if (isElectron) window.electronAPI.openExternal(g.ratings.opencriticUrl);
+    } else {
+      const url = `https://search.yahoo.com/search?q=site:opencritic.com/game+${encodeURIComponent(g.hltbData.name || g.name)}`;
+      if (isElectron) window.electronAPI.openExternal(url);
+    }
+  };
+
+  const hasSubdomainIgn = g.ratings && g.ratings.ignUrl && !/^https?:\/\/(?:www\.)?ign\.com/i.test(g.ratings.ignUrl);
+  const hasOpencritic = g.ratings && (g.ratings.opencriticScore !== undefined || g.ratings.opencriticUrl !== undefined);
+
+  if (g.ratings && !hasSubdomainIgn && hasOpencritic) {
+    updateMetacriticBadge(mItem, mVal, g.ratings.metascore, g.ratings.userscore);
+    updateIgnBadge(iItem, iVal, g.ratings.ignscore);
+    updateOpencriticBadge(ocItem, ocVal, g.ratings.opencriticScore, g.ratings.opencriticPercent);
+  } else {
+    mItem.style.display = 'none';
+    iItem.style.display = 'none';
+    ocItem.style.display = 'none';
+
+    if (g._fetchingRatings) return;
+    g._fetchingRatings = true;
+
+    try {
+      const ratings = await window.electronAPI.fetchGameRatings(g.hltbData.name || g.name);
+      g.ratings = ratings || { metascore: null, userscore: null, ignscore: null, url: null, ignUrl: null, opencriticScore: null, opencriticPercent: null, opencriticUrl: null };
+      await saveGames();
+      
+      if (selectedId === g.id) {
+        renderRatings(g);
+      }
+    } catch (e) {
+      console.error('Failed to fetch ratings:', e);
+    } finally {
+      delete g._fetchingRatings;
+    }
+  }
+}
+
 function renderHltbSection() {
   const g = gameById(selectedId); if(!g) return;
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -605,6 +737,7 @@ function renderHltbSection() {
     if (titleEl) {
       titleEl.style.display = 'flex';
       if (nameEl) nameEl.textContent = g.hltbData.name || '';
+      renderRatings(g);
       
       if (imgEl) {
         if (g.hltbData.image) {
@@ -647,11 +780,15 @@ function renderHltbSection() {
     $('hltbMainTime').textContent = formatHltbSeconds(g.hltbData.main);
     $('hltbPlusTime').textContent = formatHltbSeconds(g.hltbData.plus);
     $('hltb100Time').textContent = formatHltbSeconds(g.hltbData.completionist);
+    
+    // HLTB Rating card removed as requested
   } else {
     container.style.display = 'none';
     emptyState.style.display = 'flex';
     unlinkBtn.style.display = 'none';
     if (titleEl) titleEl.style.display = 'none';
+    const ratingsContainer = $('hltbRatingsContainer');
+    if (ratingsContainer) ratingsContainer.style.display = 'none';
     $('hltbLinkBtn').innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -709,7 +846,8 @@ function renderHltbSearchResults(results) {
         main: res.comp_main,
         plus: res.comp_plus,
         completionist: res.comp_100,
-        image: res.game_image
+        image: res.game_image,
+        rating: res.review_score
       };
       await updateGameHltbData(selectedId, hltbData);
       
@@ -962,37 +1100,81 @@ async function handleResetIcon(g) {
   // If the path is an image file (corrupted by the custom icon bug), clear it
   if (g.path && /\.(png|jpg|jpeg|gif|ico|bmp|webp)$/i.test(g.path)) {
     g.path = '';
-    await saveGames();
   }
 
-  let success = false;
-  let exePath = g.path;
-  
-  if (!exePath && g.exe) {
-    exePath = await window.electronAPI.findProcessPath(g.exe);
-    if (exePath) {
-      g.path = exePath;
-      await saveGames();
+  // 1. Delete custom icon flags to reset back to default
+  delete g.isCustomIcon;
+  delete g.icon;
+  g.iconAttempted = false;
+
+  // 2. Try fetching HLTB first and filling it
+  let hltbSuccess = false;
+  try {
+    const results = await window.electronAPI.fetchHltbTime(g.name);
+    if (results && results.length > 0) {
+      const res = results[0];
+      g.hltbData = {
+        id: res.game_id,
+        name: res.game_name,
+        main: res.comp_main,
+        plus: res.comp_plus,
+        completionist: res.comp_100,
+        image: res.game_image,
+        rating: res.review_score
+      };
+      hltbSuccess = true;
+      
+      // Fetch DLCs in background
+      try {
+        const dlcNames = await window.electronAPI.fetchHltbDlcs(res.game_id);
+        if (dlcNames && dlcNames.length > 0) {
+          if (!g.dlcs) g.dlcs = [];
+          const existingNames = new Set(g.dlcs.map(d => d.name.toLowerCase().trim()));
+          dlcNames.forEach(dlcName => {
+            if (!existingNames.has(dlcName.toLowerCase().trim())) {
+              g.dlcs.push({
+                id: genId(),
+                name: dlcName.trim(),
+                createdTs: new Date().toISOString()
+              });
+            }
+          });
+        }
+      } catch (dlcErr) {
+        console.error('Failed to fetch DLCs on icon reset:', dlcErr);
+      }
+    }
+  } catch (err) {
+    console.error('Failed to fetch HLTB data on icon reset:', err);
+  }
+
+  // 3. Fallback to extracting the EXE system icon if HLTB failed
+  if (!hltbSuccess) {
+    let exePath = g.path;
+    if (!exePath && g.exe) {
+      exePath = await window.electronAPI.findProcessPath(g.exe);
+      if (exePath) {
+        g.path = exePath;
+      }
+    }
+    
+    if (exePath && isElectron) {
+      const iconDataUrl = await window.electronAPI.getFileIcon(exePath);
+      if (iconDataUrl) {
+        g.icon = iconDataUrl;
+        g.iconAttempted = true;
+      }
     }
   }
-  
-  if (exePath && isElectron) {
-    const iconDataUrl = await window.electronAPI.getFileIcon(exePath);
-    if (iconDataUrl) {
-      g.icon = iconDataUrl;
-      g.iconAttempted = true;
-      await saveGames();
-      success = true;
-    }
-  }
-  
-  if (!success) {
-    await resetGameIcon(g.id);
-  }
+
+  await saveGames();
   
   renderSidebar();
   if (selectedId === g.id) {
     renderGameHeader();
+    renderHltbSection();
+    renderDlcSection();
+    renderStats();
   }
   
   toast(settings.lang === 'tr' ? 'Simge orijinal sistem simgesine sıfırlandı' : 'Icon reset to system icon');

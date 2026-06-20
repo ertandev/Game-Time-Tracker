@@ -240,6 +240,7 @@ let selectedHltbData = null;
 let addGameHltbTimeout = null;
 let manualSelectedPath = null;
 let manualSelectedIcon = null;
+let isNameManuallyEdited = false;
 
 function setHltbStatusSelected(text) {
   const statusSpan = $('newGameHltbStatus');
@@ -301,7 +302,8 @@ async function searchAddGameHltb(query) {
           main: autoSelectedRes.comp_main,
           plus: autoSelectedRes.comp_plus,
           completionist: autoSelectedRes.comp_100,
-          image: autoSelectedRes.game_image
+          image: autoSelectedRes.game_image,
+          rating: autoSelectedRes.review_score
         };
         setHltbStatusSelected(dict.hltb_status_matched);
       }
@@ -371,7 +373,8 @@ async function searchAddGameHltb(query) {
             main: res.comp_main,
             plus: res.comp_plus,
             completionist: res.comp_100,
-            image: res.game_image
+            image: res.game_image,
+            rating: res.review_score
           };
           $('newGameName').value = res.game_name;
           setHltbStatusSelected(dict.hltb_status_matched);
@@ -394,6 +397,7 @@ function openAddModal(e) {
   selectedHltbData = null;
   manualSelectedPath = null;
   manualSelectedIcon = null;
+  isNameManuallyEdited = false;
   
   if ($('newGameHltbGroup')) $('newGameHltbGroup').style.display = 'none';
   if ($('newGameHltbResults')) $('newGameHltbResults').textContent = '';
@@ -440,7 +444,10 @@ $('addGameClose').addEventListener('click',closeAddModal);
 $('addGameCancel').addEventListener('click',closeAddModal);
 $('addGameOverlay').addEventListener('click',e=>{ if(e.target===$('addGameOverlay')) closeAddModal(); });
 
-$('newGameName').addEventListener('input', () => {
+$('newGameName').addEventListener('input', (e) => {
+  if (e.isTrusted) {
+    isNameManuallyEdited = $('newGameName').value.trim() !== '';
+  }
   const nameVal = $('newGameName').value.trim();
   clearTimeout(addGameHltbTimeout);
   addGameHltbTimeout = setTimeout(() => {
@@ -454,9 +461,13 @@ $('newGameName').addEventListener('input', () => {
 });
 
 $('newGameExe').addEventListener('input', () => {
+  if (isNameManuallyEdited) return;
   const exeVal = $('newGameExe').value.trim();
-  if (exeVal && !$('newGameName').value.trim()) {
+  if (exeVal) {
     $('newGameName').value = formatProcessName(exeVal);
+    $('newGameName').dispatchEvent(new Event('input'));
+  } else {
+    $('newGameName').value = '';
     $('newGameName').dispatchEvent(new Event('input'));
   }
 });

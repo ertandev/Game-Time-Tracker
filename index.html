@@ -71,7 +71,9 @@
           <div class="game-avatar" id="gameAvatar"></div>
           <div class="game-header-info">
             <h1 class="game-name" id="gameNameTitle"></h1>
-            <div class="game-exe-badge" id="gameExeBadge"></div>
+            <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px;">
+              <div class="game-exe-badge" id="gameExeBadge" style="margin-top: 0;"></div>
+            </div>
           </div>
           <div class="game-header-right">
             <div class="game-auto-status" id="gameAutoStatus">
@@ -238,6 +240,20 @@
             <div class="hltb-game-info">
               <span class="hltb-matched-label" data-i18n="hltb_matched_label">HowLongToBeat Eşleşmesi</span>
               <h3 id="hltbGameTitleName" class="hltb-game-title-name"></h3>
+            </div>
+            <div class="hltb-ratings-container" id="hltbRatingsContainer">
+              <div class="hltb-rating-item" id="ratingMetacritic" style="display: none;" data-tooltip-key="tt_metacritic">
+                <svg viewBox="0 0 24 24" width="20" height="20" class="rating-logo"><rect width="24" height="24" rx="4" fill="#000000"/><text x="12" y="16.5" font-family="'Orbitron', 'Inter', sans-serif" font-weight="900" font-size="12" fill="#ffcc00" text-anchor="middle">M</text></svg>
+                <span class="rating-val" id="valMetacritic">--</span>
+              </div>
+              <div class="hltb-rating-item" id="ratingIgn" style="display: none;" data-tooltip-key="tt_ign">
+                <svg viewBox="0 0 24 24" width="20" height="20" class="rating-logo"><rect width="24" height="24" rx="4" fill="#f02828"/><text x="12" y="15.5" font-family="'Orbitron', 'Inter', sans-serif" font-weight="900" font-size="10" fill="#ffffff" text-anchor="middle" letter-spacing="-0.5px">IGN</text></svg>
+                <span class="rating-val" id="valIgn">--</span>
+              </div>
+              <div class="hltb-rating-item" id="ratingOpencritic" style="display: none;" data-tooltip-key="tt_opencritic">
+                <svg viewBox="0 0 24 24" width="20" height="20" class="rating-logo"><polygon points="12,2 22,8 22,18 12,24 2,18 2,8" fill="#fc430a"/><text x="12" y="15.5" font-family="'Orbitron', 'Inter', sans-serif" font-weight="900" font-size="10" fill="#ffffff" text-anchor="middle">OC</text></svg>
+                <span class="rating-val" id="valOpencritic">--</span>
+              </div>
             </div>
           </div>
           <div class="hltb-times-container" id="hltbTimesContainer" style="display: none;">
