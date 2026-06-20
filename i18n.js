@@ -64,6 +64,8 @@ const TRANSLATIONS = {
     confirm_clear_sessions_text: "COUNT oturum silinecek.",
     confirm_delete_game_title: "Oyunu Sil",
     confirm_delete_game_text: '"NAME" ve tüm oturumları silinecek.',
+    confirm_update_title: "Güncellemeyi Uygula",
+    confirm_update_text: "Uygulama kapatılıp en son sürüm yüklenecek. Şimdi yeniden başlatılsın mı?",
     
     status_ready: "Hazır",
     status_running: "Çalışıyor",
@@ -184,9 +186,11 @@ const TRANSLATIONS = {
     toast_hltb_unlinked: "🗑 Eşleşme kaldırıldı",
     toast_hltb_fetch_failed: "⚠️ HLTB verileri alınamadı",
     hltb_matched_label: "HowLongToBeat Eşleşmesi",
+    reset_name: "İsmi Sıfırla",
     
     // Tooltips
     tt_settings: "Global ayarları ve tercihleri yapılandır",
+    tt_update_ready: "Güncelleme hazır! Yüklemek ve yeniden başlatmak için tıklayın.",
     tt_min: "Pencereyi simge durumuna küçült",
     tt_max: "Pencereyi boyutlandır / tam ekran yap",
     tt_close: "Uygulamayı kapat",
@@ -265,6 +269,8 @@ const TRANSLATIONS = {
     confirm_clear_sessions_text: "COUNT sessions will be deleted.",
     confirm_delete_game_title: "Delete Game",
     confirm_delete_game_text: '"NAME" and all its sessions will be deleted.',
+    confirm_update_title: "Apply Update",
+    confirm_update_text: "The app will close to install the latest version. Restart now?",
     
     status_ready: "Ready",
     status_running: "Running",
@@ -385,9 +391,11 @@ const TRANSLATIONS = {
     toast_hltb_unlinked: "🗑 Match unlinked",
     toast_hltb_fetch_failed: "⚠️ Failed to fetch HLTB data",
     hltb_matched_label: "HowLongToBeat Match",
+    reset_name: "Reset Name",
     
     // Tooltips
     tt_settings: "Configure global settings and preferences",
+    tt_update_ready: "Update ready! Click to install and restart.",
     tt_min: "Minimize window",
     tt_max: "Maximize or restore window size",
     tt_close: "Close application",
@@ -452,6 +460,12 @@ function applyLanguage() {
 function renderUpdateStatus() {
   const btnCheckUpdate = $('btnCheckUpdate');
   const updateStatusText = $('updateStatusText');
+  const btnUpdate = $('btnUpdate');
+  
+  if (btnUpdate) {
+    btnUpdate.classList.toggle('hidden', !window.lastUpdateStatus || window.lastUpdateStatus.status !== 'downloaded');
+  }
+
   if (!updateStatusText || !window.lastUpdateStatus) return;
 
   const lang = settings.lang || 'tr';

@@ -411,11 +411,26 @@ $('confirmOverlay').addEventListener('click',e=>{ if(e.target===$('confirmOverla
 
 // ─── Prompt Modal ─────────────────────────────────────────────────────────────
 let promptCb=null;
-function showPrompt(title,label,val,cb) {
+let promptResetValue = '';
+function showPrompt(title,label,val,cb,resetVal) {
   $('promptTitle').textContent=title;
   $('promptLabel').textContent=label;
   $('promptInput').value=val||'';
   promptCb=cb;
+  
+  const resetBtn = $('promptReset');
+  if (resetVal) {
+    promptResetValue = resetVal;
+    if (resetBtn) {
+      resetBtn.style.display = 'block';
+      const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+      resetBtn.textContent = dict.reset_name || 'Varsayılana Sıfırla';
+    }
+  } else {
+    promptResetValue = '';
+    if (resetBtn) resetBtn.style.display = 'none';
+  }
+  
   $('promptOverlay').classList.add('open');
   
   // Focus the input field and select all text for quick renaming
@@ -433,6 +448,13 @@ $('promptOk').addEventListener('click',()=>{
 $('promptCancel').addEventListener('click',()=>{
   $('promptOverlay').classList.remove('open');
   promptCb=null;
+});
+$('promptReset').addEventListener('click', () => {
+  if (promptResetValue) {
+    $('promptInput').value = promptResetValue;
+    $('promptInput').focus();
+    $('promptInput').select();
+  }
 });
 $('promptOverlay').addEventListener('click',e=>{
   if(e.target===$('promptOverlay')) {
@@ -658,6 +680,20 @@ async function init() {
         window.lastUpdateStatus = { status: 'checking' };
         renderUpdateStatus();
         window.electronAPI.checkForUpdates();
+      });
+    }
+
+    const btnUpdate = $('btnUpdate');
+    if (btnUpdate) {
+      btnUpdate.addEventListener('click', () => {
+        if (window.updateDownloadedState && isElectron) {
+          const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+          showConfirm(dict.confirm_update_title, dict.confirm_update_text, () => {
+            window.lastUpdateStatus = { status: 'installing' };
+            renderUpdateStatus();
+            window.electronAPI.quitAndInstall();
+          });
+        }
       });
     }
 

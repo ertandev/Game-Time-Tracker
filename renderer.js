@@ -796,8 +796,8 @@ function showCustomContextMenu(e, gameId) {
   menu.classList.remove('hidden');
   
   // Position menu
-  const menuWidth = 245;
-  const menuHeight = 330;
+  const menuWidth = 210;
+  const menuHeight = 250;
   let left = e.clientX;
   let top = e.clientY;
   
@@ -1008,6 +1008,7 @@ async function handleChangeColor(g) {
 async function handleRenameGame(g) {
   const title = settings.lang === 'tr' ? 'Oyunu Yeniden Adlandır' : 'Rename Game';
   const label = settings.lang === 'tr' ? 'Yeni adı girin:' : 'Enter new name:';
+  const defaultName = g.exe ? formatProcessName(g.exe) : '';
   
   showPrompt(title, label, g.name, async (newName) => {
     if (newName && newName.trim()) {
@@ -1018,7 +1019,7 @@ async function handleRenameGame(g) {
       }
       toast(settings.lang === 'tr' ? 'Oyun yeniden adlandırıldı' : 'Game renamed');
     }
-  });
+  }, defaultName);
 }
 
 async function handleClearSessions(g) {
