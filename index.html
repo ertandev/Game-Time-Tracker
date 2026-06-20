@@ -309,7 +309,13 @@
   <div class="overlay" id="settingsOverlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title" data-i18n="settings_modal_title">⚙️ Global Ayarlar</h3>
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color: var(--accent);">
+            <circle cx="12" cy="12" r="3"></circle>
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+          </svg>
+          <span data-i18n="settings_modal_title">Global Ayarlar</span>
+        </h3>
         <button class="modal-close" id="settingsClose" data-i18n-title="cancel">✕</button>
       </div>
 
@@ -379,7 +385,7 @@
         <div class="settings-about">
           <div class="about-title">GameTime Tracker</div>
           <div class="about-details">
-            <span>Version <span id="appVersion">1.3.0</span></span> • 
+            <span>Version <span id="appVersion">1.4.0</span></span> • 
             <span>© 2026 ertandev</span>
           </div>
           <div class="about-rights" data-i18n="about_rights">Tüm Hakları Saklıdır.</div>
@@ -404,7 +410,16 @@
   <div class="overlay" id="addGameOverlay">
     <div class="modal-box">
       <div class="modal-header">
-        <h3 class="modal-title" data-i18n="add_game_modal_title">🎮 Oyun Ekle</h3>
+        <h3 class="modal-title" style="display: flex; align-items: center; gap: 8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18" style="color: var(--accent);">
+            <rect x="2" y="6" width="20" height="12" rx="3" ry="3"></rect>
+            <line x1="6" y1="12" x2="10" y2="12"></line>
+            <line x1="8" y1="10" x2="8" y2="14"></line>
+            <line x1="15" y1="13" x2="15.01" y2="13"></line>
+            <line x1="18" y1="11" x2="18.01" y2="11"></line>
+          </svg>
+          <span data-i18n="add_game_modal_title">Oyun Ekle</span>
+        </h3>
         <button class="modal-close" id="addGameClose" data-i18n-title="cancel">✕</button>
       </div>
 
@@ -414,17 +429,47 @@
           <input type="text" id="newGameName" class="form-input" placeholder="Örn: Resident Evil 2" maxlength="50" data-i18n-placeholder="game_name_placeholder" />
         </div>
 
+        <!-- HLTB Match Section in Add Game Modal -->
+        <div class="form-group" id="newGameHltbGroup" style="margin-top: 12px; display: none;">
+          <label style="display: flex; align-items: center; margin-bottom: 6px;">
+            <span data-i18n="hltb_match_optional">HowLongToBeat Eşleştirmesi (Opsiyonel)</span>
+            <span id="newGameHltbStatus" class="s-dlc-badge" style="display: none; font-size: 0.6rem; margin-left: 8px; padding: 1px 6px; vertical-align: middle;"></span>
+          </label>
+          <div id="newGameHltbResults" class="scan-list hltb-add-results" style="max-height: 140px; overflow-y: auto;">
+            <!-- Dynamic HLTB candidates -->
+          </div>
+        </div>
+
         <!-- Tabs -->
         <div class="tabs">
-          <button class="tab active" data-tab="manual" id="tabManualBtn">✏️ Manuel EXE</button>
-          <button class="tab" data-tab="scan" id="tabScanBtn">🔍 Şu An Açık</button>
+          <button class="tab active" data-tab="manual" id="tabManualBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin: 0;">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+            <span data-i18n="tab_manual">Manuel EXE</span>
+          </button>
+          <button class="tab" data-tab="scan" id="tabScanBtn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin: 0;">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <span data-i18n="tab_scan">Şu An Açık</span>
+          </button>
         </div>
 
         <!-- Manual Tab -->
         <div class="tab-pane" id="paneManual">
           <div class="form-group">
             <label data-i18n="process_name_label">Process Adı (.exe)</label>
-            <input type="text" id="newGameExe" class="form-input" placeholder="Örn: re2.exe, Minecraft.exe" data-i18n-placeholder="process_name_placeholder" />
+            <div style="display: flex; gap: 8px;">
+              <input type="text" id="newGameExe" class="form-input" placeholder="Örn: re2.exe, Minecraft.exe" data-i18n-placeholder="process_name_placeholder" style="flex: 1;" />
+              <button type="button" class="btn-scan" id="newGameExeBrowseBtn" style="margin-top: 0; width: auto; white-space: nowrap; padding: 0 16px; margin-bottom: 0;" data-tooltip-key="tt_browse_exe">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" style="margin: 0;">
+                  <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
 

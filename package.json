@@ -1,6 +1,6 @@
 {
   "name": "game-time-tracker",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "Track your gaming sessions automatically",
   "main": "main.js",
   "author": "ertandev",

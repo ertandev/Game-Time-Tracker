@@ -236,11 +236,172 @@ $('deleteSelectedDlcsBtn').addEventListener('click', () => {
 });
 
 // ─── Add Game Modal ───────────────────────────────────────────────────────────
+let selectedHltbData = null;
+let addGameHltbTimeout = null;
+let manualSelectedPath = null;
+let manualSelectedIcon = null;
+
+function setHltbStatusSelected(text) {
+  const statusSpan = $('newGameHltbStatus');
+  if (!statusSpan) return;
+  statusSpan.textContent = '';
+  statusSpan.style.display = 'inline-block';
+  
+  const wrapper = document.createElement('span');
+  wrapper.style.display = 'inline-flex';
+  wrapper.style.alignItems = 'center';
+  wrapper.style.gap = '4px';
+  wrapper.style.color = 'var(--accent)';
+  wrapper.style.fontWeight = '600';
+  wrapper.style.fontSize = '0.62rem';
+  wrapper.style.textTransform = 'uppercase';
+  wrapper.style.letterSpacing = '0.03em';
+  wrapper.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" width="11" height="11" style="display: block; stroke-linecap: round; stroke-linejoin: round;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+  
+  const txtNode = document.createTextNode(text);
+  wrapper.appendChild(txtNode);
+  statusSpan.appendChild(wrapper);
+}
+
+async function searchAddGameHltb(query) {
+  query = query.trim();
+  if (!query || !isElectron) {
+    $('newGameHltbGroup').style.display = 'none';
+    $('newGameHltbResults').textContent = '';
+    return;
+  }
+
+  $('newGameHltbGroup').style.display = 'block';
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  $('newGameHltbStatus').style.display = 'none';
+  
+  const container = $('newGameHltbResults');
+  container.innerHTML = `<p class="scan-hint">${dict.hltb_searching}</p>`;
+
+  try {
+    const results = await window.electronAPI.fetchHltbTime(query);
+    if (!results || results.length === 0) {
+      $('newGameHltbStatus').style.display = 'none';
+      container.innerHTML = `<p class="scan-hint">${dict.hltb_no_results}</p>`;
+      return;
+    }
+    
+    $('newGameHltbStatus').style.display = 'none';
+    container.textContent = '';
+    
+    // Auto-select first candidate if it's a confident match and no selection is active
+    if (!selectedHltbData && results.length > 0) {
+      const queryLower = query.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const firstTitleLower = results[0].game_name.toLowerCase().replace(/[^a-z0-9]/g, '');
+      if (queryLower && (firstTitleLower.includes(queryLower) || queryLower.includes(firstTitleLower))) {
+        const autoSelectedRes = results[0];
+        selectedHltbData = {
+          id: autoSelectedRes.game_id,
+          name: autoSelectedRes.game_name,
+          main: autoSelectedRes.comp_main,
+          plus: autoSelectedRes.comp_plus,
+          completionist: autoSelectedRes.comp_100,
+          image: autoSelectedRes.game_image
+        };
+        setHltbStatusSelected(dict.hltb_status_matched);
+      }
+    }
+
+    results.forEach(res => {
+      const item = document.createElement('div');
+      item.className = 'hltb-result-item';
+      if (selectedHltbData && selectedHltbData.id === res.game_id) {
+        item.classList.add('selected');
+      }
+      
+      // Cover image thumbnail
+      if (res.game_image) {
+        const img = document.createElement('img');
+        img.className = 'hltb-result-item-img';
+        let imageUrl = '';
+        if (res.game_image.startsWith('http')) {
+          imageUrl = res.game_image;
+        } else if (res.game_image.startsWith('/')) {
+          imageUrl = 'https://howlongtobeat.com' + res.game_image;
+        } else {
+          imageUrl = 'https://howlongtobeat.com/games/' + res.game_image;
+        }
+        img.src = imageUrl;
+        item.appendChild(img);
+      }
+      
+      const info = document.createElement('div');
+      info.className = 'hltb-result-info';
+      
+      const title = document.createElement('span');
+      title.className = 'hltb-result-title';
+      title.textContent = res.game_name;
+      info.appendChild(title);
+      
+      const subtitle = document.createElement('span');
+      subtitle.className = 'hltb-result-subtitle';
+      const release = res.release_world ? `, ${res.release_world}` : '';
+      const platform = res.profile_platform ? ` (${res.profile_platform})` : '';
+      subtitle.textContent = `${res.game_type}${release}${platform}`;
+      info.appendChild(subtitle);
+      
+      item.appendChild(info);
+      
+      const btn = document.createElement('button');
+      btn.className = 'hltb-result-btn';
+      btn.textContent = dict.select || 'Seç';
+      item.appendChild(btn);
+      
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        
+        const isAlreadySelected = item.classList.contains('selected');
+        
+        container.querySelectorAll('.hltb-result-item').forEach(x => x.classList.remove('selected'));
+        
+        if (isAlreadySelected) {
+          selectedHltbData = null;
+          $('newGameHltbStatus').textContent = '';
+          $('newGameHltbStatus').style.display = 'none';
+        } else {
+          item.classList.add('selected');
+          selectedHltbData = {
+            id: res.game_id,
+            name: res.game_name,
+            main: res.comp_main,
+            plus: res.comp_plus,
+            completionist: res.comp_100,
+            image: res.game_image
+          };
+          $('newGameName').value = res.game_name;
+          setHltbStatusSelected(dict.hltb_status_matched);
+        }
+      });
+      
+      container.appendChild(item);
+    });
+  } catch (err) {
+    console.error('Failed to search HLTB in modal:', err);
+    $('newGameHltbStatus').style.display = 'none';
+    container.innerHTML = `<p class="scan-hint">${dict.toast_hltb_fetch_failed}</p>`;
+  }
+}
+
 function openAddModal(e) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   $('newGameName').value=''; $('newGameExe').value='';
   scanSelectedExe=null; scanSelectedName=null; scanSelectedPath=null;
+  selectedHltbData = null;
+  manualSelectedPath = null;
+  manualSelectedIcon = null;
   
+  if ($('newGameHltbGroup')) $('newGameHltbGroup').style.display = 'none';
+  if ($('newGameHltbResults')) $('newGameHltbResults').textContent = '';
+  if ($('newGameHltbStatus')) {
+    $('newGameHltbStatus').textContent = '';
+    $('newGameHltbStatus').style.display = 'none';
+  }
+
   const el = $('scanList');
   el.textContent = '';
   const p = document.createElement('p');
@@ -251,9 +412,6 @@ function openAddModal(e) {
   
   if (e && e.shiftKey) {
     switchTab('scan');
-    setTimeout(() => {
-      $('scanBtn').click();
-    }, 150);
   } else {
     switchTab('manual');
   }
@@ -281,10 +439,52 @@ $('welcomeIcon').addEventListener('click', e => openAddModal(e));
 $('addGameClose').addEventListener('click',closeAddModal);
 $('addGameCancel').addEventListener('click',closeAddModal);
 $('addGameOverlay').addEventListener('click',e=>{ if(e.target===$('addGameOverlay')) closeAddModal(); });
+
+$('newGameName').addEventListener('input', () => {
+  const nameVal = $('newGameName').value.trim();
+  clearTimeout(addGameHltbTimeout);
+  addGameHltbTimeout = setTimeout(() => {
+    if (selectedHltbData && selectedHltbData.name.toLowerCase() !== nameVal.toLowerCase()) {
+      selectedHltbData = null;
+      $('newGameHltbStatus').textContent = '';
+      $('newGameHltbStatus').style.display = 'none';
+    }
+    searchAddGameHltb(nameVal);
+  }, 500);
+});
+
 $('newGameExe').addEventListener('input', () => {
   const exeVal = $('newGameExe').value.trim();
   if (exeVal && !$('newGameName').value.trim()) {
     $('newGameName').value = formatProcessName(exeVal);
+    $('newGameName').dispatchEvent(new Event('input'));
+  }
+});
+
+$('newGameExeBrowseBtn').addEventListener('click', async () => {
+  if (!isElectron) return;
+  const filePath = await window.electronAPI.selectExePath();
+  if (filePath) {
+    manualSelectedPath = filePath;
+    const exeName = filePath.split(/[\\/]/).pop();
+    $('newGameExe').value = exeName;
+    
+    // Auto-extract name
+    const extractedName = formatProcessName(exeName);
+    $('newGameName').value = extractedName;
+    
+    // Trigger input event to update HLTB search
+    $('newGameName').dispatchEvent(new Event('input'));
+    
+    // Fetch file icon
+    try {
+      const iconDataUrl = await window.electronAPI.getFileIcon(filePath);
+      if (iconDataUrl) {
+        manualSelectedIcon = iconDataUrl;
+      }
+    } catch (e) {
+      console.error('Failed to get icon for browse EXE:', e);
+    }
   }
 });
 
@@ -293,6 +493,13 @@ function switchTab(tab) {
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.tab===tab));
   $('paneManual').classList.toggle('hidden',tab!=='manual');
   $('paneScan').classList.toggle('hidden',tab!=='scan');
+  
+  // Auto trigger process scan if entering the 'scan' tab
+  if (tab === 'scan') {
+    setTimeout(() => {
+      $('scanBtn').click();
+    }, 50);
+  }
 }
 document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>switchTab(t.dataset.tab)));
 
@@ -302,58 +509,71 @@ $('addGameConfirm').addEventListener('click', async()=>{
   if(!name) { toast(dict.toast_err_game_name); return; }
   let exe='';
   let iconDataUrl = null;
+  let finalPath = '';
   if(addTabActive==='manual') {
     exe=$('newGameExe').value.trim();
     if(exe&&!exe.toLowerCase().endsWith('.exe')) exe+='.exe';
+    finalPath = manualSelectedPath || '';
+    iconDataUrl = manualSelectedIcon || null;
   } else {
     exe=scanSelectedExe||'';
     if(!scanSelectedExe&&!$('newGameName').value.trim()) { toast(dict.toast_err_select_list); return; }
     if(isElectron && scanSelectedPath) {
       iconDataUrl = await window.electronAPI.getFileIcon(scanSelectedPath);
     }
+    finalPath = scanSelectedPath || '';
   }
-  const idx=games.length;
-  const g={ id:genId(), name, exe:exe.toLowerCase(), path:(addTabActive==='scan' && scanSelectedPath) ? scanSelectedPath : '', color:gameColor(idx), sessions:[], icon:iconDataUrl };
   
-  if (isElectron) {
-    try {
-      const hltbResults = await window.electronAPI.fetchHltbTime(name);
-      if (hltbResults && hltbResults.length > 0) {
-        const match = hltbResults[0];
-        g.hltbData = {
-          id: match.game_id,
-          name: match.game_name,
-          main: match.comp_main,
-          plus: match.comp_plus,
-          completionist: match.comp_100,
-          image: match.game_image
-        };
+  const idx=games.length;
+  const gameId = genId();
+  const g={ 
+    id: gameId, 
+    name, 
+    exe: exe.toLowerCase(), 
+    path: finalPath, 
+    color: gameColor(idx), 
+    sessions: [], 
+    icon: iconDataUrl,
+    hltbData: selectedHltbData || null
+  };
 
-        try {
-          const dlcNames = await window.electronAPI.fetchHltbDlcs(match.game_id);
-          if (dlcNames && dlcNames.length > 0) {
-            if (!g.dlcs) g.dlcs = [];
-            dlcNames.forEach(dlcName => {
-              g.dlcs.push({
+  games.push(g); 
+  await saveGames();
+  closeAddModal(); 
+  renderSidebar();
+  selectGame(g.id);
+  toast(dict.toast_game_added.replace('NAME', name));
+
+  if (selectedHltbData && isElectron) {
+    window.electronAPI.fetchHltbDlcs(selectedHltbData.id).then(async (dlcNames) => {
+      if (dlcNames && dlcNames.length > 0) {
+        const game = gameById(gameId);
+        if (game) {
+          if (!game.dlcs) game.dlcs = [];
+          const existingNames = new Set(game.dlcs.map(d => d.name.toLowerCase().trim()));
+          let addedCount = 0;
+          dlcNames.forEach(dlcName => {
+            if (!existingNames.has(dlcName.toLowerCase().trim())) {
+              game.dlcs.push({
                 id: genId(),
                 name: dlcName.trim(),
                 createdTs: new Date().toISOString()
               });
-            });
+              addedCount++;
+            }
+          });
+          if (addedCount > 0) {
+            await saveGames();
+            if (selectedId === gameId) {
+              renderDlcSection();
+            }
           }
-        } catch (de) {
-          console.error('Failed to auto fetch HLTB DLCs on addition:', de);
         }
       }
-    } catch (e) {
-      console.error('Failed to auto-fetch HLTB times on game addition:', e);
-    }
+    }).catch(de => {
+      console.error('Failed to auto fetch DLCs in background:', de);
+    });
   }
-
-  games.push(g); saveGames();
-  closeAddModal(); renderSidebar();
-  selectGame(g.id);
-  toast(dict.toast_game_added.replace('NAME', name));
 });
 
 // ─── Scan ─────────────────────────────────────────────────────────────────────

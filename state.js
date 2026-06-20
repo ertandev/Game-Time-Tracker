@@ -253,10 +253,13 @@ async function loadState() {
   }
 }
 
-async function updateGameIcon(gameId, iconDataUrl, filePath) {
+async function updateGameIcon(gameId, iconDataUrl, filePath, isCustom = false) {
   const g = gameById(gameId);
   if (!g) return;
   g.icon = iconDataUrl;
+  if (isCustom) {
+    g.isCustomIcon = true;
+  }
   if (filePath && filePath.toLowerCase().endsWith('.exe') && !g.path) {
     g.path = filePath;
   }
@@ -268,6 +271,7 @@ async function resetGameIcon(gameId) {
   if (!g) return;
   delete g.icon;
   g.iconAttempted = false;
+  delete g.isCustomIcon;
   await saveGames();
 }
 

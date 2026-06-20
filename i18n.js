@@ -22,7 +22,7 @@ const TRANSLATIONS = {
     session: "Oturum",
     session_history: "Oturum Geçmişi",
     
-    settings_modal_title: "⚙️ Global Ayarlar",
+    settings_modal_title: "Global Ayarlar",
     settings_section_afk: "Oyun İçi AFK",
     settings_afk_label: "Oyun açıkken hiç input olmayınca ne kadar sonra dursun?",
     settings_afk_hint: "Grafik ayarlarında, menüde mouse/klavye yoksa. <strong>0 = kapalı</strong>",
@@ -40,11 +40,11 @@ const TRANSLATIONS = {
     about_rights: "Tüm Hakları Saklıdır.",
     settings_section_lang: "Dil / Language",
     
-    add_game_modal_title: "🎮 Oyun Ekle",
+    add_game_modal_title: "Oyun Ekle",
     game_name_label: "Oyun Adı",
     game_name_placeholder: "Örn: Resident Evil 2",
-    tab_manual: "✏️ Manuel EXE",
-    tab_scan: "🔍 Şu An Açık",
+    tab_manual: "Manuel EXE",
+    tab_scan: "Şu An Açık",
     process_name_label: "Process Adı (.exe)",
     process_name_placeholder: "Örn: re2.exe, Minecraft.exe",
     scan_btn_idle: "Çalışan Processleri Tara",
@@ -187,9 +187,14 @@ const TRANSLATIONS = {
     toast_hltb_fetch_failed: "⚠️ HLTB verileri alınamadı",
     hltb_matched_label: "HowLongToBeat Eşleşmesi",
     reset_name: "İsmi Sıfırla",
+    hltb_match_optional: "HowLongToBeat Eşleştirmesi (Opsiyonel)",
+    hltb_searching: "Aranıyor...",
+    hltb_select_hint: "Eşleştirmek için bir oyuna tıklayın.",
+    hltb_status_matched: "Eşleşti",
     
     // Tooltips
     tt_settings: "Global ayarları ve tercihleri yapılandır",
+    tt_browse_exe: "Bilgisayardan oyunun çalıştırılabilir (.exe) dosyasını seç",
     tt_update_ready: "Güncelleme hazır! Yüklemek ve yeniden başlatmak için tıklayın.",
     tt_min: "Pencereyi simge durumuna küçült",
     tt_max: "Pencereyi boyutlandır / tam ekran yap",
@@ -227,7 +232,7 @@ const TRANSLATIONS = {
     session: "Sessions",
     session_history: "Session History",
     
-    settings_modal_title: "⚙️ Global Settings",
+    settings_modal_title: "Global Settings",
     settings_section_afk: "In-Game AFK",
     settings_afk_label: "Pause after how much keyboard/mouse inactivity?",
     settings_afk_hint: "Triggers if idle in game menus/settings. <strong>0 = disabled</strong>",
@@ -245,11 +250,11 @@ const TRANSLATIONS = {
     about_rights: "All Rights Reserved.",
     settings_section_lang: "Language / Dil",
     
-    add_game_modal_title: "🎮 Add Game",
+    add_game_modal_title: "Add Game",
     game_name_label: "Game Name",
     game_name_placeholder: "e.g., Resident Evil 2",
-    tab_manual: "✏️ Manual EXE",
-    tab_scan: "🔍 Running Now",
+    tab_manual: "Manual EXE",
+    tab_scan: "Running Now",
     process_name_label: "Process Name (.exe)",
     process_name_placeholder: "e.g., re2.exe, Minecraft.exe",
     scan_btn_idle: "Scan Running Processes",
@@ -392,9 +397,14 @@ const TRANSLATIONS = {
     toast_hltb_fetch_failed: "⚠️ Failed to fetch HLTB data",
     hltb_matched_label: "HowLongToBeat Match",
     reset_name: "Reset Name",
+    hltb_match_optional: "HowLongToBeat Match (Optional)",
+    hltb_searching: "Searching...",
+    hltb_select_hint: "Click a game to match it.",
+    hltb_status_matched: "Matched",
     
     // Tooltips
     tt_settings: "Configure global settings and preferences",
+    tt_browse_exe: "Select the game executable (.exe) file from your computer",
     tt_update_ready: "Update ready! Click to install and restart.",
     tt_min: "Minimize window",
     tt_max: "Maximize or restore window size",
@@ -415,6 +425,7 @@ const TRANSLATIONS = {
 
 function applyLanguage() {
   const lang = settings.lang || 'tr';
+  document.documentElement.lang = lang;
   const dict = TRANSLATIONS[lang] || TRANSLATIONS.tr;
   
   document.querySelectorAll('[data-i18n]').forEach(el => {

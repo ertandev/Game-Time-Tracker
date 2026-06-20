@@ -56,13 +56,14 @@ let selectedSessionIds = new Set();
 let isDlcMultiSelectMode = false;
 let selectedDlcIds = new Set();
 function getGameIconUrl(g) {
-  if (g.icon) return g.icon;
+  if (g.isCustomIcon && g.icon) return g.icon;
   if (g.hltbData && g.hltbData.image) {
     const img = g.hltbData.image;
     if (img.startsWith('http')) return img;
     if (img.startsWith('/')) return 'https://howlongtobeat.com' + img;
     return 'https://howlongtobeat.com/games/' + img;
   }
+  if (g.icon) return g.icon;
   return null;
 }
 
@@ -96,7 +97,7 @@ function renderSidebar() {
       const img = document.createElement('img');
       img.src = iconUrl;
       img.className = 'sg-avatar-img';
-      if (!g.icon && g.hltbData && g.hltbData.image) {
+      if (g.hltbData && g.hltbData.image && !g.isCustomIcon) {
         img.classList.add('cover-fit');
       }
       img.alt = g.name;
@@ -179,7 +180,7 @@ function renderGameHeader() {
     const img = document.createElement('img');
     img.src = iconUrl;
     img.className = 'game-avatar-img';
-    if (!g.icon && g.hltbData && g.hltbData.image) {
+    if (g.hltbData && g.hltbData.image && !g.isCustomIcon) {
       img.classList.add('cover-fit');
     }
     img.alt = g.name;
@@ -698,7 +699,7 @@ function renderHltbSearchResults(results) {
     
     const btn = document.createElement('button');
     btn.className = 'hltb-result-btn';
-    btn.textContent = dict.yes || 'Seç';
+    btn.textContent = dict.select || 'Seç';
     item.appendChild(btn);
     
     item.addEventListener('click', async () => {
@@ -779,6 +780,7 @@ function renderScanList(procs) {
       scanSelectedName = item.dataset.name;
       scanSelectedPath = item.dataset.path;
       $('newGameName').value = formatProcessName(scanSelectedExe);
+      $('newGameName').dispatchEvent(new Event('input'));
     });
     
     el.appendChild(item);
@@ -945,7 +947,7 @@ async function handleOpenLocation(g) {
 async function handleChangeIcon(g) {
   const result = await window.electronAPI.selectCustomIcon();
   if (result && result.icon) {
-    await updateGameIcon(g.id, result.icon, result.path);
+    await updateGameIcon(g.id, result.icon, result.path, true);
     renderSidebar();
     if (selectedId === g.id) {
       renderGameHeader();
@@ -1008,7 +1010,7 @@ async function handleChangeColor(g) {
 async function handleRenameGame(g) {
   const title = settings.lang === 'tr' ? 'Oyunu Yeniden Adlandır' : 'Rename Game';
   const label = settings.lang === 'tr' ? 'Yeni adı girin:' : 'Enter new name:';
-  const defaultName = g.exe ? formatProcessName(g.exe) : '';
+  const defaultName = (g.hltbData && g.hltbData.name) ? g.hltbData.name : (g.exe ? formatProcessName(g.exe) : '');
   
   showPrompt(title, label, g.name, async (newName) => {
     if (newName && newName.trim()) {
