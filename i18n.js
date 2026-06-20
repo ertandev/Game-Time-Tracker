@@ -154,6 +154,10 @@ const TRANSLATIONS = {
     toast_dlc_added: '✅ "NAME" eklendi',
     toast_dlc_deleted: '🗑 DLC silindi',
     toast_err_dlc_name: "⚠️ DLC adı gir",
+    confirm_delete_selected_dlc_title: "Seçilen DLC'leri Sil",
+    confirm_delete_selected_dlc_text: "Seçilen COUNT DLC/alt hedef silinecek. Mevcut oturumları silinmeyecek fakat etiketsiz kalacaktır. Devam etmek istiyor musunuz?",
+    toast_selected_dlc_deleted: "🗑 Seçilen DLC'ler silindi",
+    toast_err_no_dlc_selected: "⚠️ Hiç DLC seçilmedi",
     
     // Multi-select sessions
     select: "Seç",
@@ -178,7 +182,25 @@ const TRANSLATIONS = {
     hltb_not_matched: "HowLongToBeat verisi eşleştirilmemiş.",
     toast_hltb_linked: "✅ HowLongToBeat verisi eşleştirildi!",
     toast_hltb_unlinked: "🗑 Eşleşme kaldırıldı",
-    toast_hltb_fetch_failed: "⚠️ HLTB verileri alınamadı"
+    toast_hltb_fetch_failed: "⚠️ HLTB verileri alınamadı",
+    hltb_matched_label: "HowLongToBeat Eşleşmesi",
+    
+    // Tooltips
+    tt_settings: "Global ayarları ve tercihleri yapılandır",
+    tt_min: "Pencereyi simge durumuna küçült",
+    tt_max: "Pencereyi boyutlandır / tam ekran yap",
+    tt_close: "Uygulamayı kapat",
+    tt_add_game: "Takip etmek için kütüphaneye yeni oyun ekle",
+    tt_delete_game: "Seçili oyunu ve tüm oturum verilerini sil",
+    tt_start: "Oyun süresini kaydetmeye başla",
+    tt_pause: "Zamanlayıcıyı geçici olarak duraklat",
+    tt_stop: "Mevcut oturumu bitir ve geçmişe kaydet",
+    tt_select_dlc: "Çoklu seçip silmek için DLC seçim modunu aç",
+    tt_add_dlc: "Yeni bir DLC veya alt hedef tanımla",
+    tt_select_sessions: "Çoklu seçip silmek için oturum seçim modunu aç",
+    tt_clear_sessions: "Bu oyunun tüm oturum geçmişini temizle",
+    tt_hltb_link: "HowLongToBeat verilerini aramak ve eşleştirmek için pencere açar",
+    tt_hltb_unlink: "Bu oyunun HowLongToBeat verileriyle olan eşleşmesini kaldır"
   },
   en: {
     my_games: "MY GAMES",
@@ -333,6 +355,10 @@ const TRANSLATIONS = {
     toast_dlc_added: '✅ "NAME" added',
     toast_dlc_deleted: '🗑 DLC deleted',
     toast_err_dlc_name: "⚠️ Please enter DLC name",
+    confirm_delete_selected_dlc_title: "Delete Selected DLCs",
+    confirm_delete_selected_dlc_text: "Selected COUNT DLCs/sub-targets will be deleted. Existing sessions will not be deleted but will lose their tag. Do you want to continue?",
+    toast_selected_dlc_deleted: "🗑 Selected DLCs deleted",
+    toast_err_no_dlc_selected: "⚠️ No DLCs selected",
     
     // Multi-select sessions
     select: "Select",
@@ -357,7 +383,25 @@ const TRANSLATIONS = {
     hltb_not_matched: "HowLongToBeat data is not matched.",
     toast_hltb_linked: "✅ HowLongToBeat data matched!",
     toast_hltb_unlinked: "🗑 Match unlinked",
-    toast_hltb_fetch_failed: "⚠️ Failed to fetch HLTB data"
+    toast_hltb_fetch_failed: "⚠️ Failed to fetch HLTB data",
+    hltb_matched_label: "HowLongToBeat Match",
+    
+    // Tooltips
+    tt_settings: "Configure global settings and preferences",
+    tt_min: "Minimize window",
+    tt_max: "Maximize or restore window size",
+    tt_close: "Close application",
+    tt_add_game: "Add a new game to library for tracking",
+    tt_delete_game: "Delete selected game and all session data",
+    tt_start: "Start tracking play time",
+    tt_pause: "Temporarily pause the timer",
+    tt_stop: "End current session and save to history",
+    tt_select_dlc: "Toggle multi-select mode to delete DLCs/targets",
+    tt_add_dlc: "Define a new DLC, expansion, or sub-target for this game",
+    tt_select_sessions: "Toggle multi-select mode to delete sessions",
+    tt_clear_sessions: "Clear all tracking session history for this game",
+    tt_hltb_link: "Open search window to match game with HowLongToBeat data",
+    tt_hltb_unlink: "Remove HowLongToBeat match for this game"
   }
 };
 

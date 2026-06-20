@@ -325,6 +325,24 @@ async function deleteDlc(gameId, dlcId) {
   await saveGames();
 }
 
+async function deleteDlcs(gameId, dlcIds) {
+  const g = gameById(gameId);
+  if (!g) return;
+  const dlcIdSet = new Set(dlcIds);
+  if (g.dlcs) {
+    g.dlcs = g.dlcs.filter(d => !dlcIdSet.has(d.id));
+  }
+  if (g.activeDlcId && dlcIdSet.has(g.activeDlcId)) {
+    g.activeDlcId = null;
+  }
+  g.sessions.forEach(s => {
+    if (s.dlcId && dlcIdSet.has(s.dlcId)) {
+      s.dlcId = null;
+    }
+  });
+  await saveGames();
+}
+
 async function setActiveDlc(gameId, dlcId) {
   const g = gameById(gameId);
   if (!g) return;

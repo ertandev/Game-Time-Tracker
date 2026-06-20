@@ -22,10 +22,10 @@
       <span>GameTime<span class="tb-accent">Tracker</span></span>
     </div>
     <div class="tb-controls">
-      <button class="tc tc-settings" id="globalSettingsBtn" title="Ayarlar" data-i18n-title="settings_title">⚙</button>
-      <button class="tc" id="btnMin">─</button>
-      <button class="tc" id="btnMax">▢</button>
-      <button class="tc tc-x" id="btnClose">✕</button>
+      <button class="tc tc-settings" id="globalSettingsBtn" title="Ayarlar" data-i18n-title="settings_title" data-tooltip-key="tt_settings">⚙</button>
+      <button class="tc" id="btnMin" data-tooltip-key="tt_min">─</button>
+      <button class="tc" id="btnMax" data-tooltip-key="tt_max">▢</button>
+      <button class="tc tc-x" id="btnClose" data-tooltip-key="tt_close">✕</button>
     </div>
   </div>
 
@@ -39,7 +39,7 @@
         <!-- Injected by JS -->
       </div>
       <div class="sidebar-bottom">
-        <button class="btn-add-game" id="addGameBtn">
+        <button class="btn-add-game" id="addGameBtn" data-tooltip-key="tt_add_game">
           <span class="add-icon">＋</span> <span data-i18n="add_game">Oyun Ekle</span>
         </button>
       </div>
@@ -53,7 +53,7 @@
         <div class="welcome-icon" id="welcomeIcon">🎮</div>
         <h1 class="welcome-title" data-i18n="welcome_title">Hoş Geldin!</h1>
         <p class="welcome-sub" data-i18n="welcome_sub">Sol panelden bir oyun seç veya yeni oyun ekle.</p>
-        <button class="btn-welcome-add" id="welcomeAddBtn" data-i18n="welcome_add_btn">＋ İlk Oyununu Ekle</button>
+        <button class="btn-welcome-add" id="welcomeAddBtn" data-i18n="welcome_add_btn" data-tooltip-key="tt_add_game">＋ İlk Oyununu Ekle</button>
       </div>
 
       <!-- Game page (hidden until game selected) -->
@@ -71,7 +71,7 @@
               <span class="auto-dot" id="autoStatusDot"></span>
               <span id="autoStatusText">İzleniyor</span>
             </div>
-            <button class="btn-icon-danger" id="deleteGameBtn" title="Oyunu Sil" data-i18n-title="delete_game_title">🗑</button>
+            <button class="btn-icon-danger" id="deleteGameBtn" title="Oyunu Sil" data-i18n-title="delete_game_title" data-tooltip-key="tt_delete_game">🗑</button>
           </div>
         </div>
 
@@ -94,15 +94,15 @@
             </div>
           </div>
           <div class="controls">
-            <button class="btn-start" id="startBtn">
+            <button class="btn-start" id="startBtn" data-tooltip-key="tt_start">
               <svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg>
               <span data-i18n="start">Başlat</span>
             </button>
-            <button class="btn-pause" id="pauseBtn" disabled>
+            <button class="btn-pause" id="pauseBtn" disabled data-tooltip-key="tt_pause">
               <svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
               <span data-i18n="pause">Duraklat</span>
             </button>
-            <button class="btn-stop" id="stopBtn" disabled>
+            <button class="btn-stop" id="stopBtn" disabled data-tooltip-key="tt_stop">
               <svg viewBox="0 0 24 24" fill="currentColor"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
               <span data-i18n="stop">Bitir</span>
             </button>
@@ -122,7 +122,23 @@
               </div>
               <span data-i18n="dlc_title">DLC'ler & Alt Hedefler</span>
             </h2>
-            <button class="btn-add-dlc" id="addDlcBtn" data-i18n="dlc_add_btn">＋ DLC Ekle</button>
+            <div style="display: flex; gap: 8px;">
+              <button class="btn-add-dlc" id="selectDlcsBtn" data-tooltip-key="tt_select_dlc" data-i18n="select">Seç</button>
+              <button class="btn-add-dlc" id="addDlcBtn" data-tooltip-key="tt_add_dlc" data-i18n="dlc_add_btn">＋ DLC Ekle</button>
+            </div>
+          </div>
+          <div class="dlcs-edit-bar" id="dlcsEditBar">
+            <div class="edit-bar-left">
+              <label class="checkbox-label" style="margin-bottom: 0;">
+                <input type="checkbox" id="selectAllDlcsCheckbox" />
+                <span data-i18n="select_all">Tümünü Seç</span>
+              </label>
+              <span class="select-count" id="selectDlcCountText">0 seçildi</span>
+            </div>
+            <div class="edit-bar-right" style="display: flex; gap: 8px;">
+              <button class="btn-clear-sessions btn-danger-action" id="deleteSelectedDlcsBtn" data-i18n="confirm_delete_selected_title">Sil</button>
+              <button class="btn-clear-sessions" id="cancelDlcSelectBtn" data-i18n="cancel">İptal</button>
+            </div>
           </div>
           <div class="dlc-list" id="dlcList">
             <!-- Injected by JS -->
@@ -195,19 +211,26 @@
               <span>HowLongToBeat</span>
             </h2>
             <div style="display: flex; gap: 8px; align-items: center;">
-              <button class="btn-hltb-action" id="hltbLinkBtn">
+              <button class="btn-hltb-action" id="hltbLinkBtn" data-tooltip-key="tt_hltb_link">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
                   <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
                 </svg>
                 <span data-i18n="hltb_link_manually">HLTB Eşleştir</span>
               </button>
-              <button class="dlc-item-del" id="hltbUnlinkBtn" style="display: none;" title="Eşleşmeyi Kaldır" data-i18n-title="hltb_unlink">
+              <button class="dlc-item-del" id="hltbUnlinkBtn" style="display: none;" title="Eşleşmeyi Kaldır" data-i18n-title="hltb_unlink" data-tooltip-key="tt_hltb_unlink">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <polyline points="3 6 5 6 21 6"></polyline>
                   <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
                 </svg>
               </button>
+            </div>
+          </div>
+          <div class="hltb-matched-header" id="hltbGameTitle" style="display: none;">
+            <img id="hltbGameImage" class="hltb-game-image" src="" alt="Game Art" />
+            <div class="hltb-game-info">
+              <span class="hltb-matched-label" data-i18n="hltb_matched_label">HowLongToBeat Eşleşmesi</span>
+              <h3 id="hltbGameTitleName" class="hltb-game-title-name"></h3>
             </div>
           </div>
           <div class="hltb-times-container" id="hltbTimesContainer" style="display: none;">
@@ -245,8 +268,8 @@
               <span data-i18n="session_history">Oturum Geçmişi</span>
             </h2>
             <div style="display: flex; gap: 8px;">
-              <button class="btn-clear-sessions" id="selectSessionsBtn" data-i18n="select">Seç</button>
-              <button class="btn-clear-sessions" id="clearSessionsBtn" data-i18n="clear">Temizle</button>
+              <button class="btn-clear-sessions" id="selectSessionsBtn" data-tooltip-key="tt_select_sessions" data-i18n="select">Seç</button>
+              <button class="btn-clear-sessions" id="clearSessionsBtn" data-tooltip-key="tt_clear_sessions" data-i18n="clear">Temizle</button>
             </div>
           </div>
           <div class="sessions-tabs-bar" id="sessionsTabBar"></div>

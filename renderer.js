@@ -53,6 +53,19 @@ if(isElectron) window.electronAPI.onProcessList(onProcessList);
 let sessionFilterTab = 'overall';
 let isMultiSelectMode = false;
 let selectedSessionIds = new Set();
+let isDlcMultiSelectMode = false;
+let selectedDlcIds = new Set();
+function getGameIconUrl(g) {
+  if (g.icon) return g.icon;
+  if (g.hltbData && g.hltbData.image) {
+    const img = g.hltbData.image;
+    if (img.startsWith('http')) return img;
+    if (img.startsWith('/')) return 'https://howlongtobeat.com' + img;
+    return 'https://howlongtobeat.com/games/' + img;
+  }
+  return null;
+}
+
 function renderSidebar() {
   const el = $('sidebarGames');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -78,10 +91,14 @@ function renderSidebar() {
     item.dataset.gid = g.id;
     item.style.setProperty('--game-color', g.color);
     
-    if (g.icon) {
+    const iconUrl = getGameIconUrl(g);
+    if (iconUrl) {
       const img = document.createElement('img');
-      img.src = g.icon;
+      img.src = iconUrl;
       img.className = 'sg-avatar-img';
+      if (!g.icon && g.hltbData && g.hltbData.image) {
+        img.classList.add('cover-fit');
+      }
       img.alt = g.name;
       item.appendChild(img);
     } else {
@@ -136,6 +153,14 @@ function selectGame(id) {
     const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
     selectBtn.textContent = dict.select;
   }
+  
+  isDlcMultiSelectMode = false;
+  selectedDlcIds.clear();
+  const dlcEditBar = $('dlcsEditBar');
+  if (dlcEditBar) dlcEditBar.classList.remove('open');
+  const selectDlcBtn = $('selectDlcsBtn');
+  if (selectDlcBtn) selectDlcBtn.classList.remove('hidden');
+
   document.documentElement.style.setProperty('--game-color',g.color);
   $('welcomeScreen').classList.add('hidden');
   $('gamePage').classList.remove('hidden');
@@ -149,10 +174,14 @@ function renderGameHeader() {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   const av = $('gameAvatar');
   av.textContent = '';
-  if (g.icon) {
+  const iconUrl = getGameIconUrl(g);
+  if (iconUrl) {
     const img = document.createElement('img');
-    img.src = g.icon;
+    img.src = iconUrl;
     img.className = 'game-avatar-img';
+    if (!g.icon && g.hltbData && g.hltbData.image) {
+      img.classList.add('cover-fit');
+    }
     img.alt = g.name;
     av.appendChild(img);
   } else {
@@ -278,6 +307,23 @@ function updateSelectCount() {
       });
       const allSelected = sessionsToRender.length > 0 && sessionsToRender.every(s => selectedSessionIds.has(s.id));
       selectAllCb.checked = allSelected;
+    }
+  }
+}
+
+function updateDlcSelectCount() {
+  const countEl = $('selectDlcCountText'); if (!countEl) return;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  countEl.textContent = dict.selected_count.replace('COUNT', selectedDlcIds.size);
+  
+  const selectAllCb = $('selectAllDlcsCheckbox');
+  if (selectAllCb) {
+    const g = gameById(selectedId);
+    if (g && g.dlcs) {
+      const allSelected = g.dlcs.length > 0 && g.dlcs.every(d => selectedDlcIds.has(d.id));
+      selectAllCb.checked = allSelected;
+    } else {
+      selectAllCb.checked = false;
     }
   }
 }
@@ -415,6 +461,11 @@ function renderDlcSection() {
   const mainItem = document.createElement('div');
   mainItem.className = 'dlc-item' + (activeDlc === null ? ' active' : '');
   
+  if (isDlcMultiSelectMode) {
+    mainItem.style.opacity = '0.5';
+    mainItem.style.pointerEvents = 'none';
+  }
+  
   const mainRadio = document.createElement('div');
   mainRadio.className = 'dlc-item-radio';
   mainItem.appendChild(mainRadio);
@@ -450,9 +501,19 @@ function renderDlcSection() {
       const item = document.createElement('div');
       item.className = 'dlc-item' + (activeDlc === d.id ? ' active' : '');
 
-      const radio = document.createElement('div');
-      radio.className = 'dlc-item-radio';
-      item.appendChild(radio);
+      if (isDlcMultiSelectMode) {
+        const checkboxWrapper = document.createElement('div');
+        checkboxWrapper.className = 'session-item-checkbox-wrapper';
+        checkboxWrapper.style.marginRight = '8px';
+        const checkbox = document.createElement('div');
+        checkbox.className = 'session-item-checkbox' + (selectedDlcIds.has(d.id) ? ' checked' : '');
+        checkboxWrapper.appendChild(checkbox);
+        item.appendChild(checkboxWrapper);
+      } else {
+        const radio = document.createElement('div');
+        radio.className = 'dlc-item-radio';
+        item.appendChild(radio);
+      }
 
       const name = document.createElement('div');
       name.className = 'dlc-item-name';
@@ -464,51 +525,66 @@ function renderDlcSection() {
       total.textContent = fmtDur(filteredTotalMs(g, d.id));
       item.appendChild(total);
 
-      const del = document.createElement('button');
-      del.className = 'dlc-item-del';
-      del.title = dict.confirm_delete_dlc_title;
-      del.innerHTML = `
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/>
-          <path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/>
-        </svg>`;
+      if (!isDlcMultiSelectMode) {
+        const del = document.createElement('button');
+        del.className = 'dlc-item-del';
+        del.title = dict.confirm_delete_dlc_title;
+        del.innerHTML = `
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="3,6 5,6 21,6"/><path d="M19,6l-1,14H6L5,6"/>
+            <path d="M10,11v6"/><path d="M14,11v6"/><path d="M9,6V4h6v2"/>
+          </svg>`;
 
-      del.addEventListener('click', e => {
-        e.stopPropagation();
-        if (activeGameId === g.id && activeState) {
-          toast(settings.lang === 'tr' ? 'Oturum çalışırken DLC silinemez!' : 'Cannot delete DLC during a running session!');
-          return;
-        }
-        showConfirm(dict.confirm_delete_dlc_title, dict.confirm_delete_dlc_text, async () => {
-          await deleteDlc(g.id, d.id);
-          if (sessionFilterTab === d.id) {
-            sessionFilterTab = 'overall';
+        del.addEventListener('click', e => {
+          e.stopPropagation();
+          if (activeGameId === g.id && activeState) {
+            toast(settings.lang === 'tr' ? 'Oturum çalışırken DLC silinemez!' : 'Cannot delete DLC during a running session!');
+            return;
           }
+          showConfirm(dict.confirm_delete_dlc_title, dict.confirm_delete_dlc_text, async () => {
+            await deleteDlc(g.id, d.id);
+            if (sessionFilterTab === d.id) {
+              sessionFilterTab = 'overall';
+            }
+            renderDlcSection();
+            renderSessionList();
+            renderStats();
+            renderSidebar();
+            toast(dict.toast_dlc_deleted);
+          });
+        });
+        item.appendChild(del);
+      }
+
+      if (isDlcMultiSelectMode) {
+        item.addEventListener('click', () => {
+          if (selectedDlcIds.has(d.id)) {
+            selectedDlcIds.delete(d.id);
+          } else {
+            selectedDlcIds.add(d.id);
+          }
+          renderDlcSection();
+          updateDlcSelectCount();
+        });
+      } else {
+        item.addEventListener('click', async () => {
+          if (activeGameId === g.id && activeState) {
+            toast(settings.lang === 'tr' ? 'Oturum çalışırken hedef değiştirilemez!' : 'Cannot change target during a running session!');
+            return;
+          }
+          await setActiveDlc(g.id, d.id);
+          sessionFilterTab = d.id;
           renderDlcSection();
           renderSessionList();
           renderStats();
           renderSidebar();
-          toast(dict.toast_dlc_deleted);
         });
-      });
-      item.appendChild(del);
-
-      item.addEventListener('click', async () => {
-        if (activeGameId === g.id && activeState) {
-          toast(settings.lang === 'tr' ? 'Oturum çalışırken hedef değiştirilemez!' : 'Cannot change target during a running session!');
-          return;
-        }
-        await setActiveDlc(g.id, d.id);
-        sessionFilterTab = d.id;
-        renderDlcSection();
-        renderSessionList();
-        renderStats();
-        renderSidebar();
-      });
+      }
 
       el.appendChild(item);
     });
   }
+  updateDlcSelectCount();
 }
 
 function renderHltbSection() {
@@ -517,11 +593,36 @@ function renderHltbSection() {
   const container = $('hltbTimesContainer');
   const emptyState = $('hltbEmptyState');
   const unlinkBtn = $('hltbUnlinkBtn');
+  const titleEl = $('hltbGameTitle');
+  const nameEl = $('hltbGameTitleName');
+  const imgEl = $('hltbGameImage');
 
   if (g.hltbData) {
     container.style.display = 'grid';
     emptyState.style.display = 'none';
     unlinkBtn.style.display = 'inline-flex';
+    if (titleEl) {
+      titleEl.style.display = 'flex';
+      if (nameEl) nameEl.textContent = g.hltbData.name || '';
+      
+      if (imgEl) {
+        if (g.hltbData.image) {
+          let imageUrl = '';
+          if (g.hltbData.image.startsWith('http')) {
+            imageUrl = g.hltbData.image;
+          } else if (g.hltbData.image.startsWith('/')) {
+            imageUrl = 'https://howlongtobeat.com' + g.hltbData.image;
+          } else {
+            imageUrl = 'https://howlongtobeat.com/games/' + g.hltbData.image;
+          }
+          imgEl.src = imageUrl;
+          imgEl.style.display = 'block';
+        } else {
+          imgEl.src = '';
+          imgEl.style.display = 'none';
+        }
+      }
+    }
     $('hltbLinkBtn').innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
@@ -549,6 +650,7 @@ function renderHltbSection() {
     container.style.display = 'none';
     emptyState.style.display = 'flex';
     unlinkBtn.style.display = 'none';
+    if (titleEl) titleEl.style.display = 'none';
     $('hltbLinkBtn').innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
@@ -640,6 +742,8 @@ function renderHltbSearchResults(results) {
 
       closeHltbModal();
       renderHltbSection();
+      renderSidebar();
+      renderGameHeader();
       toast(dict.toast_hltb_linked);
     });
     

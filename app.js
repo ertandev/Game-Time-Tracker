@@ -146,6 +146,95 @@ $('addDlcBtn').addEventListener('click', () => {
   });
 });
 
+$('selectDlcsBtn').addEventListener('click', () => {
+  if (!selectedId) return;
+  
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  if (activeGameId === selectedId && activeState) {
+    toast(settings.lang === 'tr' ? 'Oturum çalışırken DLC seçilemez/silinemez!' : 'Cannot select/delete DLCs during a running session!');
+    return;
+  }
+
+  isDlcMultiSelectMode = true;
+  selectedDlcIds.clear();
+  
+  const editBar = $('dlcsEditBar');
+  const selectBtn = $('selectDlcsBtn');
+  
+  if (editBar) editBar.classList.add('open');
+  if (selectBtn) selectBtn.classList.add('hidden');
+  
+  updateDlcSelectCount();
+  renderDlcSection();
+});
+
+$('cancelDlcSelectBtn').addEventListener('click', () => {
+  isDlcMultiSelectMode = false;
+  selectedDlcIds.clear();
+  
+  const editBar = $('dlcsEditBar');
+  if (editBar) editBar.classList.remove('open');
+  
+  const selectBtn = $('selectDlcsBtn');
+  if (selectBtn) selectBtn.classList.remove('hidden');
+  
+  updateDlcSelectCount();
+  renderDlcSection();
+});
+
+$('selectAllDlcsCheckbox').addEventListener('change', (e) => {
+  const g = gameById(selectedId);
+  if (!g) return;
+  
+  if (e.target.checked) {
+    if (g.dlcs) {
+      g.dlcs.forEach(d => selectedDlcIds.add(d.id));
+    }
+  } else {
+    selectedDlcIds.clear();
+  }
+  
+  renderDlcSection();
+  updateDlcSelectCount();
+});
+
+$('deleteSelectedDlcsBtn').addEventListener('click', () => {
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  if (selectedDlcIds.size === 0) {
+    toast(dict.toast_err_no_dlc_selected);
+    return;
+  }
+  
+  if (activeGameId === selectedId && activeState) {
+    toast(settings.lang === 'tr' ? 'Oturum çalışırken DLC silinemez!' : 'Cannot delete DLCs during a running session!');
+    return;
+  }
+
+  showConfirm(
+    dict.confirm_delete_selected_dlc_title,
+    dict.confirm_delete_selected_dlc_text.replace('COUNT', selectedDlcIds.size),
+    async () => {
+      await deleteDlcs(selectedId, Array.from(selectedDlcIds));
+      
+      isDlcMultiSelectMode = false;
+      selectedDlcIds.clear();
+      
+      const editBar = $('dlcsEditBar');
+      if (editBar) editBar.classList.remove('open');
+      
+      const selectBtn = $('selectDlcsBtn');
+      if (selectBtn) selectBtn.classList.remove('hidden');
+      
+      updateDlcSelectCount();
+      renderDlcSection();
+      renderSessionList();
+      renderStats();
+      renderSidebar();
+      toast(dict.toast_selected_dlc_deleted);
+    }
+  );
+});
+
 // ─── Add Game Modal ───────────────────────────────────────────────────────────
 function openAddModal(e) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -382,6 +471,8 @@ $('hltbUnlinkBtn').addEventListener('click', () => {
     async () => {
       await unlinkGameHltbData(selectedId);
       renderHltbSection();
+      renderSidebar();
+      renderGameHeader();
       toast(dict.toast_hltb_unlinked);
     }
   );
@@ -424,11 +515,92 @@ $('hltbSearchInput').addEventListener('keydown', e => {
   }
 });
 
+// ─── Custom Tooltip Controller ────────────────────────────────────────────────
+let tooltipEl = null;
+
+function initTooltip() {
+  tooltipEl = document.createElement('div');
+  tooltipEl.className = 'custom-tooltip';
+  document.body.appendChild(tooltipEl);
+  
+  document.addEventListener('mouseover', (e) => {
+    const target = e.target.closest('[data-tooltip-key], [data-tooltip], [title], [data-original-title]');
+    if (!target) return;
+    
+    // If the target has a native title, swap it to prevent the browser's default tooltip
+    if (target.hasAttribute('title')) {
+      target.dataset.originalTitle = target.getAttribute('title');
+      target.removeAttribute('title');
+    }
+    
+    const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+    let text = '';
+    
+    if (target.dataset.tooltipKey) {
+      text = dict[target.dataset.tooltipKey] || target.dataset.tooltipKey;
+    } else if (target.dataset.tooltip) {
+      text = dict[target.dataset.tooltip] || target.dataset.tooltip;
+    } else if (target.dataset.originalTitle) {
+      text = dict[target.dataset.originalTitle] || target.dataset.originalTitle;
+    }
+    
+    if (!text) return;
+    
+    tooltipEl.textContent = text;
+    tooltipEl.classList.add('visible');
+    
+    // Position calculations centered above the target element
+    const rect = target.getBoundingClientRect();
+    const tooltipRect = tooltipEl.getBoundingClientRect();
+    
+    let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+    let top = rect.top - tooltipRect.height - 8;
+    
+    // Boundaries check
+    if (left < 10) left = 10;
+    if (left + tooltipRect.width > window.innerWidth - 10) {
+      left = window.innerWidth - tooltipRect.width - 10;
+    }
+    if (top < 10) {
+      // If tooltip goes off-screen at the top, position it below the element instead
+      top = rect.bottom + 8;
+    }
+    
+    tooltipEl.style.left = `${left}px`;
+    tooltipEl.style.top = `${top}px`;
+  });
+  
+  document.addEventListener('mouseout', (e) => {
+    const target = e.target.closest('[data-tooltip-key], [data-tooltip], [data-original-title]');
+    if (!target) return;
+    
+    // Only handle if mouse actually leaves the target (not moving to its child)
+    if (e.relatedTarget && target.contains(e.relatedTarget)) return;
+    
+    if (target.dataset.originalTitle) {
+      target.setAttribute('title', target.dataset.originalTitle);
+      delete target.dataset.originalTitle;
+    }
+    
+    if (tooltipEl) {
+      tooltipEl.classList.remove('visible');
+    }
+  });
+  
+  // Hide tooltip on mouse clicks to prevent tooltip staying visible on button click
+  document.addEventListener('click', () => {
+    if (tooltipEl) {
+      tooltipEl.classList.remove('visible');
+    }
+  });
+}
+
 // ─── Init ─────────────────────────────────────────────────────────────────────
 async function init() {
   await loadSettings();
   await loadGames();
   applyLanguage();
+  initTooltip();
   
   // Fetch and display dynamic app version in settings
   if (isElectron) {
