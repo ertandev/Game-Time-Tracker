@@ -261,10 +261,17 @@ ipcMain.on('open-external', (_, url) => {
 });
 ipcMain.on('set-startup', (_, { openAtLogin, startMinimized }) => {
   try {
+    const args = [];
+    if (!app.isPackaged) {
+      args.push(app.getAppPath());
+    }
+    if (startMinimized) {
+      args.push('--hidden');
+    }
     app.setLoginItemSettings({
       openAtLogin: openAtLogin,
       path: app.getPath('exe'),
-      args: startMinimized ? ['--hidden'] : []
+      args: args
     });
   } catch (e) {
     console.error('Failed to set login item settings:', e);

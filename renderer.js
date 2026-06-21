@@ -729,11 +729,33 @@ function renderHltbSection() {
   const titleEl = $('hltbGameTitle');
   const nameEl = $('hltbGameTitleName');
   const imgEl = $('hltbGameImage');
+  const headerTitleEl = $('hltbHeaderTitle');
 
   if (g.hltbData) {
     container.style.display = 'grid';
     emptyState.style.display = 'none';
     unlinkBtn.style.display = 'inline-flex';
+
+    const hltbUrl = 'https://howlongtobeat.com/game/' + g.hltbData.id;
+    const openHltb = () => {
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        window.electronAPI.openExternal(hltbUrl);
+      }
+    };
+
+    if (headerTitleEl) {
+      headerTitleEl.style.cursor = 'pointer';
+      headerTitleEl.onclick = openHltb;
+    }
+    if (imgEl) {
+      imgEl.style.cursor = 'pointer';
+      imgEl.onclick = openHltb;
+    }
+    if (nameEl) {
+      nameEl.style.cursor = 'pointer';
+      nameEl.onclick = openHltb;
+    }
+
     if (titleEl) {
       titleEl.style.display = 'flex';
       if (nameEl) nameEl.textContent = g.hltbData.name || '';
@@ -789,6 +811,20 @@ function renderHltbSection() {
     if (titleEl) titleEl.style.display = 'none';
     const ratingsContainer = $('hltbRatingsContainer');
     if (ratingsContainer) ratingsContainer.style.display = 'none';
+
+    if (headerTitleEl) {
+      headerTitleEl.style.cursor = 'default';
+      headerTitleEl.onclick = null;
+    }
+    if (imgEl) {
+      imgEl.style.cursor = 'default';
+      imgEl.onclick = null;
+    }
+    if (nameEl) {
+      nameEl.style.cursor = 'default';
+      nameEl.onclick = null;
+    }
+
     $('hltbLinkBtn').innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
