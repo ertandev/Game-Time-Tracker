@@ -905,7 +905,24 @@ async function init() {
     toast(dict.toast_prev_session_resumed);
   } else {
     renderSidebar();
-    if (games.length) selectGame(games[0].id);
+    if (games.length) {
+      // Son oynanan oyunu bul (en yüksek session start timestamp'i)
+      let lastPlayedGame = null;
+      let lastTs = -1;
+      for (const g of games) {
+        if (g.sessions && g.sessions.length) {
+          const latestSession = g.sessions.reduce((a, s) => {
+            const ts = s.startTs ? new Date(s.startTs).getTime() : 0;
+            return ts > a ? ts : a;
+          }, 0);
+          if (latestSession > lastTs) {
+            lastTs = latestSession;
+            lastPlayedGame = g;
+          }
+        }
+      }
+      selectGame(lastPlayedGame ? lastPlayedGame.id : games[0].id);
+    }
   }
 
   // Auto Updater event binding & click listener
