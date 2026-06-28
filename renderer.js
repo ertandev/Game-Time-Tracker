@@ -73,6 +73,7 @@ function getGameIconUrl(g) {
 // ─── Drag-and-Drop Manager (Smooth Spring-Physics) ──────────────────────────────
 const DragManager = (() => {
   let isDragging = false;
+  let isMouseDown = false;
   let dragItem = null;
   let dragGhost = null;
   let placeholder = null;
@@ -91,6 +92,10 @@ const DragManager = (() => {
   let prevMouseY = 0;
   let mouseVelocity = 0;
 
+  // Last mouse position
+  let lastClientX = null;
+  let lastClientY = null;
+
   // Source item animation
   let sourceHeight = 0;
   let sourceMargin = 0;
@@ -99,12 +104,28 @@ const DragManager = (() => {
   const SPRING_DAMPING = 0.72;
   const MAX_TILT = 3; // degrees
 
+  function getTransformY(el) {
+    const style = window.getComputedStyle(el);
+    const transform = style.transform;
+    if (!transform || transform === 'none') return 0;
+    
+    if (transform.startsWith('matrix3d(')) {
+      const parts = transform.slice(9, -1).split(',');
+      return parseFloat(parts[13]) || 0;
+    } else if (transform.startsWith('matrix(')) {
+      const parts = transform.slice(7, -1).split(',');
+      return parseFloat(parts[5]) || 0;
+    }
+    return 0;
+  }
+
   function init(itemEl, e) {
     if (e.button !== 0) return;
 
     container = document.getElementById('sidebarGames');
     if (!container) return;
 
+    isMouseDown = true;
     dragItem = itemEl;
     dragGameId = itemEl.dataset.gid;
     startY = e.clientY;
@@ -125,6 +146,7 @@ const DragManager = (() => {
     const onMouseUp = (ev) => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
+      isMouseDown = false;
       if (isDragging) {
         endDrag(ev);
       }
@@ -136,11 +158,18 @@ const DragManager = (() => {
 
   function beginDrag(e) {
     isDragging = true;
+    lastClientX = e.clientX;
+    lastClientY = e.clientY;
 
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'grabbing';
 
     container.classList.add('drag-active');
+
+    // Prevent text selection glitches and escape key/blur cancellations
+    document.addEventListener('keydown', onKeyDown);
+    window.addEventListener('blur', onWindowBlur);
+    container.addEventListener('scroll', onContainerScroll);
 
     const rect = dragItem.getBoundingClientRect();
     sourceHeight = rect.height;
@@ -180,6 +209,8 @@ const DragManager = (() => {
     dragItem.style.height = '0px';
     dragItem.style.padding = '0 10px';
     dragItem.style.margin = '0';
+    dragItem.style.opacity = '0';
+    dragItem.style.overflow = 'hidden';
 
     // Create placeholder
     placeholder = document.createElement('div');
@@ -200,6 +231,9 @@ const DragManager = (() => {
   }
 
   function updateMousePosition(e) {
+    lastClientX = e.clientX;
+    lastClientY = e.clientY;
+
     mouseVelocity = e.clientY - prevMouseY;
     prevMouseY = e.clientY;
     mouseY = e.clientY - offsetY;
@@ -248,7 +282,7 @@ const DragManager = (() => {
       const allItems = Array.from(container.querySelectorAll('.sg-item:not(.drag-source)'));
       const firstPositions = new Map();
       allItems.forEach(item => {
-        firstPositions.set(item, item.getBoundingClientRect().top);
+        firstPositions.set(item, item.offsetTop + getTransformY(item));
       });
 
       if (insertBefore) {
@@ -261,22 +295,34 @@ const DragManager = (() => {
       allItems.forEach(item => {
         const firstTop = firstPositions.get(item);
         if (firstTop === undefined) return;
-        const newTop = item.getBoundingClientRect().top;
+        const newTop = item.offsetTop;
         const dy = firstTop - newTop;
-        if (Math.abs(dy) > 1) {
+        if (Math.abs(dy) > 0.5) {
+          if (item._transitionHandler) {
+            item.removeEventListener('transitionend', item._transitionHandler);
+            item.removeEventListener('transitioncancel', item._transitionHandler);
+          }
+
           // Cancel any running animation
           item.style.transition = 'none';
           item.style.transform = `translateY(${dy}px)`;
           item.getBoundingClientRect(); // force reflow
-          item.style.transition = 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+          item.style.transition = 'transform 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
           item.style.transform = 'translateY(0)';
-          item.addEventListener('transitionend', function handler(ev) {
+          
+          const handler = (ev) => {
+            if (item._transitionHandler !== handler) return;
             if (ev.propertyName === 'transform') {
               item.style.transition = '';
               item.style.transform = '';
               item.removeEventListener('transitionend', handler);
+              item.removeEventListener('transitioncancel', handler);
+              delete item._transitionHandler;
             }
-          });
+          };
+          item._transitionHandler = handler;
+          item.addEventListener('transitionend', handler);
+          item.addEventListener('transitioncancel', handler);
         }
       });
     }
@@ -292,6 +338,9 @@ const DragManager = (() => {
       ghostVY += springForce;
       ghostVY *= SPRING_DAMPING;
       ghostY += ghostVY;
+
+      // Decay mouse velocity for smooth leveling when mouse stops
+      mouseVelocity *= 0.8;
 
       // Apply position with tilt based on velocity
       const tilt = Math.max(-MAX_TILT, Math.min(MAX_TILT, mouseVelocity * 0.15));
@@ -385,6 +434,12 @@ const DragManager = (() => {
     scrollInterval = setInterval(() => {
       if (container) {
         container.scrollTop += direction * speed;
+        if (lastClientY !== null) {
+          updateMousePosition({
+            clientX: lastClientX,
+            clientY: lastClientY
+          });
+        }
       }
     }, 16);
   }
@@ -396,15 +451,68 @@ const DragManager = (() => {
     }
   }
 
+  const onKeyDown = (e) => {
+    if (e.key === 'Escape') {
+      cancelDrag();
+    }
+  };
+
+  const onWindowBlur = () => {
+    cancelDrag();
+  };
+
+  const onContainerScroll = () => {
+    if (isDragging && lastClientY !== null) {
+      updateMousePosition({
+        clientX: lastClientX,
+        clientY: lastClientY
+      });
+    }
+  };
+
+  function cancelDrag() {
+    if (!isDragging) return;
+
+    stopEdgeScroll();
+
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
+    if (dragItem) {
+      dragItem.classList.remove('drag-source');
+      dragItem.style.transition = 'none';
+      dragItem.style.height = '';
+      dragItem.style.padding = '';
+      dragItem.style.margin = '';
+      dragItem.style.opacity = '';
+      dragItem.style.overflow = '';
+      dragItem.style.transform = '';
+    }
+
+    // Re-render sidebar to restore original DOM order and clean up any transforms on siblings
+    renderSidebar();
+    cleanup();
+  }
+
   function cleanup() {
     isDragging = false;
+    isMouseDown = false;
     dragItem = null;
     dragGameId = null;
     mouseVelocity = 0;
     ghostVY = 0;
+    lastClientX = null;
+    lastClientY = null;
     document.body.style.userSelect = '';
     document.body.style.cursor = '';
-    if (container) container.classList.remove('drag-active');
+    document.removeEventListener('keydown', onKeyDown);
+    window.removeEventListener('blur', onWindowBlur);
+    if (container) {
+      container.removeEventListener('scroll', onContainerScroll);
+      container.classList.remove('drag-active');
+    }
     if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
     if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
     dragGhost = null;
@@ -417,11 +525,17 @@ const DragManager = (() => {
     stopEdgeScroll();
   }
 
-  return { init };
+  return {
+    init,
+    isDragging: () => isDragging || isMouseDown
+  };
 })();
 
 
 function renderSidebar() {
+  if (typeof DragManager !== 'undefined' && DragManager.isDragging && DragManager.isDragging()) {
+    return;
+  }
   const el = $('sidebarGames');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   el.textContent = ''; // clear existing
@@ -448,10 +562,13 @@ function renderSidebar() {
     
     // Custom drag-and-drop via DragManager (replaces HTML5 drag API)
     item.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
       // Don't start drag if clicking on buttons or interactive elements
       if (e.target.closest('button')) return;
+      e.preventDefault();
       DragManager.init(item, e);
     });
+    item.addEventListener('dragstart', (e) => e.preventDefault());
 
     const iconUrl = getGameIconUrl(g);
     if (iconUrl) {
@@ -459,6 +576,7 @@ function renderSidebar() {
       img.src = iconUrl;
       img.className = 'sg-avatar-img cover-fit';
       img.alt = g.name;
+      img.draggable = false;
       item.appendChild(img);
     } else {
       const avatar = document.createElement('div');
