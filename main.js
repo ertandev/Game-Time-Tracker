@@ -238,7 +238,7 @@ ipcMain.handle('store-write', async (event, key, data) => {
 });
 
 // Window controls
-ipcMain.on('win-minimize', () => mainWindow?.hide());
+ipcMain.on('win-minimize', () => mainWindow?.minimize());
 ipcMain.on('win-maximize', () => mainWindow?.isMaximized() ? mainWindow.unmaximize() : mainWindow.maximize());
 ipcMain.on('win-close',    () => {
   if (closeToTray) {

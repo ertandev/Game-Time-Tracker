@@ -28,8 +28,11 @@ function onProcessList(procs) {
       }
 
       if (settings.autoSaveOnClose) {
-        stopSession();
-        toast(dict.toast_game_closed_saved.replace('NAME', g.name));
+        stopSession().then(saved => {
+          if (saved) {
+            toast(dict.toast_game_closed_saved.replace('NAME', g.name));
+          }
+        });
       } else if (!activeState?.isPaused) {
         pauseSession();
         toast(dict.toast_game_closed_paused.replace('NAME', g.name));
@@ -67,6 +70,267 @@ function getGameIconUrl(g) {
   return null;
 }
 
+// ─── Drag-and-Drop Manager ─────────────────────────────────────────────────────
+const DragManager = (() => {
+  let isDragging = false;
+  let dragItem = null;        // the original .sg-item DOM node
+  let dragGhost = null;       // the floating clone
+  let placeholder = null;     // the glowing drop indicator line
+  let container = null;       // #sidebarGames
+  let startY = 0;
+  let offsetY = 0;
+  let dragGameId = null;
+  let scrollInterval = null;
+
+  function init(itemEl, e) {
+    // Only start on left mouse button
+    if (e.button !== 0) return;
+    
+    container = document.getElementById('sidebarGames');
+    if (!container) return;
+    
+    dragItem = itemEl;
+    dragGameId = itemEl.dataset.gid;
+    startY = e.clientY;
+    
+    // Calculate offset from top of element to mouse position
+    const rect = itemEl.getBoundingClientRect();
+    offsetY = e.clientY - rect.top;
+    
+    // We use a threshold so that normal clicks still work
+    const onMouseMove = (ev) => {
+      if (!isDragging && Math.abs(ev.clientY - startY) > 5) {
+        beginDrag(ev);
+      }
+      if (isDragging) {
+        moveDrag(ev);
+      }
+    };
+    
+    const onMouseUp = (ev) => {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      if (isDragging) {
+        endDrag(ev);
+      }
+    };
+    
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }
+
+  function beginDrag(e) {
+    isDragging = true;
+    
+    // Prevent text selection
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'grabbing';
+    
+    // Visual feedback on sidebar
+    container.classList.add('drag-active');
+    
+    // Create ghost element (a floating clone)
+    const rect = dragItem.getBoundingClientRect();
+    dragGhost = document.createElement('div');
+    dragGhost.className = 'sg-drag-ghost';
+    dragGhost.style.width = rect.width + 'px';
+    dragGhost.style.left = rect.left + 'px';
+    dragGhost.style.top = (e.clientY - offsetY) + 'px';
+    
+    // Clone the item content into the ghost
+    const clone = dragItem.cloneNode(true);
+    clone.classList.remove('active');
+    clone.style.width = '100%';
+    dragGhost.appendChild(clone);
+    document.body.appendChild(dragGhost);
+    
+    // Collapse the source item
+    dragItem.classList.add('drag-source');
+    
+    // Create the placeholder line
+    placeholder = document.createElement('div');
+    placeholder.className = 'sg-drop-placeholder';
+    
+    // Insert placeholder at original position
+    dragItem.parentNode.insertBefore(placeholder, dragItem);
+  }
+
+  function moveDrag(e) {
+    if (!dragGhost || !container) return;
+    
+    // Move ghost to follow cursor
+    const rect = container.getBoundingClientRect();
+    dragGhost.style.top = (e.clientY - offsetY) + 'px';
+    
+    // Edge scrolling
+    const scrollZone = 40;
+    const containerRect = container.getBoundingClientRect();
+    if (e.clientY < containerRect.top + scrollZone) {
+      startEdgeScroll(-1);
+    } else if (e.clientY > containerRect.bottom - scrollZone) {
+      startEdgeScroll(1);
+    } else {
+      stopEdgeScroll();
+    }
+    
+    // Find where to insert the placeholder
+    const items = Array.from(container.querySelectorAll('.sg-item:not(.drag-source)'));
+    let insertBefore = null;
+    
+    for (const item of items) {
+      const r = item.getBoundingClientRect();
+      const midY = r.top + r.height / 2;
+      if (e.clientY < midY) {
+        insertBefore = item;
+        break;
+      }
+    }
+    
+    // Move placeholder if needed (with FLIP animation for siblings)
+    // Find the next visible sibling after placeholder (skip drag-source)
+    let nextVisible = placeholder.nextElementSibling;
+    while (nextVisible && nextVisible.classList.contains('drag-source')) {
+      nextVisible = nextVisible.nextElementSibling;
+    }
+    // Also skip the placeholder itself in the comparison
+    let needsMove = false;
+    if (insertBefore) {
+      needsMove = nextVisible !== insertBefore;
+    } else {
+      // Should be at the end - no visible items after placeholder
+      needsMove = nextVisible !== null;
+    }
+    
+    if (needsMove) {
+      // Capture positions before move (FLIP - First)
+      const allItems = Array.from(container.querySelectorAll('.sg-item:not(.drag-source)'));
+      const firstPositions = new Map();
+      allItems.forEach(item => {
+        const r = item.getBoundingClientRect();
+        firstPositions.set(item, { top: r.top, left: r.left });
+      });
+      
+      // Move placeholder (FLIP - Invert & Play)
+      if (insertBefore) {
+        container.insertBefore(placeholder, insertBefore);
+      } else {
+        // Append at the very end
+        container.appendChild(placeholder);
+      }
+      
+      // Animate items that moved (FLIP)
+      allItems.forEach(item => {
+        const first = firstPositions.get(item);
+        if (!first) return;
+        const r = item.getBoundingClientRect();
+        const dy = first.top - r.top;
+        if (Math.abs(dy) > 1) {
+          item.style.transition = 'none';
+          item.style.transform = `translateY(${dy}px)`;
+          // Force reflow
+          item.getBoundingClientRect();
+          item.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)';
+          item.style.transform = '';
+          item.addEventListener('transitionend', function handler(ev) {
+            if (ev.propertyName === 'transform') {
+              item.style.transition = '';
+              item.style.transform = '';
+              item.removeEventListener('transitionend', handler);
+            }
+          });
+        }
+      });
+    }
+  }
+
+  function endDrag(e) {
+    stopEdgeScroll();
+    
+    if (!dragGhost || !placeholder || !container) {
+      cleanup();
+      return;
+    }
+    
+    // Find the drop target position
+    const placeholderRect = placeholder.getBoundingClientRect();
+    const ghostRect = dragGhost.getBoundingClientRect();
+    
+    // Animate ghost to the placeholder's position
+    dragGhost.classList.add('dropping');
+    dragGhost.style.top = placeholderRect.top + 'px';
+    dragGhost.style.left = ghostRect.left + 'px';
+    
+    // After animation, apply the reorder and cleanup
+    const onEnd = () => {
+      // Move the drag-source item to placeholder position in DOM
+      dragItem.classList.remove('drag-source');
+      container.insertBefore(dragItem, placeholder);
+      placeholder.remove();
+      
+      // Read new order from the DOM
+      const items = Array.from(container.querySelectorAll('.sg-item'));
+      const newOrder = [];
+      items.forEach(el => {
+        const gid = el.dataset.gid;
+        const game = games.find(g => g.id === gid);
+        if (game) newOrder.push(game);
+      });
+      
+      if (newOrder.length === games.length) {
+        games = newOrder;
+        saveGames();
+      }
+      
+      // Remove ghost
+      if (dragGhost && dragGhost.parentNode) {
+        dragGhost.parentNode.removeChild(dragGhost);
+      }
+      
+      // Re-render to sync
+      renderSidebar();
+      
+      cleanup();
+    };
+    
+    // Wait for drop animation
+    setTimeout(onEnd, 220);
+  }
+
+  function startEdgeScroll(direction) {
+    if (scrollInterval) return;
+    scrollInterval = setInterval(() => {
+      if (container) {
+        container.scrollTop += direction * 6;
+      }
+    }, 16);
+  }
+
+  function stopEdgeScroll() {
+    if (scrollInterval) {
+      clearInterval(scrollInterval);
+      scrollInterval = null;
+    }
+  }
+
+  function cleanup() {
+    isDragging = false;
+    dragItem = null;
+    dragGameId = null;
+    document.body.style.userSelect = '';
+    document.body.style.cursor = '';
+    if (container) container.classList.remove('drag-active');
+    if (dragGhost && dragGhost.parentNode) dragGhost.parentNode.removeChild(dragGhost);
+    if (placeholder && placeholder.parentNode) placeholder.parentNode.removeChild(placeholder);
+    dragGhost = null;
+    placeholder = null;
+    container = null;
+    stopEdgeScroll();
+  }
+
+  return { init };
+})();
+
+
 function renderSidebar() {
   const el = $('sidebarGames');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
@@ -81,7 +345,7 @@ function renderSidebar() {
     el.appendChild(p);
     return;
   }
-  
+
   games.forEach((g, i) => {
     const target = (selectedId === g.id) ? sessionFilterTab : 'overall';
     const ms = filteredTotalMs(g, target);
@@ -92,6 +356,13 @@ function renderSidebar() {
     item.dataset.gid = g.id;
     item.style.setProperty('--game-color', g.color);
     
+    // Custom drag-and-drop via DragManager (replaces HTML5 drag API)
+    item.addEventListener('mousedown', (e) => {
+      // Don't start drag if clicking on buttons or interactive elements
+      if (e.target.closest('button')) return;
+      DragManager.init(item, e);
+    });
+
     const iconUrl = getGameIconUrl(g);
     if (iconUrl) {
       const img = document.createElement('img');
@@ -378,7 +649,7 @@ function renderSessionList() {
     
     const date = document.createElement('div');
     date.className = 's-date';
-    date.textContent = fmtDate(s.startTs);
+    date.textContent = fmtSessionTime(s);
     if (s.dlcId) {
       const dlc = g.dlcs && g.dlcs.find(d => d.id === s.dlcId);
       if (dlc) {
@@ -742,10 +1013,15 @@ function renderHltbSection() {
         window.electronAPI.openExternal(hltbUrl);
       }
     };
+    const openHltbMain = () => {
+      if (window.electronAPI && window.electronAPI.openExternal) {
+        window.electronAPI.openExternal('https://howlongtobeat.com');
+      }
+    };
 
     if (headerTitleEl) {
       headerTitleEl.style.cursor = 'pointer';
-      headerTitleEl.onclick = openHltb;
+      headerTitleEl.onclick = openHltbMain;
     }
     if (imgEl) {
       imgEl.style.cursor = 'pointer';

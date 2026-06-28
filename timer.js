@@ -152,20 +152,31 @@ function resumeSession() {
   saveState();
 }
 async function stopSession() {
-  if(!activeState) return;
-  const g = gameById(activeGameId); if(!g) return;
+  if(!activeState) return false;
+  const g = gameById(activeGameId); if(!g) return false;
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
-  g.sessions.unshift({
-    id: genId(), startTs: activeState.startTs, endTs: new Date().toISOString(),
-    durationMs: activeState.runningMs, dateKey: todayKey(),
-    dlcId: g.activeDlcId || null
-  });
-  saveGames();
+  
+  const isTooShort = activeState.runningMs < 60000;
+  if (!isTooShort) {
+    g.sessions.unshift({
+      id: genId(), startTs: activeState.startTs, endTs: new Date().toISOString(),
+      durationMs: activeState.runningMs, dateKey: todayKey(),
+      dlcId: g.activeDlcId || null
+    });
+    saveGames();
+  }
+  
   activeState=null; activeGameId=null;
   stopTicking(); clearInact();
   await saveState();
   renderControls(); renderTimer(); renderStatusPill(); renderGameHeader();
   renderSessionList(); renderStats(); renderSidebar();
-  toast(dict.toast_session_saved);
+  
+  if (!isTooShort) {
+    toast(dict.toast_session_saved);
+  } else {
+    toast(dict.toast_session_too_short || (settings.lang === 'tr' ? "⚠️ Oturum 1 dakikadan kısa olduğu için kaydedilmedi" : "⚠️ Session too short (< 1 min) — not saved"));
+  }
   if(isElectron) window.electronAPI.updateTray('GameTime Tracker');
+  return !isTooShort;
 }

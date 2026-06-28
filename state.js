@@ -65,6 +65,58 @@ function fmtDate(iso) {
   if(key===yest) return `${dict.date_yesterday} ${time}`;
   return d.toLocaleDateString(locale, {day:'2-digit',month:'short'})+' '+time;
 }
+function fmtSessionTime(s) {
+  if (!s.startTs) return '';
+  const startD = new Date(s.startTs);
+  const lang = settings.lang || 'tr';
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.tr;
+  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  
+  const startTimeStr = startD.toLocaleTimeString(locale, {hour:'2-digit',minute:'2-digit'});
+  const startDateKey = startD.toISOString().slice(0,10);
+  
+  let datePrefix = '';
+  if (startDateKey === todayKey()) {
+    datePrefix = dict.date_today;
+  } else {
+    const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
+    if (startDateKey === yest) {
+      datePrefix = dict.date_yesterday;
+    } else {
+      datePrefix = startD.toLocaleDateString(locale, {day:'2-digit',month:'short'});
+    }
+  }
+  
+  let endTs = s.endTs;
+  if (!endTs && s.durationMs) {
+    endTs = new Date(startD.getTime() + s.durationMs).toISOString();
+  }
+  
+  if (!endTs) {
+    return `${datePrefix} ${startTimeStr}`;
+  }
+  
+  const endD = new Date(endTs);
+  const endTimeStr = endD.toLocaleTimeString(locale, {hour:'2-digit',minute:'2-digit'});
+  const endDateKey = endD.toISOString().slice(0,10);
+  
+  if (startDateKey === endDateKey) {
+    return `${datePrefix} ${startTimeStr} - ${endTimeStr}`;
+  } else {
+    let endDatePrefix = '';
+    if (endDateKey === todayKey()) {
+      endDatePrefix = dict.date_today;
+    } else {
+      const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
+      if (endDateKey === yest) {
+        endDatePrefix = dict.date_yesterday;
+      } else {
+        endDatePrefix = endD.toLocaleDateString(locale, {day:'2-digit',month:'short'});
+      }
+    }
+    return `${datePrefix} ${startTimeStr} - ${endDatePrefix} ${endTimeStr}`;
+  }
+}
 function genId() { return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
 function esc(s)  { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
 function formatProcessName(procName) {
