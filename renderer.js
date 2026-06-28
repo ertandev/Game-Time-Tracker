@@ -70,43 +70,58 @@ function getGameIconUrl(g) {
   return null;
 }
 
-// ─── Drag-and-Drop Manager ─────────────────────────────────────────────────────
+// ─── Drag-and-Drop Manager (Smooth Spring-Physics) ──────────────────────────────
 const DragManager = (() => {
   let isDragging = false;
-  let dragItem = null;        // the original .sg-item DOM node
-  let dragGhost = null;       // the floating clone
-  let placeholder = null;     // the glowing drop indicator line
-  let container = null;       // #sidebarGames
+  let dragItem = null;
+  let dragGhost = null;
+  let placeholder = null;
+  let container = null;
   let startY = 0;
+  let startX = 0;
   let offsetY = 0;
   let dragGameId = null;
   let scrollInterval = null;
+  let rafId = null;
+
+  // Spring-physics state for ghost
+  let mouseY = 0;
+  let ghostY = 0;
+  let ghostVY = 0;
+  let prevMouseY = 0;
+  let mouseVelocity = 0;
+
+  // Source item animation
+  let sourceHeight = 0;
+  let sourceMargin = 0;
+
+  const SPRING_STIFFNESS = 0.35;
+  const SPRING_DAMPING = 0.72;
+  const MAX_TILT = 3; // degrees
 
   function init(itemEl, e) {
-    // Only start on left mouse button
     if (e.button !== 0) return;
-    
+
     container = document.getElementById('sidebarGames');
     if (!container) return;
-    
+
     dragItem = itemEl;
     dragGameId = itemEl.dataset.gid;
     startY = e.clientY;
-    
-    // Calculate offset from top of element to mouse position
+    startX = e.clientX;
+
     const rect = itemEl.getBoundingClientRect();
     offsetY = e.clientY - rect.top;
-    
-    // We use a threshold so that normal clicks still work
+
     const onMouseMove = (ev) => {
-      if (!isDragging && Math.abs(ev.clientY - startY) > 5) {
+      if (!isDragging && (Math.abs(ev.clientY - startY) > 5 || Math.abs(ev.clientX - startX) > 5)) {
         beginDrag(ev);
       }
       if (isDragging) {
-        moveDrag(ev);
+        updateMousePosition(ev);
       }
     };
-    
+
     const onMouseUp = (ev) => {
       document.removeEventListener('mousemove', onMouseMove);
       document.removeEventListener('mouseup', onMouseUp);
@@ -114,69 +129,98 @@ const DragManager = (() => {
         endDrag(ev);
       }
     };
-    
+
     document.addEventListener('mousemove', onMouseMove);
     document.addEventListener('mouseup', onMouseUp);
   }
 
   function beginDrag(e) {
     isDragging = true;
-    
-    // Prevent text selection
+
     document.body.style.userSelect = 'none';
     document.body.style.cursor = 'grabbing';
-    
-    // Visual feedback on sidebar
+
     container.classList.add('drag-active');
-    
-    // Create ghost element (a floating clone)
+
     const rect = dragItem.getBoundingClientRect();
+    sourceHeight = rect.height;
+    sourceMargin = 2; // margin-bottom from CSS
+
+    // Create ghost element
     dragGhost = document.createElement('div');
     dragGhost.className = 'sg-drag-ghost';
     dragGhost.style.width = rect.width + 'px';
     dragGhost.style.left = rect.left + 'px';
-    dragGhost.style.top = (e.clientY - offsetY) + 'px';
-    
-    // Clone the item content into the ghost
+    dragGhost.style.position = 'fixed';
+    dragGhost.style.zIndex = '10000';
+    dragGhost.style.pointerEvents = 'none';
+
     const clone = dragItem.cloneNode(true);
     clone.classList.remove('active');
     clone.style.width = '100%';
+    clone.style.margin = '0';
     dragGhost.appendChild(clone);
     document.body.appendChild(dragGhost);
-    
-    // Collapse the source item
+
+    // Initialize spring physics
+    mouseY = e.clientY - offsetY;
+    ghostY = mouseY;
+    ghostVY = 0;
+    prevMouseY = e.clientY;
+    mouseVelocity = 0;
+
+    dragGhost.style.top = ghostY + 'px';
+
+    // Animate source item collapse (smooth height transition)
     dragItem.classList.add('drag-source');
-    
-    // Create the placeholder line
+    dragItem.style.height = sourceHeight + 'px';
+    dragItem.style.transition = 'none';
+    dragItem.getBoundingClientRect(); // force reflow
+    dragItem.style.transition = 'height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.2s ease, padding 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), margin 0.3s cubic-bezier(0.2, 0.8, 0.2, 1)';
+    dragItem.style.height = '0px';
+    dragItem.style.padding = '0 10px';
+    dragItem.style.margin = '0';
+
+    // Create placeholder
     placeholder = document.createElement('div');
     placeholder.className = 'sg-drop-placeholder';
-    
-    // Insert placeholder at original position
+    placeholder.style.height = '0px';
+    placeholder.style.opacity = '0';
     dragItem.parentNode.insertBefore(placeholder, dragItem);
+
+    // Animate placeholder expand
+    requestAnimationFrame(() => {
+      placeholder.style.transition = 'height 0.3s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease';
+      placeholder.style.height = sourceHeight + 'px';
+      placeholder.style.opacity = '1';
+    });
+
+    // Start animation loop
+    startAnimationLoop();
   }
 
-  function moveDrag(e) {
-    if (!dragGhost || !container) return;
-    
-    // Move ghost to follow cursor
-    const rect = container.getBoundingClientRect();
-    dragGhost.style.top = (e.clientY - offsetY) + 'px';
-    
-    // Edge scrolling
-    const scrollZone = 40;
+  function updateMousePosition(e) {
+    mouseVelocity = e.clientY - prevMouseY;
+    prevMouseY = e.clientY;
+    mouseY = e.clientY - offsetY;
+
+    // Edge scrolling with smooth acceleration
+    const scrollZone = 50;
     const containerRect = container.getBoundingClientRect();
     if (e.clientY < containerRect.top + scrollZone) {
-      startEdgeScroll(-1);
+      const intensity = 1 - (e.clientY - containerRect.top) / scrollZone;
+      startEdgeScroll(-1, Math.max(0.2, intensity));
     } else if (e.clientY > containerRect.bottom - scrollZone) {
-      startEdgeScroll(1);
+      const intensity = 1 - (containerRect.bottom - e.clientY) / scrollZone;
+      startEdgeScroll(1, Math.max(0.2, intensity));
     } else {
       stopEdgeScroll();
     }
-    
-    // Find where to insert the placeholder
+
+    // Find insertion point
     const items = Array.from(container.querySelectorAll('.sg-item:not(.drag-source)'));
     let insertBefore = null;
-    
+
     for (const item of items) {
       const r = item.getBoundingClientRect();
       const midY = r.top + r.height / 2;
@@ -185,52 +229,47 @@ const DragManager = (() => {
         break;
       }
     }
-    
-    // Move placeholder if needed (with FLIP animation for siblings)
-    // Find the next visible sibling after placeholder (skip drag-source)
+
+    // Check if placeholder needs to move
     let nextVisible = placeholder.nextElementSibling;
     while (nextVisible && nextVisible.classList.contains('drag-source')) {
       nextVisible = nextVisible.nextElementSibling;
     }
-    // Also skip the placeholder itself in the comparison
+
     let needsMove = false;
     if (insertBefore) {
       needsMove = nextVisible !== insertBefore;
     } else {
-      // Should be at the end - no visible items after placeholder
       needsMove = nextVisible !== null;
     }
-    
+
     if (needsMove) {
-      // Capture positions before move (FLIP - First)
+      // FLIP animation for sibling items
       const allItems = Array.from(container.querySelectorAll('.sg-item:not(.drag-source)'));
       const firstPositions = new Map();
       allItems.forEach(item => {
-        const r = item.getBoundingClientRect();
-        firstPositions.set(item, { top: r.top, left: r.left });
+        firstPositions.set(item, item.getBoundingClientRect().top);
       });
-      
-      // Move placeholder (FLIP - Invert & Play)
+
       if (insertBefore) {
         container.insertBefore(placeholder, insertBefore);
       } else {
-        // Append at the very end
         container.appendChild(placeholder);
       }
-      
-      // Animate items that moved (FLIP)
+
+      // Animate displaced items with spring-like FLIP
       allItems.forEach(item => {
-        const first = firstPositions.get(item);
-        if (!first) return;
-        const r = item.getBoundingClientRect();
-        const dy = first.top - r.top;
+        const firstTop = firstPositions.get(item);
+        if (firstTop === undefined) return;
+        const newTop = item.getBoundingClientRect().top;
+        const dy = firstTop - newTop;
         if (Math.abs(dy) > 1) {
+          // Cancel any running animation
           item.style.transition = 'none';
           item.style.transform = `translateY(${dy}px)`;
-          // Force reflow
-          item.getBoundingClientRect();
-          item.style.transition = 'transform 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)';
-          item.style.transform = '';
+          item.getBoundingClientRect(); // force reflow
+          item.style.transition = 'transform 0.35s cubic-bezier(0.25, 1, 0.5, 1)';
+          item.style.transform = 'translateY(0)';
           item.addEventListener('transitionend', function handler(ev) {
             if (ev.propertyName === 'transform') {
               item.style.transition = '';
@@ -243,31 +282,68 @@ const DragManager = (() => {
     }
   }
 
+  function startAnimationLoop() {
+    function tick() {
+      if (!isDragging || !dragGhost) return;
+
+      // Spring physics: smoothly interpolate ghost position toward mouse
+      const targetY = mouseY;
+      const springForce = (targetY - ghostY) * SPRING_STIFFNESS;
+      ghostVY += springForce;
+      ghostVY *= SPRING_DAMPING;
+      ghostY += ghostVY;
+
+      // Apply position with tilt based on velocity
+      const tilt = Math.max(-MAX_TILT, Math.min(MAX_TILT, mouseVelocity * 0.15));
+      const scale = 1.03 + Math.abs(ghostVY) * 0.0005;
+      dragGhost.style.top = ghostY + 'px';
+      dragGhost.style.transform = `scale(${Math.min(scale, 1.08)}) rotate(${tilt}deg)`;
+
+      rafId = requestAnimationFrame(tick);
+    }
+    rafId = requestAnimationFrame(tick);
+  }
+
   function endDrag(e) {
     stopEdgeScroll();
-    
+
+    // Stop animation loop
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+
     if (!dragGhost || !placeholder || !container) {
       cleanup();
       return;
     }
-    
-    // Find the drop target position
+
+    // Animate ghost to placeholder position
     const placeholderRect = placeholder.getBoundingClientRect();
-    const ghostRect = dragGhost.getBoundingClientRect();
-    
-    // Animate ghost to the placeholder's position
-    dragGhost.classList.add('dropping');
+
+    dragGhost.style.transition = 'top 0.3s cubic-bezier(0.25, 1, 0.5, 1), transform 0.3s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.3s ease, box-shadow 0.3s ease';
     dragGhost.style.top = placeholderRect.top + 'px';
-    dragGhost.style.left = ghostRect.left + 'px';
-    
-    // After animation, apply the reorder and cleanup
-    const onEnd = () => {
-      // Move the drag-source item to placeholder position in DOM
+    dragGhost.style.transform = 'scale(1) rotate(0deg)';
+    dragGhost.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+    dragGhost.style.opacity = '0.85';
+
+    let dropDone = false;
+    const onDropEnd = () => {
+      if (dropDone) return;
+      dropDone = true;
+
+      // Move item in DOM
       dragItem.classList.remove('drag-source');
+      dragItem.style.transition = 'none';
+      dragItem.style.height = '';
+      dragItem.style.padding = '';
+      dragItem.style.margin = '';
+      dragItem.style.opacity = '';
+      dragItem.style.overflow = '';
       container.insertBefore(dragItem, placeholder);
       placeholder.remove();
-      
-      // Read new order from the DOM
+
+      // Read new order
       const items = Array.from(container.querySelectorAll('.sg-item'));
       const newOrder = [];
       items.forEach(el => {
@@ -275,32 +351,40 @@ const DragManager = (() => {
         const game = games.find(g => g.id === gid);
         if (game) newOrder.push(game);
       });
-      
+
       if (newOrder.length === games.length) {
         games = newOrder;
         saveGames();
       }
-      
-      // Remove ghost
+
+      // Remove ghost with a subtle fade
       if (dragGhost && dragGhost.parentNode) {
         dragGhost.parentNode.removeChild(dragGhost);
       }
-      
-      // Re-render to sync
+
+      // Re-render to sync state
       renderSidebar();
-      
       cleanup();
     };
-    
-    // Wait for drop animation
-    setTimeout(onEnd, 220);
+
+    // Listen for the transition to finish
+    dragGhost.addEventListener('transitionend', function handler(ev) {
+      if (ev.propertyName === 'top') {
+        dragGhost.removeEventListener('transitionend', handler);
+        onDropEnd();
+      }
+    });
+
+    // Fallback timeout in case transitionend doesn't fire
+    setTimeout(onDropEnd, 350);
   }
 
-  function startEdgeScroll(direction) {
-    if (scrollInterval) return;
+  function startEdgeScroll(direction, intensity) {
+    stopEdgeScroll();
+    const speed = 3 + intensity * 8;
     scrollInterval = setInterval(() => {
       if (container) {
-        container.scrollTop += direction * 6;
+        container.scrollTop += direction * speed;
       }
     }, 16);
   }
@@ -316,6 +400,8 @@ const DragManager = (() => {
     isDragging = false;
     dragItem = null;
     dragGameId = null;
+    mouseVelocity = 0;
+    ghostVY = 0;
     document.body.style.userSelect = '';
     document.body.style.cursor = '';
     if (container) container.classList.remove('drag-active');
@@ -324,6 +410,10 @@ const DragManager = (() => {
     dragGhost = null;
     placeholder = null;
     container = null;
+    if (rafId) {
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
     stopEdgeScroll();
   }
 
