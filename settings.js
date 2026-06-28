@@ -15,6 +15,10 @@ function openSettingsModal() {
   $('autoSaveCheckbox').checked = !!settings.autoSaveOnClose;
   $('startupCheckbox').checked = !!settings.startMinimized;
   $('closeToTrayCheckbox').checked = settings.closeToTray !== false;
+  
+  const modalBody = $('settingsOverlay').querySelector('.modal-body');
+  if (modalBody) modalBody.scrollTop = 0;
+
   $('settingsOverlay').classList.add('open');
 }
 

@@ -426,6 +426,9 @@ function openAddModal(e) {
     switchTab('manual');
   }
 
+  const modalBody = $('addGameOverlay').querySelector('.modal-body');
+  if (modalBody) modalBody.scrollTop = 0;
+
   $('addGameOverlay').classList.add('open');
   setTimeout(()=>$('newGameName').focus(),50);
 }
@@ -435,6 +438,12 @@ function openHltbModal() {
   const g = gameById(selectedId); if(!g) return;
   $('hltbSearchInput').value = g.name;
   $('hltbResultList').textContent = '';
+
+  const modalBody = $('hltbOverlay').querySelector('.modal-body');
+  if (modalBody) modalBody.scrollTop = 0;
+  const resultList = $('hltbResultList');
+  if (resultList) resultList.scrollTop = 0;
+
   $('hltbOverlay').classList.add('open');
   setTimeout(() => $('hltbSearchInput').focus(), 50);
 }

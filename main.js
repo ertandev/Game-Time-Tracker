@@ -322,17 +322,28 @@ ipcMain.handle('launch-game', async (_, filePath) => {
     if (!filePath || !fs.existsSync(filePath)) return false;
     const gameDir = path.dirname(filePath);
     
-    // Spawn explorer.exe to launch the game. We use spawn instead of exec to avoid
-    // error callbacks triggered by explorer.exe exiting with code 1.
-    const child = spawn('explorer.exe', [filePath], {
+    // Try to launch the game executable directly to preserve the working directory (cwd)
+    const child = spawn(filePath, [], {
       cwd: gameDir,
       detached: true,
       stdio: 'ignore'
     });
+    
+    child.on('error', (err) => {
+      console.error('Direct spawn failed, falling back to explorer.exe:', err);
+      // Fallback to explorer.exe if direct spawn fails (e.g. permission issues or special file types)
+      const fallbackChild = spawn('explorer.exe', [filePath], {
+        cwd: gameDir,
+        detached: true,
+        stdio: 'ignore'
+      });
+      fallbackChild.unref();
+    });
+
     child.unref();
     return true;
   } catch (e) {
-    console.error('Failed to launch game via explorer.exe:', e);
+    console.error('Failed to launch game directly:', e);
     try {
       shell.openPath(filePath);
       return true;
