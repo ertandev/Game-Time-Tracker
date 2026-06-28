@@ -84,6 +84,7 @@ const DragManager = (() => {
   let dragGameId = null;
   let scrollInterval = null;
   let rafId = null;
+  let dropTimeoutId = null;
 
   // Spring-physics state for ghost
   let mouseY = 0;
@@ -381,7 +382,17 @@ const DragManager = (() => {
       if (dropDone) return;
       dropDone = true;
 
-      // Move item in DOM
+      if (dropTimeoutId) {
+        clearTimeout(dropTimeoutId);
+        dropTimeoutId = null;
+      }
+
+      if (!dragItem || !container) {
+        cleanup();
+        return;
+      }
+
+      // Move item in DOM safely
       dragItem.classList.remove('drag-source');
       dragItem.style.transition = 'none';
       dragItem.style.height = '';
@@ -389,8 +400,17 @@ const DragManager = (() => {
       dragItem.style.margin = '';
       dragItem.style.opacity = '';
       dragItem.style.overflow = '';
-      container.insertBefore(dragItem, placeholder);
-      placeholder.remove();
+      dragItem.style.transform = '';
+
+      if (placeholder && placeholder.parentNode === container) {
+        container.insertBefore(dragItem, placeholder);
+      } else {
+        container.appendChild(dragItem);
+      }
+
+      if (placeholder) {
+        placeholder.remove();
+      }
 
       // Read new order
       const items = Array.from(container.querySelectorAll('.sg-item'));
@@ -425,7 +445,7 @@ const DragManager = (() => {
     });
 
     // Fallback timeout in case transitionend doesn't fire
-    setTimeout(onDropEnd, 350);
+    dropTimeoutId = setTimeout(onDropEnd, 350);
   }
 
   function startEdgeScroll(direction, intensity) {
@@ -521,6 +541,10 @@ const DragManager = (() => {
     if (rafId) {
       cancelAnimationFrame(rafId);
       rafId = null;
+    }
+    if (dropTimeoutId) {
+      clearTimeout(dropTimeoutId);
+      dropTimeoutId = null;
     }
     stopEdgeScroll();
   }
