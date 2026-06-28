@@ -431,9 +431,9 @@ const DragManager = (() => {
         dragGhost.parentNode.removeChild(dragGhost);
       }
 
+      cleanup();
       // Re-render to sync state
       renderSidebar();
-      cleanup();
     };
 
     // Listen for the transition to finish
@@ -511,9 +511,9 @@ const DragManager = (() => {
       dragItem.style.transform = '';
     }
 
+    cleanup();
     // Re-render sidebar to restore original DOM order and clean up any transforms on siblings
     renderSidebar();
-    cleanup();
   }
 
   function cleanup() {
