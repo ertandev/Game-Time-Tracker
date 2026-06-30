@@ -1654,9 +1654,7 @@ if (isElectron) {
           case 'rename':
             await handleRenameGame(g);
             break;
-          case 'change-exe':
-            await handleChangeExe(g);
-            break;
+
           case 'clear-sessions':
             await handleClearSessions(g);
             break;
@@ -1849,35 +1847,7 @@ async function handleRenameGame(g) {
   }, defaultName);
 }
 
-async function handleChangeExe(g) {
-  const title = TRANSLATIONS[settings.lang || 'tr']?.prompt_change_exe_title || 'İzlenen EXE Dosyasını Değiştir';
-  const label = TRANSLATIONS[settings.lang || 'tr']?.prompt_change_exe_label || 'İzlenecek process adını (.exe) girin:';
-  
-  showPrompt(title, label, g.exe || '', async (newExe) => {
-    if (newExe !== null) {
-      let exeVal = newExe.trim();
-      if (exeVal) {
-        if (!exeVal.toLowerCase().endsWith('.exe')) exeVal += '.exe';
-        g.exe = exeVal.toLowerCase();
-        
-        // Reset the path and icon attempts to re-resolve for the new process
-        g.path = '';
-        g.iconAttempted = false;
-        
-        await saveGames();
-        renderSidebar();
-        if (selectedId === g.id) {
-          renderGameHeader();
-        }
-        toast(TRANSLATIONS[settings.lang || 'tr']?.toast_exe_updated || 'Takip edilen EXE güncellendi');
-        
-        if (isElectron) {
-          checkAndFetchIcon(g);
-        }
-      }
-    }
-  }, g.exe || '');
-}
+
 
 async function handleClearSessions(g) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
