@@ -23,6 +23,20 @@ function clearInact() {
   $('inactBar').style.setProperty('--p', '100%');
 }
 
+function updateInact(show, pct, label) {
+  if (selectedId !== activeGameId) {
+    clearInact();
+    return;
+  }
+  if (show) {
+    $('inactWrap').classList.add('on');
+    if (pct !== undefined) $('inactBar').style.setProperty('--p', pct + '%');
+    if (label !== undefined) $('inactivityLabel').textContent = label;
+  } else {
+    clearInact();
+  }
+}
+
 function doAutoPause() {
   if (!activeState || activeState.isPaused || activeState.isAutoPaused) return;
   activeState.isAutoPaused = true; activeState.lastTickTs = null;
@@ -43,22 +57,20 @@ function onWinStatus({ procName, idleMs }) {
   // ─ Manual mode (EXE yok) ─────────────────────────────────────────────
   if (!g || !g.exe) {
     const th = settings.afkTimeout * 1000;
-    if (!th) { clearInact(); return; }
+    if (!th) { updateInact(false); return; }
     if (idleMs >= th) {
       if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_afk_paused); }
     } else {
       if (activeState.isAutoPaused) resumeSession();
       const pct = Math.max(0, 100 - (idleMs / th) * 100);
-      $('inactWrap').classList.add('on');
-      $('inactBar').style.setProperty('--p', pct.toFixed(1) + '%');
-      $('inactivityLabel').textContent = dict.inact_afk_tolerance;
+      updateInact(true, pct.toFixed(1), dict.inact_afk_tolerance);
     }
     return;
   }
 
   // ─ EXE mode ──────────────────────────────────────────────────────────
   const exeBase = g.exe.toLowerCase().replace(/\.exe$/, '');
-  const gameFg  = procName.includes(exeBase);
+  const gameFg  = procName === exeBase;
 
   // Manuel başlatılan session (detected=false): process eşleşmesi güvenilmez
   // olabilir (korsan/crack oyunlar vs.), sadece AFK kontrolü yap.
@@ -76,11 +88,9 @@ function onWinStatus({ procName, idleMs }) {
       if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_ingame_afk_paused); }
     } else if (afkTh > 0) {
       const pct = Math.max(0, 100 - (idleMs / afkTh) * 100);
-      $('inactWrap').classList.add('on');
-      $('inactBar').style.setProperty('--p', pct.toFixed(1) + '%');
-      $('inactivityLabel').textContent = dict.inact_ingame_afk;
+      updateInact(true, pct.toFixed(1), dict.inact_ingame_afk);
     } else {
-      clearInact();
+      updateInact(false);
     }
   } else if (!isAutoSession) {
     // Manuel session + foreground eşleşmiyor → sadece AFK kontrolü
@@ -93,11 +103,9 @@ function onWinStatus({ procName, idleMs }) {
       if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_afk_paused); }
     } else if (afkTh > 0) {
       const pct = Math.max(0, 100 - (idleMs / afkTh) * 100);
-      $('inactWrap').classList.add('on');
-      $('inactBar').style.setProperty('--p', pct.toFixed(1) + '%');
-      $('inactivityLabel').textContent = dict.inact_afk_tolerance;
+      updateInact(true, pct.toFixed(1), dict.inact_afk_tolerance);
     } else {
-      clearInact();
+      updateInact(false);
     }
   } else {
     // Otomatik session + oyun arka planda (alt-tab)
@@ -108,11 +116,9 @@ function onWinStatus({ procName, idleMs }) {
       if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_alttab_paused); }
     } else if (altTh > 0) {
       const pct = Math.max(0, 100 - (outMs / altTh) * 100);
-      $('inactWrap').classList.add('on');
-      $('inactBar').style.setProperty('--p', pct.toFixed(1) + '%');
-      $('inactivityLabel').textContent = dict.inact_alttab_time;
+      updateInact(true, pct.toFixed(1), dict.inact_alttab_time);
     } else {
-      clearInact();
+      updateInact(false);
     }
   }
 }

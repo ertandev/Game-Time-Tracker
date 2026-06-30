@@ -61,7 +61,7 @@ async function onProcessList(procs) {
   for (const g of games) {
     if(!g.exe) continue;
     const exeKey = g.exe.toLowerCase().replace(/\.exe$/,'');
-    let running = procs.some(p => p.includes(exeKey));
+    let running = procs.some(p => p === g.exe.toLowerCase() || p.replace(/\.exe$/,'') === exeKey);
     const myActive = activeGameId===g.id && activeState;
     if (running && !g.icon && !g.iconAttempted) {
       checkAndFetchIcon(g);
@@ -134,7 +134,8 @@ async function onProcessList(procs) {
   if(selectedId) {
     const g = gameById(selectedId);
     if(g&&g.exe) {
-      const running = procs.some(p=>p.includes(g.exe.toLowerCase().replace(/\.exe$/,'')));
+      const exeKey = g.exe.toLowerCase().replace(/\.exe$/,'');
+      const running = procs.some(p => p === g.exe.toLowerCase() || p.replace(/\.exe$/,'') === exeKey);
       const dot = $('autoStatusDot'), txt = $('autoStatusText');
       dot.className='auto-dot'+(running?' active':g.exe?' watching':'');
       txt.textContent=running?dict.exe_running.replace('NAME', g.name):g.exe?dict.exe_waiting:dict.exe_none;
@@ -757,6 +758,7 @@ function selectGame(id) {
   $('welcomeScreen').classList.add('hidden');
   $('gamePage').classList.remove('hidden');
   renderGameHeader(); renderTimer(); renderControls(); renderStatusPill();
+  if (typeof clearInact === 'function') clearInact();
   renderStats(); renderSessionList(); renderDlcSection(); renderHltbSection();
   renderSidebar();
 }
