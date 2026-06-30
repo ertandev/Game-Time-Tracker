@@ -79,6 +79,10 @@ async function onProcessList(procs) {
         const checkResult = await window.electronAPI.checkGameRunning({ exeName: g.exe, gamePath: g.path });
         if (checkResult && checkResult.running) {
           running = true;
+          if (myActive && activeState) {
+            activeState.detected = true;
+            autoDetectChildExe(g);
+          }
           // Auto-update exe name if it's different (e.g. loader vs actual game exe)
           if (checkResult.exeName && checkResult.exeName.toLowerCase() !== g.exe.toLowerCase()) {
             console.log(`Auto-updated game exe from folder check: ${g.exe} -> ${checkResult.exeName}`);
@@ -100,20 +104,24 @@ async function onProcessList(procs) {
       startSession(g.id);
       if (activeState) activeState.detected = true;
       toast(dict.toast_game_opened.replace('NAME', g.name));
-    } else if(!running && myActive) {
+    } else if(!running && myActive && activeState) {
       // Sadece otomatik algılanan veya klasör takipli (g.path tanımlı) session'lar process kapandığında kapatılır.
       if (!activeState.detected) {
-        // Oyunun açılması için 45 saniyelik bir tolerans süresi veriyoruz (manuel başlatma için)
         const elapsedMs = Date.now() - new Date(activeState.startTs).getTime();
-        const gracePeriodMs = 45000;
+        const gracePeriodMs = 5000;
+        console.log(`[onProcessList] Grace check: elapsed=${Math.round(elapsedMs/1000)}s, limit=${gracePeriodMs/1000}s, path=${g.path}, isPaused=${activeState?.isPaused}, isAutoPaused=${activeState?.isAutoPaused}`);
         if (elapsedMs < gracePeriodMs) continue;
 
         // Tolerans süresi bitti ve oyun hala açılmadıysa otomatik duraklat
-        if (!g.path) continue; // Yol yoksa hiç kapatma (klasik manuel mod)
+        if (!g.path) {
+          console.log(`[onProcessList] No path for ${g.name}, ignoring.`);
+          continue;
+        }
         
-        if (!activeState.isAutoPaused && !activeState.isPaused) {
-          pauseSession();
-          toast(dict.toast_game_not_running_paused);
+        if (activeState && !activeState.isAutoPaused && !activeState.isPaused) {
+          console.log(`[onProcessList] Grace period expired! Calling stopSession for ${g.name}...`);
+          stopSession();
+          toast(dict.toast_game_not_running_cancelled);
         }
         continue;
       }
@@ -124,7 +132,7 @@ async function onProcessList(procs) {
             toast(dict.toast_game_closed_saved.replace('NAME', g.name));
           }
         });
-      } else if (!activeState?.isPaused) {
+      } else if (activeState && !activeState.isPaused) {
         pauseSession();
         toast(dict.toast_game_closed_paused.replace('NAME', g.name));
       }
@@ -1011,6 +1019,41 @@ function renderSessionList() {
       });
     });
 
+    const edit = document.createElement('button');
+    edit.className = 's-edit';
+    edit.title = settings.lang === 'tr' ? 'Süreyi Düzenle' : 'Edit Duration';
+    edit.innerHTML = `
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+        <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4z"></path>
+      </svg>`;
+      
+    edit.addEventListener('click', e => {
+      e.stopPropagation();
+      const title = settings.lang === 'tr' ? 'Oturum Süresini Düzenle' : 'Edit Session Duration';
+      const label = settings.lang === 'tr' ? 'Yeni süreyi girin (Örn: 2:30:00 veya 90dk):' : 'Enter new duration (e.g. 2:30:00 or 90m):';
+      const defaultVal = fmtShort(s.durationMs);
+      
+      showPrompt(title, label, defaultVal, async (inputVal) => {
+        if (!inputVal) return;
+        const parsedMs = parseDurationInput(inputVal);
+        if (parsedMs !== null && parsedMs !== undefined && !isNaN(parsedMs)) {
+          const gi = games.findIndex(x => x.id === selectedId);
+          if (gi < 0) return;
+          const si = games[gi].sessions.findIndex(x => x.id === s.id);
+          if (si < 0) return;
+          games[gi].sessions[si].durationMs = parsedMs;
+          await saveGames();
+          renderSessionList();
+          renderStats();
+          renderSidebar();
+          toast(settings.lang === 'tr' ? 'Oturum süresi güncellendi' : 'Session duration updated');
+        } else {
+          toast(settings.lang === 'tr' ? 'Geçersiz süre formatı!' : 'Invalid duration format!');
+        }
+      });
+    });
+
     if (isMultiSelectMode) {
       const checkboxWrapper = document.createElement('div');
       checkboxWrapper.className = 'session-item-checkbox-wrapper';
@@ -1034,6 +1077,7 @@ function renderSessionList() {
     div.appendChild(info);
     div.appendChild(dur);
     if (!isMultiSelectMode) {
+      div.appendChild(edit);
       div.appendChild(del);
     }
     el.appendChild(div);

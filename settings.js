@@ -200,4 +200,4 @@ $('deleteAllDataBtn').addEventListener('click', () => {
   });
 });
 
-$('settingsOverlay').addEventListener('click', e => { if (e.target === $('settingsOverlay')) $('settingsOverlay').classList.remove('open'); });
+

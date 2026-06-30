@@ -52,6 +52,11 @@ function onWinStatus({ procName, idleMs }) {
   if (!activeState || activeState.isPaused) return;
 
   const g = gameById(activeGameId);
+  // Oyun henüz hiç açılmadıysa (tolerans süresindeyken) alt-tab/AFK kontrollerini yapma
+  if (g && g.exe && !activeState.detected) {
+    updateInact(false);
+    return;
+  }
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
 
   // ─ Manual mode (EXE yok) ─────────────────────────────────────────────
@@ -77,15 +82,30 @@ function onWinStatus({ procName, idleMs }) {
   // Otomatik algılanan session (detected=true): hem AFK hem alt-tab kontrolü yap.
   const isAutoSession = !!activeState.detected || (g && !!g.path);
 
+  const afkTh = settings.afkTimeout * 1000;
+
+  // Handle resuming from auto-pause, or early exit if still paused/AFK
+  if (activeState.isAutoPaused) {
+    if (gameFg) {
+      lastGameFocusedMs = Date.now();
+      resumeSession();
+      toast(dict.toast_returned_resumed);
+    } else if (!isAutoSession && afkTh > 0 && idleMs < afkTh) {
+      resumeSession();
+    } else {
+      updateInact(false);
+      return;
+    }
+  }
+
   if (gameFg) {
     // Oyun ön planda — alt-tab timer'ını sıfırla
     lastGameFocusedMs = Date.now();
-    if (activeState.isAutoPaused) { resumeSession(); toast(dict.toast_returned_resumed); }
 
     // Kural 1: Oyun içi AFK (input yoksa)
-    const afkTh = settings.afkTimeout * 1000;
     if (afkTh > 0 && idleMs >= afkTh) {
-      if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_ingame_afk_paused); }
+      doAutoPause();
+      toast(dict.toast_ingame_afk_paused);
     } else if (afkTh > 0) {
       const pct = Math.max(0, 100 - (idleMs / afkTh) * 100);
       updateInact(true, pct.toFixed(1), dict.inact_ingame_afk);
@@ -94,13 +114,9 @@ function onWinStatus({ procName, idleMs }) {
     }
   } else if (!isAutoSession) {
     // Manuel session + foreground eşleşmiyor → sadece AFK kontrolü
-    // (korsan/crack oyunlarda process adı farklı olabilir)
-    if (activeState.isAutoPaused && idleMs < (settings.afkTimeout * 1000 || Infinity)) {
-      resumeSession();
-    }
-    const afkTh = settings.afkTimeout * 1000;
     if (afkTh > 0 && idleMs >= afkTh) {
-      if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_afk_paused); }
+      doAutoPause();
+      toast(dict.toast_afk_paused);
     } else if (afkTh > 0) {
       const pct = Math.max(0, 100 - (idleMs / afkTh) * 100);
       updateInact(true, pct.toFixed(1), dict.inact_afk_tolerance);
@@ -113,7 +129,8 @@ function onWinStatus({ procName, idleMs }) {
     const outMs = Date.now() - lastGameFocusedMs;
 
     if (altTh > 0 && outMs >= altTh) {
-      if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_alttab_paused); }
+      doAutoPause();
+      toast(dict.toast_alttab_paused);
     } else if (altTh > 0) {
       const pct = Math.max(0, 100 - (outMs / altTh) * 100);
       updateInact(true, pct.toFixed(1), dict.inact_alttab_time);

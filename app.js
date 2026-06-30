@@ -457,7 +457,7 @@ $('welcomeAddBtn').addEventListener('click', e => openAddModal(e));
 $('welcomeIcon').addEventListener('click', e => openAddModal(e));
 $('addGameClose').addEventListener('click',closeAddModal);
 $('addGameCancel').addEventListener('click',closeAddModal);
-$('addGameOverlay').addEventListener('click',e=>{ if(e.target===$('addGameOverlay')) closeAddModal(); });
+
 
 $('newGameName').addEventListener('input', (e) => {
   if (e.isTrusted) {
@@ -660,7 +660,7 @@ function showConfirm(title,text,cb) {
 }
 $('confirmOk').addEventListener('click',()=>{ if(confirmCb) confirmCb(); $('confirmOverlay').classList.remove('open'); confirmCb=null; });
 $('confirmCancel').addEventListener('click',()=>{ $('confirmOverlay').classList.remove('open'); confirmCb=null; });
-$('confirmOverlay').addEventListener('click',e=>{ if(e.target===$('confirmOverlay')) { $('confirmOverlay').classList.remove('open'); confirmCb=null; }});
+
 
 // ─── Prompt Modal ─────────────────────────────────────────────────────────────
 let promptCb=null;
@@ -709,12 +709,7 @@ $('promptReset').addEventListener('click', () => {
     $('promptInput').select();
   }
 });
-$('promptOverlay').addEventListener('click',e=>{
-  if(e.target===$('promptOverlay')) {
-    $('promptOverlay').classList.remove('open');
-    promptCb=null;
-  }
-});
+
 // Allow Enter key to confirm inside prompt input
 $('promptInput').addEventListener('keydown', e => {
   if (e.key === 'Enter') {
@@ -755,9 +750,7 @@ $('hltbUnlinkBtn').addEventListener('click', () => {
 
 $('hltbClose').addEventListener('click', closeHltbModal);
 $('hltbCancel').addEventListener('click', closeHltbModal);
-$('hltbOverlay').addEventListener('click', e => {
-  if (e.target === $('hltbOverlay')) closeHltbModal();
-});
+
 
 async function handleHltbSearch() {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;

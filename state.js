@@ -53,6 +53,44 @@ function fmtDur(ms) {
 function fmtShort(ms) {
   const {h,m,s} = msToHMS(ms); return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
+function parseDurationInput(str) {
+  str = str.trim().toLowerCase();
+  
+  // Check for hh:mm:ss
+  let m = str.match(/^(\d+):(\d+):(\d+)$/);
+  if (m) {
+    return ((parseInt(m[1]) * 60 + parseInt(m[2])) * 60 + parseInt(m[3])) * 1000;
+  }
+  
+  // Check for hh:mm
+  m = str.match(/^(\d+):(\d+)$/);
+  if (m) {
+    return (parseInt(m[1]) * 60 + parseInt(m[2])) * 60 * 1000;
+  }
+  
+  // Parse combined units, e.g. "2h 30m" or "2sa 30dk"
+  let totalMs = 0;
+  let hasMatch = false;
+  
+  // Hours
+  m = str.match(/(\d+)\s*(h|sa|hour|hours|saat)/);
+  if (m) { totalMs += parseInt(m[1]) * 3600 * 1000; hasMatch = true; }
+  
+  // Minutes
+  m = str.match(/(\d+)\s*(m|dk|min|mins|minute|minutes|dakika)/);
+  if (m) { totalMs += parseInt(m[1]) * 60 * 1000; hasMatch = true; }
+  
+  // Seconds
+  m = str.match(/(\d+)\s*(s|sn|sec|secs|second|seconds|saniye)/);
+  if (m) { totalMs += parseInt(m[1]) * 1000; hasMatch = true; }
+  
+  // If it is just a plain number of minutes
+  if (!hasMatch && /^\d+$/.test(str)) {
+    return parseInt(str) * 60 * 1000;
+  }
+  
+  return hasMatch ? totalMs : null;
+}
 function todayKey() { return new Date().toISOString().slice(0,10); }
 function fmtDate(iso) {
   const d = new Date(iso), key = d.toISOString().slice(0,10);

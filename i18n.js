@@ -105,6 +105,7 @@ const TRANSLATIONS = {
     toast_prev_session_resumed: "🔄 Önceki oturum devam ettiriliyor…",
     toast_exe_updated: "Takip edilen EXE dosyası güncellendi",
     toast_game_not_running_paused: "⚠️ Oyun çalışmadığı için sayaç duraklatıldı",
+    toast_game_not_running_cancelled: "⚠️ Oyun çalışmadığı için sayaç iptal edildi",
     prompt_change_exe_title: "Takip Edilen EXE Değiştir",
     prompt_change_exe_label: "İzlenecek process adını (.exe) girin:",
     
@@ -325,6 +326,7 @@ const TRANSLATIONS = {
     toast_prev_session_resumed: "🔄 Resuming previous session…",
     toast_exe_updated: "Watched EXE updated",
     toast_game_not_running_paused: "⚠️ Game not running — timer paused",
+    toast_game_not_running_cancelled: "⚠️ Game not running — timer cancelled",
     prompt_change_exe_title: "Change Watched EXE",
     prompt_change_exe_label: "Enter process name (.exe) to watch:",
     
