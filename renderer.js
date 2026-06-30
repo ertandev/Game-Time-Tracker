@@ -1,18 +1,99 @@
 'use strict';
 
 // ─── EXE Process Monitor ──────────────────────────────────────────────────────
-function onProcessList(procs) {
+const IGNORED_CHILD_EXES = new Set([
+  'conhost.exe', 'cmd.exe', 'powershell.exe', 'bash.exe', 'wsl.exe',
+  'steam.exe', 'steamwebhelper.exe', 'goggalaxy.exe', 'epicgameslauncher.exe', 'galaxyclient.exe',
+  'origin.exe', 'ea.exe', 'uplay.exe', 'connect.exe', 'lesta.exe', 'battlenet.exe',
+  'crashreporter.exe', 'unitycrashhandler64.exe', 'unitycrashhandler32.exe', 'werfault.exe',
+  'cefsharp.browsersubprocess.exe', 'chrome.exe', 'firefox.exe', 'msedge.exe',
+  'epicgameslauncher.exe', 'epicwebhelper.exe', 'eadesktop.exe', 'eabackgroundservice.exe',
+  'gamedisplaywnd', 'gameoverlayui.exe', 'socialclubhelper.exe', 'rockstarService.exe',
+  'unins000.exe', 'uninstall.exe', 'setup.exe'
+]);
+
+let lastChildDetectionTs = 0;
+
+async function autoDetectChildExe(g) {
+  const now = Date.now();
+  if (now - lastChildDetectionTs < 10000) return;
+  lastChildDetectionTs = now;
+
+  try {
+    const children = await window.electronAPI.getChildProcesses(g.exe);
+    if (!children || children.length === 0) return;
+
+    const parentPathNorm = g.path.toLowerCase().replace(/\//g, '\\');
+    const parentDir = parentPathNorm.substring(0, parentPathNorm.lastIndexOf('\\') + 1);
+
+    for (const child of children) {
+      if (!child.name || !child.path) continue;
+      const childNameLower = child.name.toLowerCase();
+
+      if (childNameLower === g.exe.toLowerCase()) continue;
+      if (IGNORED_CHILD_EXES.has(childNameLower)) continue;
+
+      const childPathNorm = child.path.toLowerCase().replace(/\//g, '\\');
+      if (childPathNorm.startsWith(parentDir)) {
+        console.log(`Auto-detected real game process child: ${childNameLower} under ${g.name}`);
+        g.exe = childNameLower;
+        g.iconAttempted = false;
+        await saveGames();
+        
+        const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+        const msg = settings.lang === 'tr' 
+          ? `🎮 Oyun süreci otomatik olarak algılandı: ${child.name}` 
+          : `🎮 Game process auto-detected: ${child.name}`;
+        toast(msg);
+        
+        renderSidebar();
+        renderGameHeader();
+        break;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to auto-detect child process:', e);
+  }
+}
+
+async function onProcessList(procs) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
-  games.forEach(g => {
-    if(!g.exe) return;
+  for (const g of games) {
+    if(!g.exe) continue;
     const exeKey = g.exe.toLowerCase().replace(/\.exe$/,'');
-    const running = procs.some(p => p.includes(exeKey));
+    let running = procs.some(p => p.includes(exeKey));
     const myActive = activeGameId===g.id && activeState;
     if (running && !g.icon && !g.iconAttempted) {
       checkAndFetchIcon(g);
     }
     if (running && myActive) {
       activeState.detected = true;
+      if (isElectron && g.path) {
+        autoDetectChildExe(g);
+      }
+    }
+    
+    // If not running by name, check if any process is running in the game's directory
+    if (!running && myActive && isElectron && g.path) {
+      try {
+        const checkResult = await window.electronAPI.checkGameRunning({ exeName: g.exe, gamePath: g.path });
+        if (checkResult && checkResult.running) {
+          running = true;
+          // Auto-update exe name if it's different (e.g. loader vs actual game exe)
+          if (checkResult.exeName && checkResult.exeName.toLowerCase() !== g.exe.toLowerCase()) {
+            console.log(`Auto-updated game exe from folder check: ${g.exe} -> ${checkResult.exeName}`);
+            g.exe = checkResult.exeName.toLowerCase();
+            g.iconAttempted = false;
+            await saveGames();
+            renderSidebar();
+            if (selectedId === g.id) {
+              renderGameHeader();
+            }
+          }
+        }
+      } catch (e) {
+        console.error('Failed folder-based process check:', e);
+      }
     }
     
     if(running && !myActive && !activeState) {
@@ -20,11 +101,21 @@ function onProcessList(procs) {
       if (activeState) activeState.detected = true;
       toast(dict.toast_game_opened.replace('NAME', g.name));
     } else if(!running && myActive) {
-      // Eger oyun bu oturum boyunca en az bir kere calisir durumda algılandıysa tolerans suresini gec,
-      // kapatildigi an (veya force-close edildigi an) sayaci aninda durdur/kaydet.
+      // Sadece otomatik algılanan veya klasör takipli (g.path tanımlı) session'lar process kapandığında kapatılır.
       if (!activeState.detected) {
+        // Oyunun açılması için 45 saniyelik bir tolerans süresi veriyoruz (manuel başlatma için)
         const elapsedMs = Date.now() - new Date(activeState.startTs).getTime();
-        if (elapsedMs < 30000) return;
+        const gracePeriodMs = 45000;
+        if (elapsedMs < gracePeriodMs) continue;
+
+        // Tolerans süresi bitti ve oyun hala açılmadıysa otomatik duraklat
+        if (!g.path) continue; // Yol yoksa hiç kapatma (klasik manuel mod)
+        
+        if (!activeState.isAutoPaused && !activeState.isPaused) {
+          pauseSession();
+          toast(dict.toast_game_not_running_paused);
+        }
+        continue;
       }
 
       if (settings.autoSaveOnClose) {
@@ -38,7 +129,7 @@ function onProcessList(procs) {
         toast(dict.toast_game_closed_paused.replace('NAME', g.name));
       }
     }
-  });
+  }
   // Update auto-status dot for selected game
   if(selectedId) {
     const g = gameById(selectedId);
@@ -1446,7 +1537,7 @@ function renderScanList(procs) {
     
     const nameSpan = document.createElement('span');
     nameSpan.className = 'scan-item-name';
-    nameSpan.textContent = p.name;
+    nameSpan.textContent = p.title ? `${p.title} (${p.name})` : p.name;
     
     const pidSpan = document.createElement('span');
     pidSpan.className = 'scan-item-pid';
@@ -1461,7 +1552,7 @@ function renderScanList(procs) {
       scanSelectedExe  = item.dataset.exe;
       scanSelectedName = item.dataset.name;
       scanSelectedPath = item.dataset.path;
-      $('newGameName').value = formatProcessName(scanSelectedExe);
+      $('newGameName').value = p.title || formatProcessName(scanSelectedExe);
       $('newGameName').dispatchEvent(new Event('input'));
     });
     
@@ -1479,9 +1570,9 @@ function showCustomContextMenu(e, gameId) {
 
   menu.classList.remove('hidden');
   
-  // Position menu
-  const menuWidth = 210;
-  const menuHeight = 250;
+  // Position menu - dynamically measured
+  const menuWidth = menu.offsetWidth || 230;
+  const menuHeight = menu.offsetHeight || 380;
   let left = e.clientX;
   let top = e.clientY;
   
@@ -1491,6 +1582,9 @@ function showCustomContextMenu(e, gameId) {
   if (top + menuHeight > window.innerHeight) {
     top = window.innerHeight - menuHeight - 10;
   }
+  
+  if (left < 10) left = 10;
+  if (top < 10) top = 10;
   
   menu.style.left = `${left}px`;
   menu.style.top = `${top}px`;
@@ -1557,6 +1651,9 @@ if (isElectron) {
             break;
           case 'rename':
             await handleRenameGame(g);
+            break;
+          case 'change-exe':
+            await handleChangeExe(g);
             break;
           case 'clear-sessions':
             await handleClearSessions(g);
@@ -1748,6 +1845,36 @@ async function handleRenameGame(g) {
       toast(settings.lang === 'tr' ? 'Oyun yeniden adlandırıldı' : 'Game renamed');
     }
   }, defaultName);
+}
+
+async function handleChangeExe(g) {
+  const title = TRANSLATIONS[settings.lang || 'tr']?.prompt_change_exe_title || 'İzlenen EXE Dosyasını Değiştir';
+  const label = TRANSLATIONS[settings.lang || 'tr']?.prompt_change_exe_label || 'İzlenecek process adını (.exe) girin:';
+  
+  showPrompt(title, label, g.exe || '', async (newExe) => {
+    if (newExe !== null) {
+      let exeVal = newExe.trim();
+      if (exeVal) {
+        if (!exeVal.toLowerCase().endsWith('.exe')) exeVal += '.exe';
+        g.exe = exeVal.toLowerCase();
+        
+        // Reset the path and icon attempts to re-resolve for the new process
+        g.path = '';
+        g.iconAttempted = false;
+        
+        await saveGames();
+        renderSidebar();
+        if (selectedId === g.id) {
+          renderGameHeader();
+        }
+        toast(TRANSLATIONS[settings.lang || 'tr']?.toast_exe_updated || 'Takip edilen EXE güncellendi');
+        
+        if (isElectron) {
+          checkAndFetchIcon(g);
+        }
+      }
+    }
+  }, g.exe || '');
 }
 
 async function handleClearSessions(g) {

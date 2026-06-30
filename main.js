@@ -146,10 +146,22 @@ public class WinHelper {
   [DllImport(\"user32.dll\")] public static extern int GetWindowThreadProcessId(IntPtr h, out int pid);
   [DllImport(\"user32.dll\")] static extern bool GetLastInputInfo(ref LASTINPUTINFO p);
   [StructLayout(LayoutKind.Sequential)] struct LASTINPUTINFO { public uint cbSize; public uint dwTime; }
+  
+  [DllImport(\"kernel32.dll\", SetLastError = true)]
+  public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+  
+  [DllImport(\"kernel32.dll\", SetLastError = true, CharSet = CharSet.Auto)]
+  public static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, System.Text.StringBuilder lpExeName, ref int lpdwSize);
+  
+  [DllImport(\"kernel32.dll\", SetLastError = true)]
+  [return: MarshalAs(UnmanagedType.Bool)]
+  public static extern bool CloseHandle(IntPtr hObject);
+
   public static uint GetIdleMs() {
     var i = new LASTINPUTINFO(); i.cbSize = (uint)System.Runtime.InteropServices.Marshal.SizeOf(i);
     GetLastInputInfo(ref i); return (uint)(Environment.TickCount - i.dwTime);
   }
+  
   public static string GetActiveProcessName() {
     IntPtr hwnd = GetForegroundWindow();
     int pid = 0;
@@ -157,9 +169,24 @@ public class WinHelper {
     if (pid == 0) return "";
     try {
       using (var p = System.Diagnostics.Process.GetProcessById(pid)) {
-        return p.ProcessName.ToLower();
+        return p.ProcessName.ToLowerInvariant();
       }
     } catch {
+      // Fallback for elevated processes (PROCESS_QUERY_LIMITED_INFORMATION = 0x1000)
+      IntPtr hProcess = OpenProcess(0x1000, false, pid);
+      if (hProcess != IntPtr.Zero) {
+        try {
+          var sb = new System.Text.StringBuilder(1024);
+          int size = sb.Capacity;
+          if (QueryFullProcessImageName(hProcess, 0, sb, ref size)) {
+            string fullPath = sb.ToString();
+            string fileName = System.IO.Path.GetFileNameWithoutExtension(fullPath);
+            return fileName.ToLowerInvariant();
+          }
+        } finally {
+          CloseHandle(hProcess);
+        }
+      }
       return "";
     }
   }
@@ -500,6 +527,170 @@ if ($found) {
     });
   })
 );
+
+ipcMain.handle('get-child-processes', (_, parentExeName) =>
+  new Promise(resolve => {
+    const safeExe = parentExeName.replace(/[^a-zA-Z0-9._-]/g, '');
+    if (!safeExe) return resolve([]);
+    const nameWithoutExt = safeExe.replace(/\.exe$/i, '');
+    const script = `
+$parentName = '${nameWithoutExt}'
+$parents = Get-Process -Name $parentName -ErrorAction SilentlyContinue
+if (-not $parents) {
+    Write-Output "[]"
+    exit
+}
+$pids = $parents.Id
+$query = "SELECT Name, ExecutablePath FROM Win32_Process WHERE " + (($pids | ForEach-Object { "ParentProcessId = $_" }) -join " OR ")
+$children = Get-WmiObject -Query $query -ErrorAction SilentlyContinue
+if (-not $children) {
+    Write-Output "[]"
+    exit
+}
+$result = @()
+foreach ($c in $children) {
+    $result += [PSCustomObject]@{
+        name = $c.Name
+        path = $c.ExecutablePath
+    }
+}
+Write-Output (ConvertTo-Json -InputObject @($result) -Compress)
+`;
+    const buffer = Buffer.from(script, 'utf16le');
+    const base64 = buffer.toString('base64');
+    exec(`powershell -NoProfile -NonInteractive -EncodedCommand ${base64}`, { windowsHide: true }, (err, stdout) => {
+      if (err) return resolve([]);
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        resolve(Array.isArray(parsed) ? parsed : [parsed]);
+      } catch (e) {
+        resolve([]);
+      }
+    });
+  })
+);
+
+ipcMain.handle('check-game-running', (_, { exeName, gamePath }) =>
+  new Promise(resolve => {
+    const safeExe = exeName ? exeName.replace(/[^a-zA-Z0-9._-]/g, '') : '';
+    const standardizedExe = safeExe.toLowerCase().endsWith('.exe') ? safeExe : (safeExe ? safeExe + '.exe' : '');
+    const nameWithoutExt = standardizedExe.replace(/\.exe$/i, '');
+    
+    let script = '';
+    if (gamePath) {
+      const pathNorm = gamePath.replace(/\//g, '\\');
+      const lastSlash = pathNorm.lastIndexOf('\\');
+      const gameDir = lastSlash >= 0 ? pathNorm.substring(0, lastSlash + 1) : '';
+      
+      if (gameDir) {
+        script = `
+Add-Type -TypeDefinition @"
+using System;
+using System.Runtime.InteropServices;
+using System.Text;
+public class ProcessPathHelper {
+  [DllImport(\\"kernel32.dll\\", SetLastError = true)]
+  public static extern IntPtr OpenProcess(int dwDesiredAccess, bool bInheritHandle, int dwProcessId);
+
+  [DllImport(\\"kernel32.dll\\", SetLastError = true, CharSet = CharSet.Auto)]
+  public static extern bool QueryFullProcessImageName(IntPtr hProcess, int dwFlags, StringBuilder lpExeName, ref int lpdwSize);
+
+  [DllImport(\\"kernel32.dll\\", SetLastError = true)]
+  public static extern bool CloseHandle(IntPtr hObject);
+
+  public static string GetProcessPath(int pid) {
+    IntPtr hProcess = OpenProcess(0x1000, false, pid); // PROCESS_QUERY_LIMITED_INFORMATION = 0x1000
+    if (hProcess != IntPtr.Zero) {
+      try {
+        var sb = new StringBuilder(1024);
+        int size = sb.Capacity;
+        if (QueryFullProcessImageName(hProcess, 0, sb, ref size)) {
+          return sb.ToString();
+        }
+      } finally {
+        CloseHandle(hProcess);
+      }
+    }
+    return "";
+  }
+}
+"@ -ErrorAction SilentlyContinue
+
+$gameDir = '${gameDir.replace(/'/g, "''")}'
+$exeName = '${standardizedExe.replace(/'/g, "''")}'
+$nameNoExt = '${nameWithoutExt.replace(/'/g, "''")}'
+$ignored = @('cmd.exe', 'powershell.exe', 'conhost.exe', 'explorer.exe', 'wmic.exe', 'tasklist.exe', 'bash.exe', 'wsl.exe')
+
+# 1. Fast check if direct process is running by name
+if ($nameNoExt) {
+    $proc = Get-Process -Name $nameNoExt -ErrorAction SilentlyContinue
+    if ($proc) {
+        $res = @{ running = $true; exeName = $exeName }
+        Write-Output (ConvertTo-Json -InputObject $res -Compress)
+        exit
+    }
+}
+
+# 2. Deeper folder-based check (using C# helper for elevated processes)
+$runningInDir = @()
+foreach ($p in Get-Process) {
+    $name = $p.ProcessName.ToLowerInvariant() + ".exe"
+    if ($ignored -contains $name) { continue }
+    
+    $path = [ProcessPathHelper]::GetProcessPath($p.Id)
+    if ($path -and $path.StartsWith($gameDir, [System.StringComparison]::OrdinalIgnoreCase)) {
+        $runningInDir += [PSCustomObject]@{
+            Name = $p.ProcessName + ".exe"
+            Path = $path
+        }
+    }
+}
+
+if ($runningInDir) {
+    $procArray = @($runningInDir)
+    $act = $procArray[0]
+    $res = @{ running = $true; exeName = $act.Name }
+    Write-Output (ConvertTo-Json -InputObject $res -Compress)
+} else {
+    $res = @{ running = $false }
+    Write-Output (ConvertTo-Json -InputObject $res -Compress)
+}
+`;
+      }
+    }
+    
+    if (!script) {
+      if (!nameWithoutExt) {
+        return resolve({ running: false });
+      }
+      script = `
+$nameNoExt = '${nameWithoutExt.replace(/'/g, "''")}'
+$proc = Get-Process -Name $nameNoExt -ErrorAction SilentlyContinue
+if ($proc) {
+    $res = @{ running = $true; exeName = '${standardizedExe.replace(/'/g, "''")}' }
+    Write-Output (ConvertTo-Json -InputObject $res -Compress)
+} else {
+    $res = @{ running = $false }
+    Write-Output (ConvertTo-Json -InputObject $res -Compress)
+}
+`;
+    }
+
+    const buffer = Buffer.from(script, 'utf16le');
+    const base64 = buffer.toString('base64');
+    exec(`powershell -NoProfile -NonInteractive -EncodedCommand ${base64}`, { windowsHide: true }, (err, stdout) => {
+      if (err) return resolve({ running: false });
+      try {
+        const parsed = JSON.parse(stdout.trim());
+        resolve(parsed && typeof parsed.running === 'boolean' ? parsed : { running: false });
+      } catch (e) {
+        resolve({ running: false });
+      }
+    });
+  })
+);
+
+
 
 ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
   const HLTB_BASE_URL = 'https://howlongtobeat.com';

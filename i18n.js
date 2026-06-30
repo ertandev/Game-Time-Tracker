@@ -103,6 +103,10 @@ const TRANSLATIONS = {
     toast_err_select_list: "⚠️ Listeden seç",
     toast_game_added: '✅ "NAME" eklendi',
     toast_prev_session_resumed: "🔄 Önceki oturum devam ettiriliyor…",
+    toast_exe_updated: "Takip edilen EXE dosyası güncellendi",
+    toast_game_not_running_paused: "⚠️ Oyun çalışmadığı için sayaç duraklatıldı",
+    prompt_change_exe_title: "Takip Edilen EXE Değiştir",
+    prompt_change_exe_label: "İzlenecek process adını (.exe) girin:",
     
     dur_hour: "sa",
     dur_min: "dk",
@@ -132,6 +136,7 @@ const TRANSLATIONS = {
     menu_reset_icon: "Simgeyi Sıfırla",
     menu_change_color: "Accent Rengini Değiştir",
     menu_rename: "Oyunu Yeniden Adlandır",
+    menu_change_exe: "Takip Edilen EXE Değiştir...",
     menu_clear_sessions: "Oturum Geçmişini Temizle",
     menu_delete: "Oyunu Sil",
     
@@ -318,6 +323,10 @@ const TRANSLATIONS = {
     toast_err_select_list: "⚠️ Please select from list",
     toast_game_added: '✅ "NAME" added',
     toast_prev_session_resumed: "🔄 Resuming previous session…",
+    toast_exe_updated: "Watched EXE updated",
+    toast_game_not_running_paused: "⚠️ Game not running — timer paused",
+    prompt_change_exe_title: "Change Watched EXE",
+    prompt_change_exe_label: "Enter process name (.exe) to watch:",
     
     dur_hour: "h",
     dur_min: "m",
@@ -347,6 +356,7 @@ const TRANSLATIONS = {
     menu_reset_icon: "Reset Icon",
     menu_change_color: "Change Accent Color",
     menu_rename: "Rename Game",
+    menu_change_exe: "Change Watched EXE...",
     menu_clear_sessions: "Clear Session History",
     menu_delete: "Delete Game",
     

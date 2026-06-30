@@ -29,7 +29,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openFileLocation: (filePath) => ipcRenderer.invoke('open-file-location', filePath),
   fetchHltbTime: (gameName) => ipcRenderer.invoke('fetch-hltb-time', gameName),
   fetchHltbDlcs: (gameId) => ipcRenderer.invoke('fetch-hltb-dlcs', gameId),
-  fetchGameRatings: (gameName) => ipcRenderer.invoke('fetch-game-ratings', gameName)
+  fetchGameRatings: (gameName) => ipcRenderer.invoke('fetch-game-ratings', gameName),
+  getChildProcesses: (parentExeName) => ipcRenderer.invoke('get-child-processes', parentExeName),
+  checkGameRunning: (args) => ipcRenderer.invoke('check-game-running', args)
 });
 
 

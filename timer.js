@@ -60,6 +60,11 @@ function onWinStatus({ procName, idleMs }) {
   const exeBase = g.exe.toLowerCase().replace(/\.exe$/, '');
   const gameFg  = procName.includes(exeBase);
 
+  // Manuel başlatılan session (detected=false): process eşleşmesi güvenilmez
+  // olabilir (korsan/crack oyunlar vs.), sadece AFK kontrolü yap.
+  // Otomatik algılanan session (detected=true): hem AFK hem alt-tab kontrolü yap.
+  const isAutoSession = !!activeState.detected || (g && !!g.path);
+
   if (gameFg) {
     // Oyun ön planda — alt-tab timer'ını sıfırla
     lastGameFocusedMs = Date.now();
@@ -77,8 +82,25 @@ function onWinStatus({ procName, idleMs }) {
     } else {
       clearInact();
     }
+  } else if (!isAutoSession) {
+    // Manuel session + foreground eşleşmiyor → sadece AFK kontrolü
+    // (korsan/crack oyunlarda process adı farklı olabilir)
+    if (activeState.isAutoPaused && idleMs < (settings.afkTimeout * 1000 || Infinity)) {
+      resumeSession();
+    }
+    const afkTh = settings.afkTimeout * 1000;
+    if (afkTh > 0 && idleMs >= afkTh) {
+      if (!activeState.isAutoPaused) { doAutoPause(); toast(dict.toast_afk_paused); }
+    } else if (afkTh > 0) {
+      const pct = Math.max(0, 100 - (idleMs / afkTh) * 100);
+      $('inactWrap').classList.add('on');
+      $('inactBar').style.setProperty('--p', pct.toFixed(1) + '%');
+      $('inactivityLabel').textContent = dict.inact_afk_tolerance;
+    } else {
+      clearInact();
+    }
   } else {
-    // Kural 2: Oyun arka planda (alt-tab)
+    // Otomatik session + oyun arka planda (alt-tab)
     const altTh = settings.altTabTimeout * 1000;
     const outMs = Date.now() - lastGameFocusedMs;
 

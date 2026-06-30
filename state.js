@@ -435,6 +435,9 @@ async function updateGameHltbData(gameId, hltbData) {
   const g = gameById(gameId);
   if (!g) return;
   g.hltbData = hltbData;
+  if (hltbData && hltbData.name) {
+    g.name = hltbData.name;
+  }
   delete g.ratings;
   await saveGames();
 }

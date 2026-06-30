@@ -28,3 +28,15 @@ out/
 build/
 app-builds/
 release/
+
+# Local workspace scratch files
+scratch/
+
+# RTK (Rust Token Killer) metadata
+.rtk/
+
+# Agent customization files
+.agents/
+
+# Claude CLI developer instructions
+CLAUDE.md
