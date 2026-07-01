@@ -452,6 +452,426 @@ function closeHltbModal() {
 }
 window.closeHltbModal = closeHltbModal;
 
+let currentCalendarDate = new Date();
+let selectedCalendarDate = new Date();
+let selectedHour = 12;
+let selectedMinute = 0;
+
+function populateCustomTimePicker() {
+  const hourCol = $('timeHourColumn');
+  const minCol = $('timeMinColumn');
+  if (!hourCol || !minCol) return;
+  
+  hourCol.innerHTML = '';
+  minCol.innerHTML = '';
+  
+  for (let h = 0; h < 24; h++) {
+    const cell = document.createElement('div');
+    cell.className = 'time-cell' + (h === selectedHour ? ' selected' : '');
+    cell.textContent = String(h).padStart(2, '0');
+    cell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectedHour = h;
+      updateTimeInputVal();
+      populateCustomTimePicker();
+    });
+    hourCol.appendChild(cell);
+    if (h === selectedHour) {
+      setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+    }
+  }
+  
+  for (let m = 0; m < 60; m++) {
+    const cell = document.createElement('div');
+    cell.className = 'time-cell' + (m === selectedMinute ? ' selected' : '');
+    cell.textContent = String(m).padStart(2, '0');
+    cell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      selectedMinute = m;
+      updateTimeInputVal();
+      populateCustomTimePicker();
+    });
+    minCol.appendChild(cell);
+    if (m === selectedMinute) {
+      setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+    }
+  }
+}
+
+function updateTimeInputVal() {
+  const input = $('newSessionTime');
+  if (input) {
+    input.value = `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
+  }
+}
+
+function renderCustomCalendar() {
+  const calMonthYear = $('calMonthYear');
+  const calDays = $('calendarDays');
+  const calWeekdays = document.querySelector('.calendar-weekdays');
+  if (!calMonthYear || !calDays || !calWeekdays) return;
+
+  const lang = settings.lang || 'tr';
+  const trMonths = ['Ocak', 'Şubat', 'Mart', 'Nisan', 'Mayıs', 'Haziran', 'Temmuz', 'Ağustos', 'Eylül', 'Ekim', 'Kasım', 'Aralık'];
+  const enMonths = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+  const months = lang === 'tr' ? trMonths : enMonths;
+
+  const trWeekdays = ['Pz', 'Pt', 'Sa', 'Ça', 'Pe', 'Cu', 'Ct'];
+  const enWeekdays = ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'];
+  const weekdays = lang === 'tr' ? trWeekdays : enWeekdays;
+
+  calWeekdays.innerHTML = weekdays.map(day => `<span>${day}</span>`).join('');
+
+  const year = currentCalendarDate.getFullYear();
+  const month = currentCalendarDate.getMonth();
+
+  calMonthYear.textContent = `${months[month]} ${year}`;
+  calDays.innerHTML = '';
+
+  const firstDay = new Date(year, month, 1).getDay();
+  const totalDays = new Date(year, month + 1, 0).getDate();
+
+  for (let i = 0; i < firstDay; i++) {
+    const emptyDiv = document.createElement('div');
+    emptyDiv.className = 'calendar-day empty';
+    calDays.appendChild(emptyDiv);
+  }
+
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  
+  for (let day = 1; day <= totalDays; day++) {
+    const dayDiv = document.createElement('div');
+    dayDiv.className = 'calendar-day';
+    dayDiv.textContent = day;
+
+    if (day === today.getDate() && month === today.getMonth() && year === today.getFullYear()) {
+      dayDiv.classList.add('today');
+    }
+
+    if (day === selectedCalendarDate.getDate() && month === selectedCalendarDate.getMonth() && year === selectedCalendarDate.getFullYear()) {
+      dayDiv.classList.add('selected');
+    }
+
+    const thisDate = new Date(year, month, day);
+    if (thisDate > todayMidnight) {
+      dayDiv.classList.add('disabled');
+    } else {
+      dayDiv.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedCalendarDate = new Date(year, month, day);
+        
+        const selYear = selectedCalendarDate.getFullYear();
+        const selMonth = String(selectedCalendarDate.getMonth() + 1).padStart(2, '0');
+        const selDay = String(selectedCalendarDate.getDate()).padStart(2, '0');
+        $('newSessionDate').value = `${selYear}-${selMonth}-${selDay}`;
+        
+        $('customCalendar').classList.remove('open');
+        renderCustomCalendar();
+      });
+    }
+
+    calDays.appendChild(dayDiv);
+  }
+}
+
+function openAddSessionModal() {
+  const g = gameById(selectedId);
+  if (!g) return;
+  
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  
+  // Set date to today (local YYYY-MM-DD)
+  const today = new Date();
+  selectedCalendarDate = today;
+  currentCalendarDate = new Date(today);
+  
+  const year = today.getFullYear();
+  const month = String(today.getMonth() + 1).padStart(2, '0');
+  const day = String(today.getDate()).padStart(2, '0');
+  $('newSessionDate').value = `${year}-${month}-${day}`;
+  renderCustomCalendar();
+  
+  // Set current local time to Saat field
+  selectedHour = today.getHours();
+  selectedMinute = today.getMinutes();
+  updateTimeInputVal();
+  
+  const picker = $('customTimePicker');
+  if (picker) picker.classList.remove('open');
+  
+  // Reset fields
+  $('newSessionHours').value = '';
+  $('newSessionMinutes').value = '';
+  $('newSessionSeconds').value = '';
+  
+  // Populate dynamic select options
+  const targetSelect = $('newSessionTarget');
+  targetSelect.innerHTML = '';
+  
+  const mainOpt = document.createElement('option');
+  mainOpt.value = 'main';
+  mainOpt.textContent = dict.dlc_main_game;
+  targetSelect.appendChild(mainOpt);
+  
+  if (g.dlcs && g.dlcs.length) {
+    g.dlcs.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name;
+      targetSelect.appendChild(opt);
+    });
+  }
+  
+  // Default selection
+  if (sessionFilterTab && sessionFilterTab !== 'overall') {
+    targetSelect.value = sessionFilterTab;
+  } else {
+    targetSelect.value = 'main';
+  }
+  
+  $('addSessionOverlay').classList.add('open');
+  setTimeout(() => $('newSessionHours').focus(), 50);
+}
+
+function closeAddSessionModal() {
+  $('addSessionOverlay').classList.remove('open');
+  const cal = $('customCalendar');
+  if (cal) cal.classList.remove('open');
+  const picker = $('customTimePicker');
+  if (picker) picker.classList.remove('open');
+}
+
+// Global Stepper Repeat & Acceleration Logic
+let stepperTimer = null;
+let stepperDelay = 150;
+const stepperMinDelay = 30;
+let activeStepperInput = null;
+let activeStepperBtn = null;
+
+function stepValue(input, btn) {
+  if (!input || !btn) return;
+  const min = parseInt(input.getAttribute('min') || '0', 10);
+  const max = parseInt(input.getAttribute('max') || '999', 10);
+  let val = parseInt(input.value || '0', 10);
+  
+  if (btn.classList.contains('btn-plus')) {
+    val = Math.min(max, val + 1);
+  } else if (btn.classList.contains('btn-minus')) {
+    val = Math.max(min, val - 1);
+  }
+  
+  input.value = val;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function startStepperHold(input, btn) {
+  stopStepperHold();
+  
+  activeStepperInput = input;
+  activeStepperBtn = btn;
+  stepperDelay = 150;
+  
+  stepValue(input, btn);
+  
+  stepperTimer = setTimeout(runHoldCycle, 400); // 400ms delay before repeat starts
+}
+
+function runHoldCycle() {
+  if (!activeStepperInput || !activeStepperBtn) return;
+  
+  stepValue(activeStepperInput, activeStepperBtn);
+  
+  stepperDelay = Math.max(stepperMinDelay, stepperDelay - 20);
+  stepperTimer = setTimeout(runHoldCycle, stepperDelay);
+}
+
+function stopStepperHold() {
+  if (stepperTimer) {
+    clearTimeout(stepperTimer);
+    stepperTimer = null;
+  }
+  activeStepperInput = null;
+  activeStepperBtn = null;
+}
+
+// Global Stepper mousehold registers
+document.addEventListener('mousedown', (e) => {
+  const btn = e.target.closest('.stepper-btn');
+  if (!btn) return;
+  
+  const stepper = btn.closest('.stepper');
+  if (!stepper) return;
+  
+  const input = stepper.querySelector('.stepper-input');
+  if (!input) return;
+  
+  startStepperHold(input, btn);
+});
+
+document.addEventListener('mouseup', stopStepperHold);
+document.addEventListener('mouseleave', stopStepperHold);
+
+// Setup calendar listeners
+$('calPrevMonth').addEventListener('click', (e) => {
+  e.stopPropagation();
+  currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1);
+  renderCustomCalendar();
+});
+
+$('calNextMonth').addEventListener('click', (e) => {
+  e.stopPropagation();
+  currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1);
+  renderCustomCalendar();
+});
+
+$('newSessionDate').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const picker = $('customTimePicker');
+  if (picker) picker.classList.remove('open');
+  
+  $('customCalendar').classList.toggle('open');
+  currentCalendarDate = new Date(selectedCalendarDate);
+  renderCustomCalendar();
+});
+
+$('newSessionTime').addEventListener('click', (e) => {
+  e.stopPropagation();
+  const cal = $('customCalendar');
+  if (cal) cal.classList.remove('open');
+  
+  $('customTimePicker').classList.toggle('open');
+  populateCustomTimePicker();
+});
+
+// Update calendar search input handler for manual typing
+$('newSessionDate').addEventListener('input', (e) => {
+  const val = e.target.value.trim();
+  const match = val.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (match) {
+    const year = parseInt(match[1], 10);
+    const month = parseInt(match[2], 10) - 1;
+    const day = parseInt(match[3], 10);
+    
+    const d = new Date(year, month, day);
+    if (d.getFullYear() === year && d.getMonth() === month && d.getDate() === day) {
+      const today = new Date();
+      const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      if (d <= todayMidnight) {
+        selectedCalendarDate = d;
+        currentCalendarDate = new Date(d);
+        renderCustomCalendar();
+      }
+    }
+  }
+});
+
+document.addEventListener('click', (e) => {
+  const cal = $('customCalendar');
+  const dInput = $('newSessionDate');
+  if (cal && cal.classList.contains('open') && !cal.contains(e.target) && e.target !== dInput) {
+    cal.classList.remove('open');
+  }
+  
+  const picker = $('customTimePicker');
+  const tInput = $('newSessionTime');
+  if (picker && picker.classList.contains('open') && !picker.contains(e.target) && e.target !== tInput) {
+    picker.classList.remove('open');
+  }
+});
+
+$('addSessionBtn').addEventListener('click', openAddSessionModal);
+$('addSessionClose').addEventListener('click', closeAddSessionModal);
+$('addSessionCancel').addEventListener('click', closeAddSessionModal);
+$('addSessionConfirm').addEventListener('click', async () => {
+  const g = gameById(selectedId);
+  if (!g) return;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  
+  const dateVal = $('newSessionDate').value.trim();
+  const dateMatch = dateVal.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if (!dateMatch) {
+    toast(settings.lang === 'tr' ? "⚠️ Geçersiz tarih formatı (YYYY-MM-DD olmalı)" : "⚠️ Invalid date format (must be YYYY-MM-DD)");
+    return;
+  }
+  
+  const year = parseInt(dateMatch[1], 10);
+  const month = parseInt(dateMatch[2], 10) - 1;
+  const day = parseInt(dateMatch[3], 10);
+  
+  const checkDate = new Date(year, month, day);
+  if (checkDate.getFullYear() !== year || checkDate.getMonth() !== month || checkDate.getDate() !== day) {
+    toast(settings.lang === 'tr' ? "⚠️ Lütfen geçerli bir tarih seçin" : "⚠️ Please select a valid date");
+    return;
+  }
+  
+  const today = new Date();
+  const todayMidnight = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  if (checkDate > todayMidnight) {
+    toast(settings.lang === 'tr' ? "⚠️ Gelecek bir tarih seçemezsiniz" : "⚠️ You cannot select a future date");
+    return;
+  }
+  
+  const timeVal = $('newSessionTime').value || '12:00';
+  const timeParts = timeVal.split(':');
+  const hour = parseInt(timeParts[0], 10) || 12;
+  const minute = parseInt(timeParts[1], 10) || 0;
+  
+  const startD = new Date(year, month, day, hour, minute, 0);
+  if (startD > today) {
+    toast(settings.lang === 'tr' ? "⚠️ Gelecek bir tarih/saat seçemezsiniz" : "⚠️ You cannot select a future date/time");
+    return;
+  }
+  
+  const hours = parseInt($('newSessionHours').value || '0', 10);
+  const mins = parseInt($('newSessionMinutes').value || '0', 10);
+  const secs = parseInt($('newSessionSeconds').value || '0', 10);
+  
+  if (isNaN(hours) || isNaN(mins) || isNaN(secs) || hours < 0 || mins < 0 || secs < 0 || (hours === 0 && mins === 0 && secs === 0)) {
+    toast(dict.toast_err_session_duration);
+    return;
+  }
+  
+  if (mins >= 60) {
+    toast(settings.lang === 'tr' ? "⚠️ Dakika 60'tan küçük olmalıdır" : "⚠️ Minutes must be less than 60");
+    return;
+  }
+  if (secs >= 60) {
+    toast(settings.lang === 'tr' ? "⚠️ Saniye 60'tan küçük olmalıdır" : "⚠️ Seconds must be less than 60");
+    return;
+  }
+  
+  const durationMs = (((hours * 60) + mins) * 60 + secs) * 1000;
+  
+  const startTs = startD.toISOString();
+  const endTs = new Date(startD.getTime() + durationMs).toISOString();
+  const dateKey = startD.toISOString().slice(0, 10);
+  
+  const targetVal = $('newSessionTarget').value;
+  const dlcId = targetVal === 'main' ? null : targetVal;
+  
+  g.sessions.unshift({
+    id: genId(),
+    startTs: startTs,
+    endTs: endTs,
+    durationMs: durationMs,
+    dateKey: dateKey,
+    dlcId: dlcId
+  });
+  
+  // Sort descending
+  g.sessions.sort((a, b) => new Date(b.startTs) - new Date(a.startTs));
+  
+  await saveGames();
+  
+  renderSessionList();
+  renderStats();
+  renderSidebar();
+  
+  toast(dict.toast_manual_session_added);
+  closeAddSessionModal();
+});
+
 $('addGameBtn').addEventListener('click', e => openAddModal(e));
 $('welcomeAddBtn').addEventListener('click', e => openAddModal(e));
 $('welcomeIcon').addEventListener('click', e => openAddModal(e));

@@ -220,7 +220,20 @@ const TRANSLATIONS = {
     tt_select_sessions: "Çoklu seçip silmek için oturum seçim modunu aç",
     tt_clear_sessions: "Bu oyunun tüm oturum geçmişini temizle",
     tt_hltb_link: "HowLongToBeat verilerini aramak ve eşleştirmek için pencere açar",
-    tt_hltb_unlink: "Bu oyunun HowLongToBeat verileriyle olan eşleşmesini kaldır"
+    tt_hltb_unlink: "Bu oyunun HowLongToBeat verileriyle olan eşleşmesini kaldır",
+    
+    manual_session_add_btn: "＋ Oturum Ekle",
+    add_session_modal_title: "Manuel Oturum Ekle",
+    session_date_label: "Tarih",
+    session_time_label: "Saat",
+    session_duration_label: "Oyun Süresi",
+    duration_hours_placeholder: "Saat",
+    duration_minutes_placeholder: "Dakika",
+    duration_seconds_placeholder: "Saniye",
+    target_label: "Hedef (Genel / DLC)",
+    toast_err_session_duration: "⚠️ Lütfen geçerli bir süre girin (en az 1 saniye)",
+    toast_manual_session_added: "✅ Manuel oturum başarıyla eklendi!",
+    tt_add_session: "Manuel oturum ekle"
   },
   en: {
     my_games: "MY GAMES",
@@ -441,7 +454,20 @@ const TRANSLATIONS = {
     tt_select_sessions: "Toggle multi-select mode to delete sessions",
     tt_clear_sessions: "Clear all tracking session history for this game",
     tt_hltb_link: "Open search window to match game with HowLongToBeat data",
-    tt_hltb_unlink: "Remove HowLongToBeat match for this game"
+    tt_hltb_unlink: "Remove HowLongToBeat match for this game",
+    
+    manual_session_add_btn: "＋ Add Session",
+    add_session_modal_title: "Add Manual Session",
+    session_date_label: "Date",
+    session_time_label: "Time",
+    session_duration_label: "Play Duration",
+    duration_hours_placeholder: "Hours",
+    duration_minutes_placeholder: "Minutes",
+    duration_seconds_placeholder: "Seconds",
+    target_label: "Target (Overall / DLC)",
+    toast_err_session_duration: "⚠️ Please enter a valid duration (at least 1 second)",
+    toast_manual_session_added: "✅ Manual session added successfully!",
+    tt_add_session: "Add a manual session"
   }
 };
 
