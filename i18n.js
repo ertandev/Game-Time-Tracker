@@ -577,3 +577,7 @@ function renderUpdateStatus() {
       break;
   }
 }
+
+if (typeof module !== 'undefined') {
+  module.exports = { TRANSLATIONS, applyLanguage };
+}

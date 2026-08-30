@@ -4,9 +4,11 @@
 const GAMES_KEY    = 'gtt_games_v4';
 const STATE_KEY    = 'gtt_state_v4';
 const SETTINGS_KEY = 'gtt_settings_v4';
-const isElectron   = !!window.electronAPI;
-window.updateDownloadedState = false;
-window.lastUpdateStatus = null;
+const isElectron   = typeof window !== 'undefined' && !!window.electronAPI;
+if (typeof window !== 'undefined') {
+  window.updateDownloadedState = false;
+  window.lastUpdateStatus = null;
+}
 
 const PALETTE = [
   'hsl(162,100%,48%)', 'hsl(200,100%,55%)', 'hsl(280,75%,62%)',
@@ -22,7 +24,7 @@ let settings = {
   autoSaveOnClose: true,
   startMinimized: false,
   closeToTray: true,
-  lang: navigator.language.startsWith('tr') ? 'tr' : 'en'
+  lang: (typeof navigator !== 'undefined' && navigator.language && navigator.language.startsWith('tr')) ? 'tr' : 'en'
 };
 let selectedId   = null; // currently viewed game id
 let activeGameId = null; // game that has a running session
@@ -43,9 +45,21 @@ function msToHMS(ms) {
   const t = Math.floor(ms/1000);
   return { h: Math.floor(t/3600), m: Math.floor((t%3600)/60), s: t%60 };
 }
+function getTranslationDict() {
+  if (typeof TRANSLATIONS !== 'undefined') {
+    return TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  }
+  try {
+    const i18n = require('./i18n.js');
+    return i18n.TRANSLATIONS[settings.lang || 'tr'] || i18n.TRANSLATIONS.tr;
+  } catch {
+    return { dur_hour: 'sa', dur_min: 'dk', dur_sec: 'sn', date_today: 'Bugün', date_yesterday: 'Dün' };
+  }
+}
+
 function fmtDur(ms) {
   const {h,m,s} = msToHMS(ms);
-  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  const dict = getTranslationDict();
   if(h>0) return `${h}${dict.dur_hour} ${pad(m)}${dict.dur_min}`;
   if(m>0) return `${m}${dict.dur_min} ${pad(s)}${dict.dur_sec}`;
   return `${s}${dict.dur_sec}`;
@@ -54,42 +68,57 @@ function fmtShort(ms) {
   const {h,m,s} = msToHMS(ms); return `${pad(h)}:${pad(m)}:${pad(s)}`;
 }
 function parseDurationInput(str) {
+  if (!str || typeof str !== 'string') return null;
   str = str.trim().toLowerCase();
+  if (!str || str.includes('-')) return null;
   
   // Check for hh:mm:ss
   let m = str.match(/^(\d+):(\d+):(\d+)$/);
   if (m) {
-    return ((parseInt(m[1]) * 60 + parseInt(m[2])) * 60 + parseInt(m[3])) * 1000;
+    return ((parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) * 60 + parseInt(m[3], 10)) * 1000;
   }
   
   // Check for hh:mm
   m = str.match(/^(\d+):(\d+)$/);
   if (m) {
-    return (parseInt(m[1]) * 60 + parseInt(m[2])) * 60 * 1000;
+    return (parseInt(m[1], 10) * 60 + parseInt(m[2], 10)) * 60 * 1000;
   }
   
-  // Parse combined units, e.g. "2h 30m" or "2sa 30dk"
+  // Parse combined units, e.g. "2h 30m" or "2sa 30dk" or "1.5h"
   let totalMs = 0;
   let hasMatch = false;
+  let remaining = str;
   
-  // Hours
-  m = str.match(/(\d+)\s*(h|sa|hour|hours|saat)/);
-  if (m) { totalMs += parseInt(m[1]) * 3600 * 1000; hasMatch = true; }
+  // Hours (supports 1.5h, 2.5saat, 1,5h)
+  const hMatch = remaining.match(/(\d+(?:[.,]\d+)?)\s*(hours?|saat|sa|h)(?![a-z])/);
+  if (hMatch) { 
+    totalMs += Math.round(parseFloat(hMatch[1].replace(',', '.')) * 3600 * 1000); 
+    hasMatch = true;
+    remaining = remaining.replace(hMatch[0], ' ');
+  }
   
   // Minutes
-  m = str.match(/(\d+)\s*(m|dk|min|mins|minute|minutes|dakika)/);
-  if (m) { totalMs += parseInt(m[1]) * 60 * 1000; hasMatch = true; }
+  const mMatch = remaining.match(/(\d+(?:[.,]\d+)?)\s*(minutes?|dakika|mins?|dk|m)(?![a-z])/);
+  if (mMatch) { 
+    totalMs += Math.round(parseFloat(mMatch[1].replace(',', '.')) * 60 * 1000); 
+    hasMatch = true;
+    remaining = remaining.replace(mMatch[0], ' ');
+  }
   
   // Seconds
-  m = str.match(/(\d+)\s*(s|sn|sec|secs|second|seconds|saniye)/);
-  if (m) { totalMs += parseInt(m[1]) * 1000; hasMatch = true; }
+  const sMatch = remaining.match(/(\d+(?:[.,]\d+)?)\s*(seconds?|saniye|secs?|sn|s)(?![a-z])/);
+  if (sMatch) { 
+    totalMs += Math.round(parseFloat(sMatch[1].replace(',', '.')) * 1000); 
+    hasMatch = true;
+    remaining = remaining.replace(sMatch[0], ' ');
+  }
   
   // If it is just a plain number of minutes
   if (!hasMatch && /^\d+$/.test(str)) {
-    return parseInt(str) * 60 * 1000;
+    return parseInt(str, 10) * 60 * 1000;
   }
   
-  return hasMatch ? totalMs : null;
+  return hasMatch && totalMs > 0 ? totalMs : null;
 }
 function todayKey() { return new Date().toISOString().slice(0,10); }
 function fmtDate(iso) {
@@ -505,5 +534,16 @@ async function unlinkGameHltbData(gameId) {
   delete g.hltbData;
   delete g.ratings;
   await saveGames();
+}
+
+if (typeof module !== 'undefined') {
+  module.exports = {
+    GAMES_KEY, STATE_KEY, SETTINGS_KEY, PALETTE,
+    games, settings,
+    msToHMS, fmtDur, fmtShort, parseDurationInput, fmtSessionTime, todayKey, genId,
+    gameById, totalMs, todayMs, bestMs,
+    filteredTotalMs, filteredTodayMs, filteredBestMs, filteredSessionCount,
+    updateGameHltbData, unlinkGameHltbData
+  };
 }
 
