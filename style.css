@@ -34,10 +34,11 @@ body{font-family:var(--fb);background:var(--bg);color:var(--text);height:100vh;o
 .tb-logo{display:flex;align-items:center;gap:7px;font-family:var(--fd);font-size:.75rem;font-weight:700;letter-spacing:.07em}
 .tb-icon{filter:drop-shadow(0 0 6px var(--accent))}
 .tb-icon-img {
-  width: 18px;
-  height: 18px;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
   object-fit: contain;
-  filter: drop-shadow(0 0 6px var(--accent-glow));
+  filter: drop-shadow(0 0 8px rgba(0, 168, 255, 0.4));
 }
 .tb-accent{color:var(--accent)}
 .tb-controls{display:flex;gap:5px;-webkit-app-region:no-drag}

@@ -18,7 +18,7 @@ if (!gotTheLock) {
 
   app.name = 'GameTime Tracker';
   if (process.platform === 'win32') {
-    app.setAppUserModelId('com.ertandev.gametimetracker');
+    app.setAppUserModelId(app.isPackaged ? 'com.ertandev.gametimetracker' : process.execPath);
   }
 
 let mainWindow    = null;
@@ -36,12 +36,17 @@ const MAIN_TRANSLATIONS = {
 
 // ─── Window ───────────────────────────────────────────────────────────────────
 function createWindow() {
+  const iconPath = process.platform === 'win32' && fs.existsSync(path.join(__dirname, 'icon.ico'))
+    ? path.join(__dirname, 'icon.ico')
+    : path.join(__dirname, 'icon.png');
+  const appIcon = nativeImage.createFromPath(iconPath);
+
   mainWindow = new BrowserWindow({
     width: 1100, height: 720,
     minWidth: 800, minHeight: 560,
     frame: false,
     backgroundColor: '#0d1117',
-    icon: path.join(__dirname, 'icon.png'),
+    icon: appIcon,
     webPreferences: {
       nodeIntegration: false,
       contextIsolation: true,
@@ -49,6 +54,7 @@ function createWindow() {
     },
     show: false
   });
+  mainWindow.setIcon(appIcon);
   mainWindow.loadFile('index.html');
   mainWindow.once('ready-to-show', () => {
     const shouldMinimize = process.argv.includes('--hidden') || process.argv.includes('--minimized');
