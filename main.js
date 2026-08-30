@@ -695,13 +695,13 @@ if ($proc) {
 ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
   const HLTB_BASE_URL = 'https://howlongtobeat.com';
   const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
     'Referer': HLTB_BASE_URL,
     'Origin': HLTB_BASE_URL
   };
 
   try {
-    const initUrl = `${HLTB_BASE_URL}/api/bleed/init?t=${Date.now()}`;
+    const initUrl = `${HLTB_BASE_URL}/api/search/site/init?t=${Date.now()}`;
     const initRes = await fetch(initUrl, { headers });
     if (!initRes.ok) {
       throw new Error(`Init failed with status ${initRes.status}`);
@@ -748,7 +748,7 @@ ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
       'x-hp-val': hpVal
     };
 
-    const searchRes = await fetch(`${HLTB_BASE_URL}/api/bleed`, {
+    const searchRes = await fetch(`${HLTB_BASE_URL}/api/search/site`, {
       method: 'POST',
       headers: searchHeaders,
       body: JSON.stringify(payload)
