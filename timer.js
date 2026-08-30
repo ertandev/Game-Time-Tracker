@@ -7,7 +7,13 @@ function startTicking() {
   timerInterval = setInterval(()=>{
     if(!activeState.isPaused && !activeState.isAutoPaused) {
       const now = Date.now();
-      activeState.runningMs += now - activeState.lastTickTs;
+      const delta = now - activeState.lastTickTs;
+      if (delta > 0 && delta <= 2500) {
+        activeState.runningMs += delta;
+      } else if (delta > 2500) {
+        activeState.runningMs += 500;
+        doAutoPause();
+      }
       activeState.lastTickTs = now;
     }
     if(selectedId===activeGameId) renderTimer();
@@ -225,3 +231,26 @@ async function stopSession() {
   if(isElectron) window.electronAPI.updateTray('GameTime Tracker');
   return !isTooShort;
 }
+
+if (isElectron && window.electronAPI.onPowerEvent) {
+  window.electronAPI.onPowerEvent(async (type) => {
+    console.log('[PowerEvent] Received:', type);
+    if (!activeState) return;
+    
+    if (type === 'shutdown' || type === 'quit') {
+      await stopSession();
+    } else if (type === 'suspend' || type === 'lock-screen') {
+      doAutoPause();
+    }
+  });
+}
+
+window.addEventListener('beforeunload', () => {
+  if (activeState && activeGameId) {
+    if (settings.autoSaveOnClose) {
+      stopSession();
+    } else {
+      pauseSession();
+    }
+  }
+});

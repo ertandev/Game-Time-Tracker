@@ -31,7 +31,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   fetchHltbDlcs: (gameId) => ipcRenderer.invoke('fetch-hltb-dlcs', gameId),
   fetchGameRatings: (gameName) => ipcRenderer.invoke('fetch-game-ratings', gameName),
   getChildProcesses: (parentExeName) => ipcRenderer.invoke('get-child-processes', parentExeName),
-  checkGameRunning: (args) => ipcRenderer.invoke('check-game-running', args)
+  checkGameRunning: (args) => ipcRenderer.invoke('check-game-running', args),
+  onPowerEvent: (cb) => ipcRenderer.on('power-event', (_, data) => cb(data))
 });
 
 

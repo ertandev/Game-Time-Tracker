@@ -328,8 +328,8 @@ async function loadState() {
     if (!d) return false;
     
     // Discard state if the game no longer exists
-    const gameExists = games.some(g => g.id === d.activeGameId);
-    if (!gameExists) {
+    const g = games.find(x => x.id === d.activeGameId);
+    if (!g) {
       localStorage.removeItem(STATE_KEY);
       if (isElectron) {
         await window.electronAPI.storeWrite(STATE_KEY, '');
@@ -337,14 +337,33 @@ async function loadState() {
       return false;
     }
     
-    activeGameId = d.activeGameId;
-    activeState  = { startTs: d.startTs, runningMs: d.runningMs || 0, isPaused: d.isPaused || false, isAutoPaused: d.isAutoPaused || false };
-    lastGameFocusedMs = Date.now();
-    if (!activeState.isPaused && !activeState.isAutoPaused && d.lastTickTs) {
-      activeState.runningMs += Date.now() - d.lastTickTs;
+    // If there was an unsaved session when the app/PC closed, safely save it with its actual played time
+    if (d.runningMs && d.runningMs >= 60000) {
+      const startD = d.startTs ? new Date(d.startTs) : new Date(Date.now() - d.runningMs);
+      const endD = new Date(startD.getTime() + d.runningMs);
+      if (!g.sessions) g.sessions = [];
+      g.sessions.unshift({
+        id: genId(),
+        startTs: startD.toISOString(),
+        endTs: endD.toISOString(),
+        durationMs: d.runningMs,
+        dateKey: startD.toISOString().slice(0, 10),
+        dlcId: (d.activeDlcId !== undefined) ? d.activeDlcId : (g.activeDlcId || null)
+      });
+      g.sessions.sort((a, b) => new Date(b.startTs) - new Date(a.startTs));
+      await saveGames();
     }
-    return true;
-  } catch {
+
+    // Always clear the pending active state so offline/shutdown time is never counted
+    localStorage.removeItem(STATE_KEY);
+    if (isElectron) {
+      await window.electronAPI.storeWrite(STATE_KEY, '');
+    }
+    activeGameId = null;
+    activeState = null;
+    return false;
+  } catch (err) {
+    console.error('Error in loadState recovery:', err);
     return false;
   }
 }

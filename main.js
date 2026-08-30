@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell, dialog, powerMonitor } = require('electron');
 const path  = require('path');
 const { exec, spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
@@ -1011,6 +1011,17 @@ app.whenReady().then(() => {
   createTray();
   startIdlePoller();
   
+  // Power monitor events for PC shutdown, sleep/suspend, and lock
+  powerMonitor.on('suspend', () => {
+    mainWindow?.webContents.send('power-event', 'suspend');
+  });
+  powerMonitor.on('shutdown', () => {
+    mainWindow?.webContents.send('power-event', 'shutdown');
+  });
+  powerMonitor.on('lock-screen', () => {
+    mainWindow?.webContents.send('power-event', 'lock-screen');
+  });
+
   // Auto check for updates on startup (delay to let app load) - silent
   setTimeout(() => {
     isManualCheck = false;
@@ -1022,6 +1033,9 @@ app.whenReady().then(() => {
 
 app.on('before-quit', () => {
   app.isQuitting = true;
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('power-event', 'quit');
+  }
   clearInterval(processPoller);
   idleProcess?.kill();
   mainWindow?.removeAllListeners('close');
