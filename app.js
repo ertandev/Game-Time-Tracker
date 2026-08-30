@@ -456,52 +456,134 @@ let currentCalendarDate = new Date();
 let selectedCalendarDate = new Date();
 let selectedHour = 12;
 let selectedMinute = 0;
+let editingSessionId = null;
 
 function populateCustomTimePicker() {
   const hourCol = $('timeHourColumn');
   const minCol = $('timeMinColumn');
+  const periodCol = $('timePeriodColumn');
   if (!hourCol || !minCol) return;
+  
+  const is12h = (settings.lang === 'en');
   
   hourCol.innerHTML = '';
   minCol.innerHTML = '';
+  if (periodCol) periodCol.innerHTML = '';
   
-  for (let h = 0; h < 24; h++) {
-    const cell = document.createElement('div');
-    cell.className = 'time-cell' + (h === selectedHour ? ' selected' : '');
-    cell.textContent = String(h).padStart(2, '0');
-    cell.addEventListener('click', (e) => {
-      e.stopPropagation();
-      selectedHour = h;
-      updateTimeInputVal();
-      populateCustomTimePicker();
-    });
-    hourCol.appendChild(cell);
-    if (h === selectedHour) {
-      setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+  if (is12h) {
+    if (periodCol) periodCol.style.display = 'flex';
+    
+    const currentPeriod = selectedHour >= 12 ? 'PM' : 'AM';
+    const currentDisplayHour = (selectedHour % 12) === 0 ? 12 : (selectedHour % 12);
+    
+    // Hours 01 to 12
+    for (let h = 1; h <= 12; h++) {
+      const cell = document.createElement('div');
+      cell.className = 'time-cell' + (h === currentDisplayHour ? ' selected' : '');
+      cell.textContent = String(h).padStart(2, '0');
+      cell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        if (currentPeriod === 'PM') {
+          selectedHour = (h % 12) + 12;
+        } else {
+          selectedHour = (h % 12);
+        }
+        updateTimeInputVal();
+        populateCustomTimePicker();
+      });
+      hourCol.appendChild(cell);
+      if (h === currentDisplayHour) {
+        setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+      }
     }
-  }
-  
-  for (let m = 0; m < 60; m++) {
-    const cell = document.createElement('div');
-    cell.className = 'time-cell' + (m === selectedMinute ? ' selected' : '');
-    cell.textContent = String(m).padStart(2, '0');
-    cell.addEventListener('click', (e) => {
-      e.stopPropagation();
-      selectedMinute = m;
-      updateTimeInputVal();
-      populateCustomTimePicker();
-    });
-    minCol.appendChild(cell);
-    if (m === selectedMinute) {
-      setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+    
+    // Minutes 00 to 59
+    for (let m = 0; m < 60; m++) {
+      const cell = document.createElement('div');
+      cell.className = 'time-cell' + (m === selectedMinute ? ' selected' : '');
+      cell.textContent = String(m).padStart(2, '0');
+      cell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedMinute = m;
+        updateTimeInputVal();
+        populateCustomTimePicker();
+      });
+      minCol.appendChild(cell);
+      if (m === selectedMinute) {
+        setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+      }
+    }
+    
+    // Periods AM / PM
+    if (periodCol) {
+      ['AM', 'PM'].forEach(p => {
+        const cell = document.createElement('div');
+        cell.className = 'time-cell' + (p === currentPeriod ? ' selected' : '');
+        cell.textContent = p;
+        cell.style.padding = '10px 0';
+        cell.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (p === 'AM' && selectedHour >= 12) {
+            selectedHour -= 12;
+          } else if (p === 'PM' && selectedHour < 12) {
+            selectedHour += 12;
+          }
+          updateTimeInputVal();
+          populateCustomTimePicker();
+        });
+        periodCol.appendChild(cell);
+      });
+    }
+  } else {
+    if (periodCol) periodCol.style.display = 'none';
+    
+    // 24-hour mode
+    for (let h = 0; h < 24; h++) {
+      const cell = document.createElement('div');
+      cell.className = 'time-cell' + (h === selectedHour ? ' selected' : '');
+      cell.textContent = String(h).padStart(2, '0');
+      cell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedHour = h;
+        updateTimeInputVal();
+        populateCustomTimePicker();
+      });
+      hourCol.appendChild(cell);
+      if (h === selectedHour) {
+        setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+      }
+    }
+    
+    for (let m = 0; m < 60; m++) {
+      const cell = document.createElement('div');
+      cell.className = 'time-cell' + (m === selectedMinute ? ' selected' : '');
+      cell.textContent = String(m).padStart(2, '0');
+      cell.addEventListener('click', (e) => {
+        e.stopPropagation();
+        selectedMinute = m;
+        updateTimeInputVal();
+        populateCustomTimePicker();
+      });
+      minCol.appendChild(cell);
+      if (m === selectedMinute) {
+        setTimeout(() => cell.scrollIntoView({ block: 'center', behavior: 'auto' }), 50);
+      }
     }
   }
 }
 
 function updateTimeInputVal() {
   const input = $('newSessionTime');
-  if (input) {
+  if (!input) return;
+  const is12h = (settings.lang === 'en');
+  if (is12h) {
+    const period = selectedHour >= 12 ? 'PM' : 'AM';
+    const displayHour = (selectedHour % 12) === 0 ? 12 : (selectedHour % 12);
+    input.value = `${String(displayHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')} ${period}`;
+    input.placeholder = "hh:mm AM/PM";
+  } else {
     input.value = `${String(selectedHour).padStart(2, '0')}:${String(selectedMinute).padStart(2, '0')}`;
+    input.placeholder = "HH:MM";
   }
 }
 
@@ -576,10 +658,22 @@ function renderCustomCalendar() {
 }
 
 function openAddSessionModal() {
+  editingSessionId = null;
   const g = gameById(selectedId);
   if (!g) return;
   
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  
+  const titleEl = $('sessionModalTitle');
+  if (titleEl) {
+    titleEl.dataset.i18n = 'add_session_modal_title';
+    titleEl.textContent = dict.add_session_modal_title;
+  }
+  const confirmBtn = $('addSessionConfirm');
+  if (confirmBtn) {
+    confirmBtn.dataset.i18n = 'add';
+    confirmBtn.textContent = dict.add;
+  }
   
   // Set date to today (local YYYY-MM-DD)
   const today = new Date();
@@ -634,7 +728,82 @@ function openAddSessionModal() {
   setTimeout(() => $('newSessionHours').focus(), 50);
 }
 
+function openEditSessionModal(session) {
+  const g = gameById(selectedId);
+  if (!g || !session) return;
+  
+  editingSessionId = session.id;
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  
+  const titleEl = $('sessionModalTitle');
+  if (titleEl) {
+    titleEl.dataset.i18n = 'edit_session_modal_title';
+    titleEl.textContent = dict.edit_session_modal_title || (settings.lang === 'tr' ? 'Oturumu Düzenle' : 'Edit Session');
+  }
+  const confirmBtn = $('addSessionConfirm');
+  if (confirmBtn) {
+    confirmBtn.dataset.i18n = 'save';
+    confirmBtn.textContent = dict.save;
+  }
+  
+  // Parse session's start date
+  const sDate = session.startTs ? new Date(session.startTs) : new Date();
+  selectedCalendarDate = sDate;
+  currentCalendarDate = new Date(sDate);
+  
+  const year = sDate.getFullYear();
+  const month = String(sDate.getMonth() + 1).padStart(2, '0');
+  const day = String(sDate.getDate()).padStart(2, '0');
+  $('newSessionDate').value = `${year}-${month}-${day}`;
+  renderCustomCalendar();
+  
+  // Parse session's start time
+  selectedHour = sDate.getHours();
+  selectedMinute = sDate.getMinutes();
+  updateTimeInputVal();
+  
+  const picker = $('customTimePicker');
+  if (picker) picker.classList.remove('open');
+  
+  // Parse duration
+  const totalSecs = Math.floor((session.durationMs || 0) / 1000);
+  const sHours = Math.floor(totalSecs / 3600);
+  const sMins = Math.floor((totalSecs % 3600) / 60);
+  const sSecs = totalSecs % 60;
+  
+  $('newSessionHours').value = sHours > 0 ? sHours : (sHours === 0 && sMins === 0 && sSecs === 0 ? '' : 0);
+  $('newSessionMinutes').value = sMins;
+  $('newSessionSeconds').value = sSecs;
+  
+  // Populate dynamic select options
+  const targetSelect = $('newSessionTarget');
+  targetSelect.innerHTML = '';
+  
+  const mainOpt = document.createElement('option');
+  mainOpt.value = 'main';
+  mainOpt.textContent = dict.dlc_main_game;
+  targetSelect.appendChild(mainOpt);
+  
+  if (g.dlcs && g.dlcs.length) {
+    g.dlcs.forEach(d => {
+      const opt = document.createElement('option');
+      opt.value = d.id;
+      opt.textContent = d.name;
+      targetSelect.appendChild(opt);
+    });
+  }
+  
+  targetSelect.value = session.dlcId || 'main';
+  
+  $('addSessionOverlay').classList.add('open');
+  setTimeout(() => $('newSessionHours').focus(), 50);
+}
+
+window.openAddSessionModal = openAddSessionModal;
+window.openEditSessionModal = openEditSessionModal;
+
 function closeAddSessionModal() {
+  editingSessionId = null;
   $('addSessionOverlay').classList.remove('open');
   const cal = $('customCalendar');
   if (cal) cal.classList.remove('open');
@@ -812,10 +981,24 @@ $('addSessionConfirm').addEventListener('click', async () => {
     return;
   }
   
-  const timeVal = $('newSessionTime').value || '12:00';
-  const timeParts = timeVal.split(':');
-  const hour = parseInt(timeParts[0], 10) || 12;
-  const minute = parseInt(timeParts[1], 10) || 0;
+  const timeVal = $('newSessionTime').value.trim();
+  let hour = selectedHour;
+  let minute = selectedMinute;
+  
+  const time12Match = timeVal.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+  const time24Match = timeVal.match(/^(\d{1,2}):(\d{2})$/);
+  if (time12Match) {
+    let h = parseInt(time12Match[1], 10);
+    const m = parseInt(time12Match[2], 10);
+    const p = time12Match[3].toUpperCase();
+    if (p === 'PM' && h < 12) h += 12;
+    if (p === 'AM' && h === 12) h = 0;
+    hour = h;
+    minute = m;
+  } else if (time24Match) {
+    hour = parseInt(time24Match[1], 10);
+    minute = parseInt(time24Match[2], 10);
+  }
   
   const startD = new Date(year, month, day, hour, minute, 0);
   if (startD > today) {
@@ -850,26 +1033,39 @@ $('addSessionConfirm').addEventListener('click', async () => {
   const targetVal = $('newSessionTarget').value;
   const dlcId = targetVal === 'main' ? null : targetVal;
   
-  g.sessions.unshift({
-    id: genId(),
-    startTs: startTs,
-    endTs: endTs,
-    durationMs: durationMs,
-    dateKey: dateKey,
-    dlcId: dlcId
-  });
-  
-  // Sort descending
-  g.sessions.sort((a, b) => new Date(b.startTs) - new Date(a.startTs));
-  
-  await saveGames();
-  
-  renderSessionList();
-  renderStats();
-  renderSidebar();
-  
-  toast(dict.toast_manual_session_added);
-  closeAddSessionModal();
+  if (editingSessionId) {
+    const s = g.sessions.find(x => x.id === editingSessionId);
+    if (s) {
+      s.startTs = startTs;
+      s.endTs = endTs;
+      s.durationMs = durationMs;
+      s.dateKey = dateKey;
+      s.dlcId = dlcId;
+    }
+    g.sessions.sort((a, b) => new Date(b.startTs) - new Date(a.startTs));
+    await saveGames();
+    renderSessionList();
+    renderStats();
+    renderSidebar();
+    toast(dict.toast_session_updated || (settings.lang === 'tr' ? '✅ Oturum başarıyla güncellendi!' : '✅ Session updated successfully!'));
+    closeAddSessionModal();
+  } else {
+    g.sessions.unshift({
+      id: genId(),
+      startTs: startTs,
+      endTs: endTs,
+      durationMs: durationMs,
+      dateKey: dateKey,
+      dlcId: dlcId
+    });
+    g.sessions.sort((a, b) => new Date(b.startTs) - new Date(a.startTs));
+    await saveGames();
+    renderSessionList();
+    renderStats();
+    renderSidebar();
+    toast(dict.toast_manual_session_added);
+    closeAddSessionModal();
+  }
 });
 
 $('addGameBtn').addEventListener('click', e => openAddModal(e));

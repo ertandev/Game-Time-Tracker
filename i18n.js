@@ -224,6 +224,7 @@ const TRANSLATIONS = {
     
     manual_session_add_btn: "＋ Oturum Ekle",
     add_session_modal_title: "Manuel Oturum Ekle",
+    edit_session_modal_title: "Oturumu Düzenle",
     session_date_label: "Tarih",
     session_time_label: "Saat",
     session_duration_label: "Oyun Süresi",
@@ -233,7 +234,9 @@ const TRANSLATIONS = {
     target_label: "Hedef (Genel / DLC)",
     toast_err_session_duration: "⚠️ Lütfen geçerli bir süre girin (en az 1 saniye)",
     toast_manual_session_added: "✅ Manuel oturum başarıyla eklendi!",
-    tt_add_session: "Manuel oturum ekle"
+    toast_session_updated: "✅ Oturum başarıyla güncellendi!",
+    tt_add_session: "Manuel oturum ekle",
+    tt_edit_session: "Oturumu düzenle"
   },
   en: {
     my_games: "MY GAMES",
@@ -458,6 +461,7 @@ const TRANSLATIONS = {
     
     manual_session_add_btn: "＋ Add Session",
     add_session_modal_title: "Add Manual Session",
+    edit_session_modal_title: "Edit Session",
     session_date_label: "Date",
     session_time_label: "Time",
     session_duration_label: "Play Duration",
@@ -467,7 +471,9 @@ const TRANSLATIONS = {
     target_label: "Target (Overall / DLC)",
     toast_err_session_duration: "⚠️ Please enter a valid duration (at least 1 second)",
     toast_manual_session_added: "✅ Manual session added successfully!",
-    tt_add_session: "Add a manual session"
+    toast_session_updated: "✅ Session updated successfully!",
+    tt_add_session: "Add a manual session",
+    tt_edit_session: "Edit session"
   }
 };
 

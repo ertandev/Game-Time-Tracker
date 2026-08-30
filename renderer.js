@@ -1021,7 +1021,8 @@ function renderSessionList() {
 
     const edit = document.createElement('button');
     edit.className = 's-edit';
-    edit.title = settings.lang === 'tr' ? 'Süreyi Düzenle' : 'Edit Duration';
+    edit.title = settings.lang === 'tr' ? 'Oturumu Düzenle' : 'Edit Session';
+    edit.dataset.tooltipKey = 'tt_edit_session';
     edit.innerHTML = `
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
@@ -1030,28 +1031,11 @@ function renderSessionList() {
       
     edit.addEventListener('click', e => {
       e.stopPropagation();
-      const title = settings.lang === 'tr' ? 'Oturum Süresini Düzenle' : 'Edit Session Duration';
-      const label = settings.lang === 'tr' ? 'Yeni süreyi girin (Örn: 2:30:00 veya 90dk):' : 'Enter new duration (e.g. 2:30:00 or 90m):';
-      const defaultVal = fmtShort(s.durationMs);
-      
-      showPrompt(title, label, defaultVal, async (inputVal) => {
-        if (!inputVal) return;
-        const parsedMs = parseDurationInput(inputVal);
-        if (parsedMs !== null && parsedMs !== undefined && !isNaN(parsedMs)) {
-          const gi = games.findIndex(x => x.id === selectedId);
-          if (gi < 0) return;
-          const si = games[gi].sessions.findIndex(x => x.id === s.id);
-          if (si < 0) return;
-          games[gi].sessions[si].durationMs = parsedMs;
-          await saveGames();
-          renderSessionList();
-          renderStats();
-          renderSidebar();
-          toast(settings.lang === 'tr' ? 'Oturum süresi güncellendi' : 'Session duration updated');
-        } else {
-          toast(settings.lang === 'tr' ? 'Geçersiz süre formatı!' : 'Invalid duration format!');
-        }
-      });
+      if (typeof openEditSessionModal === 'function') {
+        openEditSessionModal(s);
+      } else if (typeof window.openEditSessionModal === 'function') {
+        window.openEditSessionModal(s);
+      }
     });
 
     if (isMultiSelectMode) {

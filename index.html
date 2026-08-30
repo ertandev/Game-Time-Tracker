@@ -519,7 +519,7 @@
             <circle cx="12" cy="12" r="10"></circle>
             <polyline points="12 6 12 12 16 14"></polyline>
           </svg>
-          <span data-i18n="add_session_modal_title">Manuel Oturum Ekle</span>
+          <span id="sessionModalTitle" data-i18n="add_session_modal_title">Manuel Oturum Ekle</span>
         </h3>
         <button class="modal-close" id="addSessionClose" data-i18n-title="cancel">✕</button>
       </div>
@@ -568,6 +568,7 @@
                   <div class="time-picker-columns">
                     <div class="time-column" id="timeHourColumn"></div>
                     <div class="time-column" id="timeMinColumn"></div>
+                    <div class="time-column" id="timePeriodColumn" style="display: none;"></div>
                   </div>
                 </div>
               </div>
