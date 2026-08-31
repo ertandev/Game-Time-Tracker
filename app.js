@@ -1028,7 +1028,7 @@ $('addSessionConfirm').addEventListener('click', async () => {
   
   const startTs = startD.toISOString();
   const endTs = new Date(startD.getTime() + durationMs).toISOString();
-  const dateKey = startD.toISOString().slice(0, 10);
+  const dateKey = toLocalDateKey(startD);
   
   const targetVal = $('newSessionTarget').value;
   const dlcId = targetVal === 'main' ? null : targetVal;

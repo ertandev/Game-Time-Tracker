@@ -10,8 +10,10 @@ function startTicking() {
       const delta = now - activeState.lastTickTs;
       if (delta > 0 && delta <= 2500) {
         activeState.runningMs += delta;
+        activeState.lastActiveTs = new Date(now).toISOString();
       } else if (delta > 2500) {
         activeState.runningMs += 500;
+        activeState.lastActiveTs = new Date(activeState.lastTickTs + 500).toISOString();
         doAutoPause();
       }
       activeState.lastTickTs = now;
@@ -181,7 +183,7 @@ function startSession(gameId) {
     saveGames();
   }
   activeGameId = gameId;
-  activeState  = { startTs: new Date().toISOString(), runningMs:0, isPaused:false, isAutoPaused:false };
+  activeState  = { startTs: new Date().toISOString(), lastActiveTs: new Date().toISOString(), runningMs:0, isPaused:false, isAutoPaused:false };
   lastGameFocusedMs = Date.now();
   startTicking();
   renderControls(); renderTimer(); renderStatusPill(); renderGameHeader();
@@ -198,6 +200,7 @@ function pauseSession() {
 function resumeSession() {
   if(!activeState||(!activeState.isPaused&&!activeState.isAutoPaused)) return;
   activeState.isPaused=false; activeState.isAutoPaused=false; activeState.lastTickTs=Date.now();
+  activeState.lastActiveTs = new Date().toISOString();
   lastGameFocusedMs = Date.now();
   renderControls(); renderTimer(); renderStatusPill();
   saveState();
@@ -209,9 +212,13 @@ async function stopSession() {
   
   const isTooShort = activeState.runningMs < 60000;
   if (!isTooShort) {
+    const endTs = (activeState.isPaused || activeState.isAutoPaused) && activeState.lastActiveTs
+      ? activeState.lastActiveTs
+      : new Date().toISOString();
+    const startD = new Date(activeState.startTs);
     g.sessions.unshift({
-      id: genId(), startTs: activeState.startTs, endTs: new Date().toISOString(),
-      durationMs: activeState.runningMs, dateKey: todayKey(),
+      id: genId(), startTs: activeState.startTs, endTs: endTs,
+      durationMs: activeState.runningMs, dateKey: toLocalDateKey(startD),
       dlcId: g.activeDlcId || null
     });
     saveGames();

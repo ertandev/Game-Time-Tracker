@@ -120,38 +120,47 @@ function parseDurationInput(str) {
   
   return hasMatch && totalMs > 0 ? totalMs : null;
 }
-function todayKey() { return new Date().toISOString().slice(0,10); }
+function toLocalDateKey(d = new Date()) {
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+function todayKey() { return toLocalDateKey(new Date()); }
+function yesterdayKey() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return toLocalDateKey(d);
+}
 function fmtDate(iso) {
-  const d = new Date(iso), key = d.toISOString().slice(0,10);
+  const d = new Date(iso), key = toLocalDateKey(d);
   const lang = settings.lang || 'tr';
-  const dict = TRANSLATIONS[lang] || TRANSLATIONS.tr;
+  const dict = getTranslationDict();
   const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
   const time = d.toLocaleTimeString(locale, {hour:'2-digit',minute:'2-digit'});
-  if(key===todayKey()) return `${dict.date_today} ${time}`;
-  const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
-  if(key===yest) return `${dict.date_yesterday} ${time}`;
+  if(key === todayKey()) return `${dict.date_today} ${time}`;
+  if(key === yesterdayKey()) return `${dict.date_yesterday} ${time}`;
   return d.toLocaleDateString(locale, {day:'2-digit',month:'short'})+' '+time;
 }
 function fmtSessionTime(s) {
   if (!s.startTs) return '';
   const startD = new Date(s.startTs);
   const lang = settings.lang || 'tr';
-  const dict = TRANSLATIONS[lang] || TRANSLATIONS.tr;
+  const dict = getTranslationDict();
   const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
   
   const startTimeStr = startD.toLocaleTimeString(locale, {hour:'2-digit',minute:'2-digit'});
-  const startDateKey = startD.toISOString().slice(0,10);
+  const startDateKey = toLocalDateKey(startD);
+  const tKey = todayKey();
+  const yKey = yesterdayKey();
   
   let datePrefix = '';
-  if (startDateKey === todayKey()) {
+  if (startDateKey === tKey) {
     datePrefix = dict.date_today;
+  } else if (startDateKey === yKey) {
+    datePrefix = dict.date_yesterday;
   } else {
-    const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
-    if (startDateKey === yest) {
-      datePrefix = dict.date_yesterday;
-    } else {
-      datePrefix = startD.toLocaleDateString(locale, {day:'2-digit',month:'short'});
-    }
+    datePrefix = startD.toLocaleDateString(locale, {day:'2-digit',month:'short'});
   }
   
   let endTs = s.endTs;
@@ -165,21 +174,18 @@ function fmtSessionTime(s) {
   
   const endD = new Date(endTs);
   const endTimeStr = endD.toLocaleTimeString(locale, {hour:'2-digit',minute:'2-digit'});
-  const endDateKey = endD.toISOString().slice(0,10);
+  const endDateKey = toLocalDateKey(endD);
   
   if (startDateKey === endDateKey) {
     return `${datePrefix} ${startTimeStr} - ${endTimeStr}`;
   } else {
     let endDatePrefix = '';
-    if (endDateKey === todayKey()) {
+    if (endDateKey === tKey) {
       endDatePrefix = dict.date_today;
+    } else if (endDateKey === yKey) {
+      endDatePrefix = dict.date_yesterday;
     } else {
-      const yest = new Date(Date.now()-86400000).toISOString().slice(0,10);
-      if (endDateKey === yest) {
-        endDatePrefix = dict.date_yesterday;
-      } else {
-        endDatePrefix = endD.toLocaleDateString(locale, {day:'2-digit',month:'short'});
-      }
+      endDatePrefix = endD.toLocaleDateString(locale, {day:'2-digit',month:'short'});
     }
     return `${datePrefix} ${startTimeStr} - ${endDatePrefix} ${endTimeStr}`;
   }
@@ -369,14 +375,14 @@ async function loadState() {
     // If there was an unsaved session when the app/PC closed, safely save it with its actual played time
     if (d.runningMs && d.runningMs >= 60000) {
       const startD = d.startTs ? new Date(d.startTs) : new Date(Date.now() - d.runningMs);
-      const endD = new Date(startD.getTime() + d.runningMs);
+      const endD = d.lastActiveTs ? new Date(d.lastActiveTs) : new Date(startD.getTime() + d.runningMs);
       if (!g.sessions) g.sessions = [];
       g.sessions.unshift({
         id: genId(),
         startTs: startD.toISOString(),
         endTs: endD.toISOString(),
         durationMs: d.runningMs,
-        dateKey: startD.toISOString().slice(0, 10),
+        dateKey: toLocalDateKey(startD),
         dlcId: (d.activeDlcId !== undefined) ? d.activeDlcId : (g.activeDlcId || null)
       });
       g.sessions.sort((a, b) => new Date(b.startTs) - new Date(a.startTs));
@@ -540,7 +546,7 @@ if (typeof module !== 'undefined') {
   module.exports = {
     GAMES_KEY, STATE_KEY, SETTINGS_KEY, PALETTE,
     games, settings,
-    msToHMS, fmtDur, fmtShort, parseDurationInput, fmtSessionTime, todayKey, genId,
+    msToHMS, fmtDur, fmtShort, parseDurationInput, fmtSessionTime, todayKey, yesterdayKey, toLocalDateKey, genId,
     gameById, totalMs, todayMs, bestMs,
     filteredTotalMs, filteredTodayMs, filteredBestMs, filteredSessionCount,
     updateGameHltbData, unlinkGameHltbData

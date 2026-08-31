@@ -6,7 +6,7 @@ const assert = require('node:assert/strict');
 // Import project modules
 const { TRANSLATIONS } = require('../i18n.js');
 const {
-  msToHMS, fmtDur, fmtShort, parseDurationInput, fmtSessionTime, todayKey, genId,
+  msToHMS, fmtDur, fmtShort, parseDurationInput, fmtSessionTime, todayKey, yesterdayKey, toLocalDateKey, genId,
   totalMs, todayMs, bestMs, filteredTotalMs, filteredTodayMs, filteredBestMs, filteredSessionCount,
   updateGameHltbData, unlinkGameHltbData,
   settings
@@ -368,7 +368,7 @@ test('Unclean shutdown recovery saves exact playtime without offline delta', () 
       startTs: startD.toISOString(),
       endTs: endD.toISOString(),
       durationMs: interruptedState.runningMs,
-      dateKey: startD.toISOString().slice(0, 10),
+      dateKey: toLocalDateKey(startD),
       dlcId: null
     });
   }
@@ -378,3 +378,37 @@ test('Unclean shutdown recovery saves exact playtime without offline delta', () 
   assert.equal(g.sessions[0].durationMs, 3600000);
   assert.equal(g.sessions[0].startTs, '2026-08-30T10:00:00.000Z');
 });
+
+// ─── 12. Local Date & Midnight Rollover Session Formatting Tests ───────────────
+test('toLocalDateKey formats local date as YYYY-MM-DD', () => {
+  const d = new Date(2026, 7, 31, 1, 30); // 31 Aug 2026, 01:30 local time
+  assert.equal(toLocalDateKey(d), '2026-08-31');
+});
+
+test('fmtSessionTime distinguishes midnight rollover across different days', () => {
+  settings.lang = 'tr';
+  
+  // Case 1: Same day session
+  const now = new Date();
+  const startSame = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 14, 0, 0);
+  const endSame = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 15, 30, 0);
+  const resSame = fmtSessionTime({
+    startTs: startSame.toISOString(),
+    endTs: endSame.toISOString(),
+    durationMs: 5400000
+  });
+  assert.ok(resSame.includes('Bugün'));
+  assert.ok(resSame.includes('-'));
+
+  // Case 2: Session spanning across midnight from yesterday 21:47 to today 01:39
+  const startYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 21, 47, 0);
+  const endToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 1, 39, 0);
+  const resCross = fmtSessionTime({
+    startTs: startYesterday.toISOString(),
+    endTs: endToday.toISOString(),
+    durationMs: 131000
+  });
+  // Must NOT collapse into "Bugün 21:47 - 01:39"
+  assert.ok(resCross.includes('Dün') && resCross.includes('Bugün'));
+});
+
