@@ -3,23 +3,31 @@
 // ─── Timer Engine ─────────────────────────────────────────────────────────────
 function startTicking() {
   if(timerInterval) return;
-  activeState.lastTickTs = Date.now();
+  if (activeState && !activeState.lastTickTs) {
+    activeState.lastTickTs = Date.now();
+  }
   timerInterval = setInterval(()=>{
-    if(!activeState.isPaused && !activeState.isAutoPaused) {
+    if(activeState && !activeState.isPaused && !activeState.isAutoPaused) {
       const now = Date.now();
-      const delta = now - activeState.lastTickTs;
-      if (delta > 0 && delta <= 2500) {
+      const delta = now - (activeState.lastTickTs || now);
+      if (delta > 0 && delta <= 10000) {
         activeState.runningMs += delta;
         activeState.lastActiveTs = new Date(now).toISOString();
-      } else if (delta > 2500) {
+      } else if (delta > 10000) {
         activeState.runningMs += 500;
-        activeState.lastActiveTs = new Date(activeState.lastTickTs + 500).toISOString();
+        activeState.lastActiveTs = new Date((activeState.lastTickTs || now) + 500).toISOString();
         doAutoPause();
       }
       activeState.lastTickTs = now;
     }
     if(selectedId===activeGameId) renderTimer();
     renderSidebar();
+    if (isElectron && activeGameId && activeState) {
+      const isP = activeState.isPaused || activeState.isAutoPaused;
+      const g = gameById(activeGameId);
+      const icon = isP ? '⏸' : '▶';
+      window.electronAPI.updateTray(`${icon} ${g?.name || 'Game'} — ${fmtShort(activeState.runningMs)}`);
+    }
     saveState();
   }, 500);
 }
@@ -49,6 +57,10 @@ function doAutoPause() {
   if (!activeState || activeState.isPaused || activeState.isAutoPaused) return;
   activeState.isAutoPaused = true; activeState.lastTickTs = null;
   clearInact(); renderControls(); renderTimer(); renderStatusPill();
+  if (isElectron && activeGameId) {
+    const g = gameById(activeGameId);
+    window.electronAPI.updateTray(`⏸ ${g?.name || 'Game'} — ${fmtShort(activeState.runningMs)}`);
+  }
   saveState();
 }
 
@@ -183,11 +195,14 @@ function startSession(gameId) {
     saveGames();
   }
   activeGameId = gameId;
-  activeState  = { startTs: new Date().toISOString(), lastActiveTs: new Date().toISOString(), runningMs:0, isPaused:false, isAutoPaused:false };
+  activeState  = { startTs: new Date().toISOString(), lastActiveTs: new Date().toISOString(), runningMs:0, isPaused:false, isAutoPaused:false, lastTickTs: Date.now() };
   lastGameFocusedMs = Date.now();
   startTicking();
   renderControls(); renderTimer(); renderStatusPill(); renderGameHeader();
   renderSidebar(); saveState();
+  if (isElectron) {
+    window.electronAPI.updateTray(`▶ ${g.name} — ${fmtShort(0)}`);
+  }
   if (g.exe) {
     checkAndFetchIcon(g);
   }
@@ -195,7 +210,12 @@ function startSession(gameId) {
 function pauseSession() {
   if(!activeState||activeState.isPaused) return;
   activeState.isPaused=true; activeState.lastTickTs=null;
-  clearInact(); renderControls(); renderTimer(); renderStatusPill(); saveState();
+  clearInact(); renderControls(); renderTimer(); renderStatusPill();
+  if (isElectron && activeGameId) {
+    const g = gameById(activeGameId);
+    window.electronAPI.updateTray(`⏸ ${g?.name || 'Game'} — ${fmtShort(activeState.runningMs)}`);
+  }
+  saveState();
 }
 function resumeSession() {
   if(!activeState||(!activeState.isPaused&&!activeState.isAutoPaused)) return;
@@ -203,6 +223,10 @@ function resumeSession() {
   activeState.lastActiveTs = new Date().toISOString();
   lastGameFocusedMs = Date.now();
   renderControls(); renderTimer(); renderStatusPill();
+  if (isElectron && activeGameId) {
+    const g = gameById(activeGameId);
+    window.electronAPI.updateTray(`▶ ${g?.name || 'Game'} — ${fmtShort(activeState.runningMs)}`);
+  }
   saveState();
 }
 async function stopSession() {

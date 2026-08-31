@@ -331,9 +331,9 @@ test('Timer interval prevents adding offline sleep hours', () => {
   const delta = now - mockState.lastTickTs;
   
   // Logic from timer.js startTicking
-  if (delta > 0 && delta <= 2500) {
+  if (delta > 0 && delta <= 10000) {
     mockState.runningMs += delta;
-  } else if (delta > 2500) {
+  } else if (delta > 10000) {
     mockState.runningMs += 500; // Only add at most 500ms and pause
     mockState.isAutoPaused = true;
   }

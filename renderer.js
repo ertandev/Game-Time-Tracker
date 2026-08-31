@@ -812,7 +812,7 @@ function renderTimer() {
   $('timerDisplay').className='timer-display '+(st?'paused':'running');
   document.querySelectorAll('.blink').forEach(c=>c.classList.toggle('on',!st));
   $('sessionBadge').textContent = st ? dict.badge_paused : dict.badge_running;
-  if(isElectron) window.electronAPI.updateTray(`▶ ${gameById(activeGameId)?.name} — ${fmtShort(activeState.runningMs)}`);
+  if(isElectron) window.electronAPI.updateTray(`${st ? '⏸' : '▶'} ${gameById(activeGameId)?.name} — ${fmtShort(activeState.runningMs)}`);
   renderDlcSection();
 }
 
