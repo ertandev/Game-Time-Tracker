@@ -1269,13 +1269,128 @@ $('scanBtn').addEventListener('click', async()=>{
 });
 
 // ─── Confirm Modal ────────────────────────────────────────────────────────────
-let confirmCb=null;
-function showConfirm(title,text,cb) {
-  $('confirmTitle').textContent=title; $('confirmText').textContent=text;
-  confirmCb=cb; $('confirmOverlay').classList.add('open');
+let confirmCb = null;
+
+const DIALOG_ICONS = {
+  update: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+    <polyline points="7 10 12 15 17 10"></polyline>
+    <line x1="12" y1="15" x2="12" y2="3"></line>
+  </svg>`,
+  danger: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M3 6h18"></path>
+    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+    <line x1="10" y1="11" x2="10" y2="17"></line>
+    <line x1="14" y1="11" x2="14" y2="17"></line>
+  </svg>`,
+  warning: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+    <line x1="12" y1="9" x2="12" y2="13"></line>
+    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+  </svg>`,
+  info: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="10"></circle>
+    <line x1="12" y1="16" x2="12" y2="12"></line>
+    <line x1="12" y1="8" x2="12.01" y2="8"></line>
+  </svg>`
+};
+
+function showConfirm(title, text, cb, options) {
+  const modalBox = $('confirmModalBox');
+  const iconEl = $('confirmIcon');
+  const titleEl = $('confirmTitle');
+  const textEl = $('confirmText');
+  const okBtn = $('confirmOk');
+  const cancelBtn = $('confirmCancel');
+  const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+
+  titleEl.textContent = title;
+  textEl.textContent = text;
+  confirmCb = cb;
+
+  // Determine dialog type
+  let type = 'warning';
+  if (typeof options === 'string') {
+    type = options;
+  } else if (options && options.type) {
+    type = options.type;
+  } else {
+    // Intelligent auto-detection based on title & text
+    const combined = `${title} ${text}`.toLowerCase();
+    if (combined.includes('güncelle') || combined.includes('update') || combined.includes('restart') || combined.includes('yeniden başlat')) {
+      type = 'update';
+    } else if (combined.includes('sil') || combined.includes('delete') || combined.includes('kaldır') || combined.includes('unlink') || combined.includes('clear') || combined.includes('temizle') || combined.includes('sıfırla') || combined.includes('reset')) {
+      type = 'danger';
+    } else if (combined.includes('bitir') || combined.includes('durdur') || combined.includes('stop') || combined.includes('end')) {
+      type = 'warning';
+    }
+  }
+
+  if (modalBox) {
+    modalBox.classList.remove('dialog-type-update', 'dialog-type-danger', 'dialog-type-warning', 'dialog-type-info');
+    modalBox.classList.add(`dialog-type-${type}`);
+  }
+
+  if (iconEl) {
+    iconEl.innerHTML = (options && options.icon) || DIALOG_ICONS[type] || DIALOG_ICONS.warning;
+  }
+
+  if (options && options.confirmText) {
+    okBtn.textContent = options.confirmText;
+  } else if (type === 'update') {
+    okBtn.textContent = settings.lang === 'en' ? 'Restart Now' : 'Yeniden Başlat';
+  } else {
+    okBtn.textContent = dict.yes;
+  }
+
+  if (options && options.cancelText) {
+    cancelBtn.textContent = options.cancelText;
+  } else if (type === 'update') {
+    cancelBtn.textContent = settings.lang === 'en' ? 'Later' : 'Daha Sonra';
+  } else {
+    cancelBtn.textContent = dict.cancel;
+  }
+
+  $('confirmOverlay').classList.add('open');
 }
-$('confirmOk').addEventListener('click',()=>{ if(confirmCb) confirmCb(); $('confirmOverlay').classList.remove('open'); confirmCb=null; });
-$('confirmCancel').addEventListener('click',()=>{ $('confirmOverlay').classList.remove('open'); confirmCb=null; });
+
+$('confirmOk').addEventListener('click', () => {
+  if (confirmCb) confirmCb();
+  $('confirmOverlay').classList.remove('open');
+  confirmCb = null;
+});
+
+$('confirmCancel').addEventListener('click', () => {
+  $('confirmOverlay').classList.remove('open');
+  confirmCb = null;
+});
+
+// Dismiss on backdrop click
+$('confirmOverlay').addEventListener('click', (e) => {
+  if (e.target === $('confirmOverlay')) {
+    $('confirmOverlay').classList.remove('open');
+    confirmCb = null;
+  }
+});
+$('promptOverlay').addEventListener('click', (e) => {
+  if (e.target === $('promptOverlay')) {
+    $('promptOverlay').classList.remove('open');
+    promptCb = null;
+  }
+});
+
+// Dismiss on Escape key
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if ($('confirmOverlay')?.classList.contains('open')) {
+      $('confirmOverlay').classList.remove('open');
+      confirmCb = null;
+    } else if ($('promptOverlay')?.classList.contains('open')) {
+      $('promptOverlay').classList.remove('open');
+      promptCb = null;
+    }
+  }
+});
 
 
 // ─── Prompt Modal ─────────────────────────────────────────────────────────────
@@ -1325,6 +1440,9 @@ $('promptReset').addEventListener('click', () => {
     $('promptInput').select();
   }
 });
+
+window.showConfirm = showConfirm;
+window.showPrompt = showPrompt;
 
 // Allow Enter key to confirm inside prompt input
 $('promptInput').addEventListener('keydown', e => {

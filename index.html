@@ -628,30 +628,54 @@
   </div>
 
   <!-- ===== GENERIC CONFIRM MODAL ===== -->
-  <div class="overlay" id="confirmOverlay">
-    <div class="modal-box modal-sm">
-      <div class="modal-icon-lg" id="confirmIcon">⚠️</div>
-      <h3 class="modal-title" id="confirmTitle" data-i18n="confirm_title">Emin misin?</h3>
-      <p class="confirm-text" id="confirmText"></p>
-      <div class="modal-actions">
-        <button class="btn-modal-cancel" id="confirmCancel" data-i18n="cancel">İptal</button>
-        <button class="btn-modal-confirm btn-danger" id="confirmOk" data-i18n="yes">Evet</button>
+  <div class="overlay modal-dialog-overlay" id="confirmOverlay">
+    <div class="modal-box modal-dialog-box" id="confirmModalBox">
+      <div class="dialog-glow-ambient" id="confirmGlowAmbient"></div>
+      <div class="dialog-accent-bar" id="confirmAccentBar"></div>
+      <div class="dialog-icon-wrapper" id="confirmIconWrapper">
+        <div class="dialog-icon-badge" id="confirmIcon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+      </div>
+      <div class="dialog-content">
+        <h3 class="dialog-title" id="confirmTitle" data-i18n="confirm_title">Emin misin?</h3>
+        <p class="dialog-desc confirm-text" id="confirmText"></p>
+      </div>
+      <div class="dialog-actions modal-actions">
+        <button class="dialog-btn dialog-btn-cancel btn-modal-cancel" id="confirmCancel" data-i18n="cancel">İptal</button>
+        <button class="dialog-btn dialog-btn-confirm btn-modal-confirm" id="confirmOk" data-i18n="yes">Evet</button>
       </div>
     </div>
   </div>
 
   <!-- ===== GENERIC PROMPT MODAL ===== -->
-  <div class="overlay" id="promptOverlay">
-    <div class="modal-box modal-sm">
-      <h3 class="modal-title" id="promptTitle">Yeniden Adlandır</h3>
-      <div class="form-group" style="margin-top: 14px; text-align: left;">
-        <label id="promptLabel">Yeni adı girin:</label>
-        <input type="text" id="promptInput" class="form-input" placeholder="" maxlength="50" style="margin-top: 6px;" />
+  <div class="overlay modal-dialog-overlay" id="promptOverlay">
+    <div class="modal-box modal-dialog-box prompt-dialog-box" id="promptModalBox">
+      <div class="dialog-glow-ambient"></div>
+      <div class="dialog-accent-bar"></div>
+      <div class="dialog-icon-wrapper">
+        <div class="dialog-icon-badge badge-accent">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+        </div>
       </div>
-      <div class="modal-actions">
-        <button class="btn-modal-cancel" id="promptReset" style="margin-right: auto; display: none;" data-i18n="reset_name">İsmi Sıfırla</button>
-        <button class="btn-modal-cancel" id="promptCancel" data-i18n="cancel">İptal</button>
-        <button class="btn-modal-confirm" id="promptOk" data-i18n="save">Kaydet</button>
+      <div class="dialog-content">
+        <h3 class="dialog-title" id="promptTitle">Yeniden Adlandır</h3>
+        <div class="form-group dialog-input-group" style="margin-top: 14px; text-align: left;">
+          <label id="promptLabel" style="font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.07em; margin-bottom: 6px; font-weight: 600;">Yeni adı girin:</label>
+          <input type="text" id="promptInput" class="form-input" placeholder="" maxlength="50" style="margin-top: 4px;" autocomplete="off" spellcheck="false" />
+        </div>
+      </div>
+      <div class="dialog-actions modal-actions" style="margin-top: 18px;">
+        <button class="dialog-btn dialog-btn-cancel btn-modal-cancel" id="promptReset" style="margin-right: auto; display: none;" data-i18n="reset_name">İsmi Sıfırla</button>
+        <button class="dialog-btn dialog-btn-cancel btn-modal-cancel" id="promptCancel" data-i18n="cancel">İptal</button>
+        <button class="dialog-btn dialog-btn-confirm btn-modal-confirm" id="promptOk" data-i18n="save">Kaydet</button>
       </div>
     </div>
   </div>
