@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell, dialog, powerMonitor } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, shell, dialog, powerMonitor, session } = require('electron');
 const path  = require('path');
 const { exec, spawn } = require('child_process');
 const { autoUpdater } = require('electron-updater');
@@ -61,6 +61,7 @@ function createWindow() {
     const shouldMinimize = process.argv.includes('--hidden') || process.argv.includes('--minimized');
     if (!shouldMinimize) {
       mainWindow.show();
+      mainWindow.focus();
     }
   });
   mainWindow.on('close', e => {
@@ -699,26 +700,51 @@ if ($proc) {
 
 
 
-ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
+let hltbAuthData = null;
+
+async function getHltbAuthData(forceRefresh = false) {
   const HLTB_BASE_URL = 'https://howlongtobeat.com';
   const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     'Referer': HLTB_BASE_URL,
     'Origin': HLTB_BASE_URL
   };
 
-  try {
-    const initUrl = `${HLTB_BASE_URL}/api/search/site/init?t=${Date.now()}`;
-    const initRes = await fetch(initUrl, { headers });
-    if (!initRes.ok) {
-      throw new Error(`Init failed with status ${initRes.status}`);
-    }
-    const initData = await initRes.json();
-    const { token, hpKey, hpVal } = initData;
-    if (!token || !hpKey || !hpVal) {
-      throw new Error('Invalid HLTB init token data');
-    }
+  const now = Date.now();
+  if (!forceRefresh && hltbAuthData && (now - hltbAuthData.timestamp < 10 * 60 * 1000)) {
+    return hltbAuthData;
+  }
 
+  const initUrl = `${HLTB_BASE_URL}/api/search/site/init?t=${now}`;
+  const initRes = await fetch(initUrl, { headers });
+  if (!initRes.ok) {
+    throw new Error(`Init failed with status ${initRes.status}`);
+  }
+  const initData = await initRes.json();
+  if (!initData || !initData.token) {
+    throw new Error('Invalid HLTB init token data');
+  }
+
+  hltbAuthData = {
+    token: initData.token,
+    hpKey: initData.hpKey || null,
+    hpVal: initData.hpVal || null,
+    timestamp: now
+  };
+  return hltbAuthData;
+}
+
+ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
+  if (!gameName || !gameName.trim()) return [];
+
+  const HLTB_BASE_URL = 'https://howlongtobeat.com';
+  const baseHeaders = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Referer': HLTB_BASE_URL,
+    'Origin': HLTB_BASE_URL
+  };
+
+  const executeSearch = async (auth) => {
     const searchTerms = gameName.trim().split(/\s+/);
     const payload = {
       searchType: "games",
@@ -732,8 +758,7 @@ ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
           sortCategory: "popular",
           rangeCategory: "main",
           rangeTime: { min: null, max: null },
-          gameplay: { perspective: "", flow: "", genre: "", difficulty: "" },
-          rangeYear: { min: null, max: null },
+          gameplay: { perspective: "", flow: "", genre: "" },
           modifier: ""
         },
         users: { sortCategory: "postcount" },
@@ -745,21 +770,37 @@ ipcMain.handle('fetch-hltb-time', async (event, gameName) => {
       useCache: true
     };
 
-    payload[hpKey] = hpVal;
+    if (auth.hpKey && auth.hpVal) {
+      payload[auth.hpKey] = auth.hpVal;
+    }
 
     const searchHeaders = {
-      ...headers,
+      ...baseHeaders,
       'Content-Type': 'application/json',
-      'x-auth-token': token,
-      'x-hp-key': hpKey,
-      'x-hp-val': hpVal
+      'x-auth-token': auth.token
     };
 
-    const searchRes = await fetch(`${HLTB_BASE_URL}/api/search/site`, {
+    if (auth.hpKey && auth.hpVal) {
+      searchHeaders['x-hp-key'] = auth.hpKey;
+      searchHeaders['x-hp-val'] = auth.hpVal;
+    }
+
+    return await fetch(`${HLTB_BASE_URL}/api/search/site`, {
       method: 'POST',
       headers: searchHeaders,
       body: JSON.stringify(payload)
     });
+  };
+
+  try {
+    let auth = await getHltbAuthData(false);
+    let searchRes = await executeSearch(auth);
+
+    // If token expired or rejected (403), refresh token once and retry
+    if (searchRes.status === 403) {
+      auth = await getHltbAuthData(true);
+      searchRes = await executeSearch(auth);
+    }
 
     if (!searchRes.ok) {
       throw new Error(`Search failed with status ${searchRes.status}`);
@@ -962,7 +1003,7 @@ ipcMain.handle('fetch-game-ratings', async (event, gameName) => {
 ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
   const HLTB_BASE_URL = 'https://howlongtobeat.com';
   const headers = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
     'Referer': HLTB_BASE_URL,
     'Origin': HLTB_BASE_URL
   };
@@ -994,15 +1035,22 @@ ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
 
 // ─── Tray ─────────────────────────────────────────────────────────────────────
 function createTray() {
-  const iconPath = path.join(__dirname, 'icon.png');
-  const img = nativeImage.createFromPath(iconPath);
-  const trayImg = img.resize({ width: 16, height: 16 });
-  tray = new Tray(trayImg);
-  updateTrayMenu();
-  tray.on('click', () => { mainWindow?.show(); mainWindow?.focus(); });
+  try {
+    const iconPath = process.platform === 'win32' && fs.existsSync(path.join(__dirname, 'icon.ico'))
+      ? path.join(__dirname, 'icon.ico')
+      : path.join(__dirname, 'icon.png');
+    const img = nativeImage.createFromPath(iconPath);
+    const trayImg = img.resize({ width: 16, height: 16 });
+    tray = new Tray(trayImg);
+    updateTrayMenu();
+    tray.on('click', () => { mainWindow?.show(); mainWindow?.focus(); });
+  } catch (err) {
+    console.error('Failed to initialize tray:', err);
+  }
 }
 
 function updateTrayMenu() {
+  if (!tray) return;
   const dict = MAIN_TRANSLATIONS[currentLang] || MAIN_TRANSLATIONS.tr;
   tray.setToolTip(dict.defaultToolTip);
   tray.setContextMenu(Menu.buildFromTemplate([
@@ -1018,6 +1066,18 @@ app.whenReady().then(() => {
   createTray();
   startIdlePoller();
   
+  // Set headers for HLTB to prevent hotlink/origin 403 blocks on images
+  if (session && session.defaultSession) {
+    session.defaultSession.webRequest.onBeforeSendHeaders(
+      { urls: ['*://*.howlongtobeat.com/*'] },
+      (details, callback) => {
+        details.requestHeaders['Referer'] = 'https://howlongtobeat.com/';
+        details.requestHeaders['Origin'] = 'https://howlongtobeat.com';
+        callback({ requestHeaders: details.requestHeaders });
+      }
+    );
+  }
+
   // Power monitor events for PC shutdown, sleep/suspend, and lock
   powerMonitor.on('suspend', () => {
     mainWindow?.webContents.send('power-event', 'suspend');
@@ -1047,7 +1107,9 @@ app.on('before-quit', () => {
   idleProcess?.kill();
   mainWindow?.removeAllListeners('close');
 });
-app.on('window-all-closed', () => { if (process.platform !== 'darwin') app.quit(); });
+app.on('window-all-closed', () => {
+  if (process.platform !== 'darwin') app.quit();
+});
 
 // ─── Auto Updater Events & IPC ────────────────────────────────────────────────
 autoUpdater.autoDownload = true;
