@@ -1537,18 +1537,36 @@ input[type=range]::-webkit-slider-thumb:hover{
 /* === SESSIONS TABS === */
 .sessions-tabs-bar {
   display: flex;
+  align-items: center;
   gap: 8px;
-  padding: 10px 14px 10px;
+  padding: 10px 14px 8px;
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
+  overflow-y: hidden;
   scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  scroll-behavior: smooth;
+  user-select: none;
 }
 .sessions-tabs-bar::-webkit-scrollbar {
   height: 4px;
 }
+.sessions-tabs-bar::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.02);
+  border-radius: 4px;
+  margin: 0 10px;
+}
 .sessions-tabs-bar::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.sessions-tabs-bar:hover::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+}
+.sessions-tabs-bar::-webkit-scrollbar-thumb:hover {
+  background: var(--game-color, var(--accent));
+  box-shadow: 0 0 8px var(--accent-glow);
 }
 .session-tab {
   background: transparent;
@@ -1561,6 +1579,7 @@ input[type=range]::-webkit-slider-thumb:hover{
   cursor: pointer;
   transition: all .18s;
   white-space: nowrap;
+  flex-shrink: 0;
 }
 .session-tab:hover {
   color: var(--text);

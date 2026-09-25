@@ -859,6 +859,16 @@ function renderSessionTabs(g) {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   bar.textContent = '';
 
+  if (!bar._wheelInit) {
+    bar._wheelInit = true;
+    bar.addEventListener('wheel', (e) => {
+      if (e.deltaY !== 0) {
+        e.preventDefault();
+        bar.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
+
   const targets = [
     { id: 'overall', name: dict.dlc_overall },
     { id: null, name: dict.dlc_main_game }
