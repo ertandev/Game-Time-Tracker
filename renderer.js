@@ -936,6 +936,48 @@ function updateDlcSelectCount() {
       selectAllCb.checked = false;
     }
   }
+function getSessionTimeParts(s) {
+  if (!s.startTs) return { dateStr: '', timeRangeStr: '' };
+  const startD = new Date(s.startTs);
+  const lang = settings.lang || 'tr';
+  const dict = TRANSLATIONS[lang] || TRANSLATIONS.tr;
+  const locale = lang === 'tr' ? 'tr-TR' : 'en-US';
+  
+  const startDateKey = toLocalDateKey(startD);
+  const tKey = todayKey();
+  const yKey = yesterdayKey();
+  
+  let dateStr = '';
+  if (startDateKey === tKey) {
+    const fullDate = startD.toLocaleDateString(locale, { day: 'numeric', month: 'long', weekday: 'short' });
+    dateStr = `${dict.date_today} • ${fullDate}`;
+  } else if (startDateKey === yKey) {
+    const fullDate = startD.toLocaleDateString(locale, { day: 'numeric', month: 'long', weekday: 'short' });
+    dateStr = `${dict.date_yesterday} • ${fullDate}`;
+  } else {
+    dateStr = startD.toLocaleDateString(locale, { day: 'numeric', month: 'long', year: 'numeric', weekday: 'short' });
+  }
+
+  let endTs = s.endTs;
+  if (!endTs && s.durationMs) {
+    endTs = new Date(startD.getTime() + s.durationMs).toISOString();
+  }
+  const startTime = startD.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+  
+  let timeRangeStr = startTime;
+  if (endTs) {
+    const endD = new Date(endTs);
+    const endTime = endD.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    const endDateKey = toLocalDateKey(endD);
+    if (startDateKey === endDateKey) {
+      timeRangeStr = `${startTime} → ${endTime}`;
+    } else {
+      const endPrefix = endD.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+      timeRangeStr = `${startTime} → ${endPrefix} ${endTime}`;
+    }
+  }
+
+  return { dateStr, timeRangeStr };
 }
 
 function renderSessionList() {
@@ -990,9 +1032,16 @@ function renderSessionList() {
     const info = document.createElement('div');
     info.className = 's-info';
     
-    const date = document.createElement('div');
-    date.className = 's-date';
-    date.textContent = fmtSessionTime(s);
+    const timeParts = getSessionTimeParts(s);
+
+    const dateRow = document.createElement('div');
+    dateRow.className = 's-date-row';
+    
+    const dateTitle = document.createElement('span');
+    dateTitle.className = 's-date-title';
+    dateTitle.textContent = timeParts.dateStr;
+    dateRow.appendChild(dateTitle);
+
     if (s.dlcId) {
       const dlc = g.dlcs && g.dlcs.find(d => d.id === s.dlcId);
       if (dlc) {
@@ -1015,7 +1064,7 @@ function renderSessionList() {
         badgeName.className = 's-dlc-badge-name';
         badgeName.textContent = dlc.name;
         badge.appendChild(badgeName);
-        date.appendChild(badge);
+        dateRow.appendChild(badge);
       }
     } else if (g.dlcs && g.dlcs.length > 0 && sessionFilterTab === 'overall') {
       const badge = document.createElement('span');
@@ -1033,9 +1082,19 @@ function renderSessionList() {
       badgeName.className = 's-dlc-badge-name';
       badgeName.textContent = dict.dlc_main_game;
       badge.appendChild(badgeName);
-      date.appendChild(badge);
+      dateRow.appendChild(badge);
     }
-    info.appendChild(date);
+    info.appendChild(dateRow);
+
+    const timeRow = document.createElement('div');
+    timeRow.className = 's-time-row';
+    timeRow.innerHTML = `
+      <svg class="s-time-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+      </svg>
+      <span class="s-time-range">${timeParts.timeRangeStr}</span>
+    `;
+    info.appendChild(timeRow);
     
     const dur = document.createElement('div');
     dur.className = 's-dur';

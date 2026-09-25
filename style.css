@@ -733,6 +733,40 @@ input[type=range]::-webkit-slider-thumb:hover{
   flex: 1;
   min-width: 0;
 }
+.s-date-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 3px;
+}
+.s-date-title {
+  font-size: .84rem;
+  font-weight: 700;
+  color: var(--text);
+  letter-spacing: -0.01em;
+}
+.s-time-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--fd);
+  font-size: .72rem;
+  color: var(--muted);
+  letter-spacing: 0.02em;
+}
+.s-time-icon {
+  width: 12px;
+  height: 12px;
+  opacity: 0.65;
+}
+.s-time-range {
+  color: hsl(220, 15%, 72%);
+  transition: color 0.2s ease;
+}
+.session-item:hover .s-time-range {
+  color: var(--text);
+}
 .s-date {
   font-size: .78rem;
   font-weight: 600;
