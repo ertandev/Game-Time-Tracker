@@ -939,7 +939,7 @@ function updateDlcSelectCount() {
 }
 
 function getSessionTimeParts(s) {
-  if (!s.startTs) return { dateStr: '', timeRangeStr: '' };
+  if (!s.startTs) return { dateStr: '', startTime: '', endTime: null, endPrefix: null };
   const startD = new Date(s.startTs);
   const lang = settings.lang || 'tr';
   const dict = TRANSLATIONS[lang] || TRANSLATIONS.tr;
@@ -966,20 +966,18 @@ function getSessionTimeParts(s) {
   }
   const startTime = startD.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
   
-  let timeRangeStr = startTime;
+  let endTime = null;
+  let endPrefix = null;
   if (endTs) {
     const endD = new Date(endTs);
-    const endTime = endD.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+    endTime = endD.toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
     const endDateKey = toLocalDateKey(endD);
-    if (startDateKey === endDateKey) {
-      timeRangeStr = `${startTime} → ${endTime}`;
-    } else {
-      const endPrefix = endD.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
-      timeRangeStr = `${startTime} → ${endPrefix} ${endTime}`;
+    if (startDateKey !== endDateKey) {
+      endPrefix = endD.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
     }
   }
 
-  return { dateStr, timeRangeStr };
+  return { dateStr, startTime, endTime, endPrefix };
 }
 
 function renderSessionList() {
@@ -1090,11 +1088,24 @@ function renderSessionList() {
 
     const timeRow = document.createElement('div');
     timeRow.className = 's-time-row';
+    let timeRangeInner = `<span class="s-time-val">${timeParts.startTime}</span>`;
+    if (timeParts.endTime) {
+      const endLabel = timeParts.endPrefix ? `${timeParts.endPrefix} ${timeParts.endTime}` : timeParts.endTime;
+      timeRangeInner += `
+        <span class="s-time-arrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </span>
+        <span class="s-time-val">${endLabel}</span>
+      `;
+    }
     timeRow.innerHTML = `
       <svg class="s-time-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
       </svg>
-      <span class="s-time-range">${timeParts.timeRangeStr}</span>
+      <div class="s-time-range">${timeRangeInner}</div>
     `;
     info.appendChild(timeRow);
     
