@@ -1194,24 +1194,30 @@ $('addGameConfirm').addEventListener('click', async()=>{
   toast(dict.toast_game_added.replace('NAME', name));
 
   if (selectedHltbData && isElectron) {
-    window.electronAPI.fetchHltbDlcs(selectedHltbData.id).then(async (dlcNames) => {
-      if (dlcNames && dlcNames.length > 0) {
+    window.electronAPI.fetchHltbDlcs(selectedHltbData.id).then(async (dlcList) => {
+      if (dlcList && dlcList.length > 0) {
         const game = gameById(gameId);
         if (game) {
           if (!game.dlcs) game.dlcs = [];
-          const existingNames = new Set(game.dlcs.map(d => d.name.toLowerCase().trim()));
-          let addedCount = 0;
-          dlcNames.forEach(dlcName => {
-            if (!existingNames.has(dlcName.toLowerCase().trim())) {
+          let changedCount = 0;
+          dlcList.forEach(item => {
+            const dlcName = (typeof item === 'string' ? item : item.name).trim();
+            const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
+            const existing = game.dlcs.find(d => d.name.toLowerCase().trim() === dlcName.toLowerCase());
+            if (!existing) {
               game.dlcs.push({
                 id: genId(),
-                name: dlcName.trim(),
+                name: dlcName,
+                image: dlcImage,
                 createdTs: new Date().toISOString()
               });
-              addedCount++;
+              changedCount++;
+            } else if (!existing.image && dlcImage) {
+              existing.image = dlcImage;
+              changedCount++;
             }
           });
-          if (addedCount > 0) {
+          if (changedCount > 0) {
             await saveGames();
             if (selectedId === gameId) {
               renderDlcSection();

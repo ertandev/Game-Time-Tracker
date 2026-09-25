@@ -1090,6 +1090,28 @@ function renderDlcSection() {
   mainRadio.className = 'dlc-item-radio';
   mainItem.appendChild(mainRadio);
 
+  const mainCoverWrapper = document.createElement('div');
+  mainCoverWrapper.className = 'dlc-item-cover-wrapper';
+  const mainCoverUrl = getGameIconUrl(g);
+  if (mainCoverUrl) {
+    const mainImg = document.createElement('img');
+    mainImg.className = 'dlc-item-cover';
+    mainImg.src = mainCoverUrl;
+    mainImg.alt = '';
+    mainImg.onerror = () => {
+      mainImg.style.display = 'none';
+      const ph = mainCoverWrapper.querySelector('.dlc-item-cover-placeholder');
+      if (ph) ph.style.display = 'flex';
+    };
+    mainCoverWrapper.appendChild(mainImg);
+  }
+  const mainPlaceholder = document.createElement('div');
+  mainPlaceholder.className = 'dlc-item-cover-placeholder';
+  if (mainCoverUrl) mainPlaceholder.style.display = 'none';
+  mainPlaceholder.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4m-2-2v4m10-2h.01"/></svg>`;
+  mainCoverWrapper.appendChild(mainPlaceholder);
+  mainItem.appendChild(mainCoverWrapper);
+
   const mainName = document.createElement('div');
   mainName.className = 'dlc-item-name';
   mainName.textContent = dict.dlc_main_game;
@@ -1134,6 +1156,28 @@ function renderDlcSection() {
         radio.className = 'dlc-item-radio';
         item.appendChild(radio);
       }
+
+      const dlcCoverWrapper = document.createElement('div');
+      dlcCoverWrapper.className = 'dlc-item-cover-wrapper';
+      const dlcCoverUrl = d.image ? resolveHltbImage(d.image) : null;
+      if (dlcCoverUrl) {
+        const dlcImg = document.createElement('img');
+        dlcImg.className = 'dlc-item-cover';
+        dlcImg.src = dlcCoverUrl;
+        dlcImg.alt = '';
+        dlcImg.onerror = () => {
+          dlcImg.style.display = 'none';
+          const ph = dlcCoverWrapper.querySelector('.dlc-item-cover-placeholder');
+          if (ph) ph.style.display = 'flex';
+        };
+        dlcCoverWrapper.appendChild(dlcImg);
+      }
+      const dlcPlaceholder = document.createElement('div');
+      dlcPlaceholder.className = 'dlc-item-cover-placeholder';
+      if (dlcCoverUrl) dlcPlaceholder.style.display = 'none';
+      dlcPlaceholder.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
+      dlcCoverWrapper.appendChild(dlcPlaceholder);
+      item.appendChild(dlcCoverWrapper);
 
       const name = document.createElement('div');
       name.className = 'dlc-item-name';
@@ -1204,6 +1248,38 @@ function renderDlcSection() {
       el.appendChild(item);
     });
   }
+
+  // Auto-sync DLC cover images in background if missing
+  if (g.hltbData && g.hltbData.id && g.dlcs && g.dlcs.length && window.electronAPI && window.electronAPI.fetchHltbDlcs) {
+    const missingCover = g.dlcs.some(d => !d.image);
+    if (missingCover && !g._dlcSyncing) {
+      g._dlcSyncing = true;
+      window.electronAPI.fetchHltbDlcs(g.hltbData.id).then(async (dlcList) => {
+        g._dlcSyncing = false;
+        if (dlcList && dlcList.length) {
+          let updated = false;
+          dlcList.forEach(item => {
+            const dlcName = (typeof item === 'string' ? item : item.name).trim().toLowerCase();
+            const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
+            if (dlcImage) {
+              const targetDlc = g.dlcs.find(d => d.name.trim().toLowerCase() === dlcName);
+              if (targetDlc && !targetDlc.image) {
+                targetDlc.image = dlcImage;
+                updated = true;
+              }
+            }
+          });
+          if (updated) {
+            await saveGames();
+            if (selectedId === g.id) {
+              renderDlcSection();
+            }
+          }
+        }
+      }).catch(() => { g._dlcSyncing = false; });
+    }
+  }
+
   updateDlcSelectCount();
 }
 
@@ -1517,24 +1593,30 @@ function renderHltbSearchResults(results) {
       await updateGameHltbData(selectedId, hltbData);
       
       try {
-        const dlcNames = await window.electronAPI.fetchHltbDlcs(hltbData.id);
-        if (dlcNames && dlcNames.length > 0) {
+        const dlcList = await window.electronAPI.fetchHltbDlcs(hltbData.id);
+        if (dlcList && dlcList.length > 0) {
           const g = gameById(selectedId);
           if (g) {
             if (!g.dlcs) g.dlcs = [];
-            const existingNames = new Set(g.dlcs.map(d => d.name.toLowerCase().trim()));
-            let addedCount = 0;
-            dlcNames.forEach(dlcName => {
-              if (!existingNames.has(dlcName.toLowerCase().trim())) {
+            let changedCount = 0;
+            dlcList.forEach(item => {
+              const dlcName = (typeof item === 'string' ? item : item.name).trim();
+              const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
+              const existing = g.dlcs.find(d => d.name.toLowerCase().trim() === dlcName.toLowerCase());
+              if (!existing) {
                 g.dlcs.push({
                   id: genId(),
-                  name: dlcName.trim(),
+                  name: dlcName,
+                  image: dlcImage,
                   createdTs: new Date().toISOString()
                 });
-                addedCount++;
+                changedCount++;
+              } else if (!existing.image && dlcImage) {
+                existing.image = dlcImage;
+                changedCount++;
               }
             });
-            if (addedCount > 0) {
+            if (changedCount > 0) {
               await saveGames();
               renderDlcSection();
             }
@@ -1795,17 +1877,22 @@ async function handleResetIcon(g) {
       
       // Fetch DLCs in background
       try {
-        const dlcNames = await window.electronAPI.fetchHltbDlcs(res.game_id);
-        if (dlcNames && dlcNames.length > 0) {
+        const dlcList = await window.electronAPI.fetchHltbDlcs(res.game_id);
+        if (dlcList && dlcList.length > 0) {
           if (!g.dlcs) g.dlcs = [];
-          const existingNames = new Set(g.dlcs.map(d => d.name.toLowerCase().trim()));
-          dlcNames.forEach(dlcName => {
-            if (!existingNames.has(dlcName.toLowerCase().trim())) {
+          dlcList.forEach(item => {
+            const dlcName = (typeof item === 'string' ? item : item.name).trim();
+            const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
+            const existing = g.dlcs.find(d => d.name.toLowerCase().trim() === dlcName.toLowerCase());
+            if (!existing) {
               g.dlcs.push({
                 id: genId(),
-                name: dlcName.trim(),
+                name: dlcName,
+                image: dlcImage,
                 createdTs: new Date().toISOString()
               });
+            } else if (!existing.image && dlcImage) {
+              existing.image = dlcImage;
             }
           });
         }

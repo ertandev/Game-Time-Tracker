@@ -220,6 +220,16 @@ test('Deleting a DLC preserves playtime by setting dlcId to null', () => {
   assert.equal(totalMs(dummyGame), 5400000); // Playtime preserved
 });
 
+test('DLC object stores cover image and resolves properly', () => {
+  const dlc = {
+    id: 'dlc-erdtree',
+    name: 'Shadow of the Erdtree',
+    image: '139385_Elden_Ring_Shadow_of_the_Erdtree.jpg'
+  };
+  assert.equal(dlc.image, '139385_Elden_Ring_Shadow_of_the_Erdtree.jpg');
+  assert.equal(resolveHltbImage(dlc.image), 'https://howlongtobeat.com/games/139385_Elden_Ring_Shadow_of_the_Erdtree.jpg');
+});
+
 // ─── 6. Process Name Formatter Tests ──────────────────────────────────────────
 function formatProcessNameTest(procName) {
   if (!procName) return '';

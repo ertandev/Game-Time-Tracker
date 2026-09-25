@@ -448,13 +448,21 @@ async function clearGameSessions(gameId) {
   await saveGames();
 }
 
-async function addDlc(gameId, name) {
+function resolveHltbImage(img) {
+  if (!img) return '';
+  if (img.startsWith('http://') || img.startsWith('https://')) return img;
+  if (img.startsWith('/')) return 'https://howlongtobeat.com' + img;
+  return 'https://howlongtobeat.com/games/' + img;
+}
+
+async function addDlc(gameId, name, image = null) {
   const g = gameById(gameId);
   if (!g) return null;
   if (!g.dlcs) g.dlcs = [];
   const newDlc = {
     id: genId(),
     name: name,
+    image: image || null,
     createdTs: new Date().toISOString()
   };
   g.dlcs.push(newDlc);
@@ -549,7 +557,8 @@ if (typeof module !== 'undefined') {
     msToHMS, fmtDur, fmtShort, parseDurationInput, fmtSessionTime, todayKey, yesterdayKey, toLocalDateKey, genId,
     gameById, totalMs, todayMs, bestMs,
     filteredTotalMs, filteredTodayMs, filteredBestMs, filteredSessionCount,
-    updateGameHltbData, unlinkGameHltbData
+    updateGameHltbData, unlinkGameHltbData,
+    resolveHltbImage, addDlc
   };
 }
 

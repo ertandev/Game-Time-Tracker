@@ -1024,7 +1024,34 @@ ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
     const gameObj = data.props?.pageProps?.game?.data;
     if (gameObj && gameObj.relationships) {
       const dlcs = gameObj.relationships.filter(r => r.game_type === 'dlc');
-      return dlcs.map(d => d.game_name);
+      if (!dlcs.length) return [];
+
+      const dlcResults = await Promise.all(dlcs.map(async (d) => {
+        let image = null;
+        try {
+          const dlcRes = await fetch(`${HLTB_BASE_URL}/game/${d.game_id}`, { headers });
+          if (dlcRes.ok) {
+            const dlcHtml = await dlcRes.text();
+            const dlcMatch = dlcHtml.match(nextDataPattern);
+            if (dlcMatch) {
+              const dlcData = JSON.parse(dlcMatch[1]);
+              const dlcGame = dlcData.props?.pageProps?.game?.data?.game?.[0];
+              if (dlcGame && dlcGame.game_image) {
+                image = dlcGame.game_image;
+              }
+            }
+          }
+        } catch (imgErr) {
+          console.warn(`Failed to fetch DLC cover for ${d.game_name} (${d.game_id}):`, imgErr.message);
+        }
+        return {
+          id: d.game_id,
+          name: d.game_name,
+          image: image
+        };
+      }));
+
+      return dlcResults;
     }
     return [];
   } catch (e) {
