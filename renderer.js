@@ -936,6 +936,8 @@ function updateDlcSelectCount() {
       selectAllCb.checked = false;
     }
   }
+}
+
 function getSessionTimeParts(s) {
   if (!s.startTs) return { dateStr: '', timeRangeStr: '' };
   const startD = new Date(s.startTs);
