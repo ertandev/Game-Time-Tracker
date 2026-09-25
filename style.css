@@ -670,21 +670,141 @@ input[type=range]::-webkit-slider-thumb:hover{
 .empty-state{text-align:center;padding:36px;color:var(--muted)}
 .empty-icon{font-size:2.5rem;margin-bottom:10px;opacity:.4}
 .empty-state p{font-size:.85rem}
-.session-item{display:flex;align-items:center;gap:12px;background:var(--s2);border:1px solid var(--border);border-radius:var(--r);padding:12px 16px;margin-bottom:7px;transition:all .18s;animation:slideIn .25s ease}
-.session-item:last-child{margin-bottom:0}
-.session-item:hover{border-color:hsl(220,15%,30%);background:var(--s3)}
-@keyframes slideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.s-num{font-family:var(--fd);font-size:.65rem;color:var(--accent);background:hsl(162,100%,50%,0.1);border:1px solid hsl(162,100%,50%,0.2);border-radius:5px;padding:3px 7px;min-width:32px;text-align:center;flex-shrink:0}
-.s-info{flex:1;min-width:0}
-.s-date{font-size:.78rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.s-meta{font-size:.68rem;color:var(--muted);margin-top:1px}
-.s-dur{font-family:var(--fd);font-size:.88rem;font-weight:700;flex-shrink:0}
-.s-del{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:5px;border-radius:5px;display:flex;align-items:center;transition:all .18s;flex-shrink:0}
-.s-del:hover{color:var(--danger);background:hsl(0,90%,60%,0.1)}
-.s-del svg{width:13px;height:13px}
-.s-edit{background:transparent;border:none;color:var(--muted);cursor:pointer;padding:5px;border-radius:5px;display:flex;align-items:center;transition:all .18s;flex-shrink:0}
-.s-edit:hover{color:var(--game-color,var(--accent));background:hsl(162,100%,50%,0.1)}
-.s-edit svg{width:13px;height:13px}
+.session-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--s2);
+  border: 1px solid var(--border);
+  border-radius: var(--r);
+  padding: 12px 16px;
+  margin-bottom: 7px;
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  overflow: hidden;
+  animation: slideIn .25s ease;
+}
+.session-item:last-child {
+  margin-bottom: 0;
+}
+.session-item::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  bottom: 20%;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--game-color, var(--accent));
+  opacity: 0.3;
+  transition: all 0.25s ease;
+}
+.session-item:hover {
+  border-color: rgba(255, 255, 255, 0.16);
+  background: var(--s3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
+}
+.session-item:hover::before {
+  top: 0;
+  bottom: 0;
+  opacity: 1;
+  box-shadow: 0 0 10px var(--game-color, var(--accent));
+}
+.s-num {
+  font-family: var(--fd);
+  font-size: .65rem;
+  font-weight: 700;
+  color: var(--game-color, var(--accent));
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 6px;
+  padding: 3px 8px;
+  min-width: 32px;
+  text-align: center;
+  flex-shrink: 0;
+  transition: all 0.2s ease;
+}
+.session-item:hover .s-num {
+  border-color: var(--game-color, var(--accent));
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.s-info {
+  flex: 1;
+  min-width: 0;
+}
+.s-date {
+  font-size: .78rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.s-meta {
+  font-size: .68rem;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.s-dur {
+  font-family: var(--fd);
+  font-size: .92rem;
+  font-weight: 700;
+  flex-shrink: 0;
+  color: var(--game-color, var(--accent));
+  text-shadow: 0 0 12px var(--accent-glow);
+  letter-spacing: 0.02em;
+  background: rgba(255, 255, 255, 0.02);
+  padding: 4px 10px;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.2s ease;
+}
+.session-item:hover .s-dur {
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+}
+.s-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  opacity: 0.35;
+  transform: translateX(3px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.session-item:hover .s-actions {
+  opacity: 1;
+  transform: translateX(0);
+}
+.s-del, .s-edit {
+  background: transparent;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 5px;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all .18s;
+  flex-shrink: 0;
+}
+.s-del:hover {
+  color: var(--danger);
+  background: hsl(0, 90%, 60%, 0.12);
+}
+.s-del svg {
+  width: 14px;
+  height: 14px;
+}
+.s-edit:hover {
+  color: var(--game-color, var(--accent));
+  background: rgba(255, 255, 255, 0.08);
+}
+.s-edit svg {
+  width: 14px;
+  height: 14px;
+}
 
 /* OVERLAY / MODAL */
 .overlay{
@@ -1521,19 +1641,59 @@ input[type=range]::-webkit-slider-thumb:hover{
   width: 13px;
   height: 13px;
 }
+/* DLC Badge in Session History */
 .s-dlc-badge {
-  display: inline-block;
-  font-size: 0.62rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.65rem;
   font-weight: 600;
   color: var(--game-color, var(--accent));
-  border: 1px solid var(--game-color, var(--accent));
-  border-radius: 4px;
-  padding: 1px 6px;
-  margin-left: 8px;
-  vertical-align: middle;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  padding: 2px 7px 2px 3px;
   letter-spacing: 0.02em;
   font-family: var(--fb);
-  background: rgba(255, 255, 255, 0.02);
+  background: rgba(255, 255, 255, 0.03);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s ease;
+  vertical-align: middle;
+}
+.session-item:hover .s-dlc-badge {
+  border-color: var(--game-color, var(--accent));
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: 0 0 8px var(--accent-glow);
+}
+.s-dlc-badge.s-main-badge {
+  color: var(--muted);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.session-item:hover .s-dlc-badge.s-main-badge {
+  color: var(--text);
+  border-color: rgba(255, 255, 255, 0.18);
+}
+.s-dlc-badge-img {
+  width: 14px;
+  height: 19px;
+  border-radius: 2px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+.s-dlc-badge-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  opacity: 0.7;
+}
+.s-dlc-badge-icon svg {
+  width: 11px;
+  height: 11px;
+}
+.s-dlc-badge-name {
+  white-space: nowrap;
 }
 
 /* === SESSIONS TABS === */

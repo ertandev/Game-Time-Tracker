@@ -998,9 +998,42 @@ function renderSessionList() {
       if (dlc) {
         const badge = document.createElement('span');
         badge.className = 's-dlc-badge';
-        badge.textContent = dlc.name;
+        if (dlc.image) {
+          const badgeImg = document.createElement('img');
+          badgeImg.className = 's-dlc-badge-img';
+          badgeImg.src = resolveHltbImage(dlc.image);
+          badgeImg.alt = '';
+          badgeImg.onerror = () => { badgeImg.style.display = 'none'; };
+          badge.appendChild(badgeImg);
+        } else {
+          const badgeIcon = document.createElement('span');
+          badgeIcon.className = 's-dlc-badge-icon';
+          badgeIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
+          badge.appendChild(badgeIcon);
+        }
+        const badgeName = document.createElement('span');
+        badgeName.className = 's-dlc-badge-name';
+        badgeName.textContent = dlc.name;
+        badge.appendChild(badgeName);
         date.appendChild(badge);
       }
+    } else if (g.dlcs && g.dlcs.length > 0 && sessionFilterTab === 'overall') {
+      const badge = document.createElement('span');
+      badge.className = 's-dlc-badge s-main-badge';
+      const mainIconUrl = getGameIconUrl(g);
+      if (mainIconUrl) {
+        const badgeImg = document.createElement('img');
+        badgeImg.className = 's-dlc-badge-img';
+        badgeImg.src = mainIconUrl;
+        badgeImg.alt = '';
+        badgeImg.onerror = () => { badgeImg.style.display = 'none'; };
+        badge.appendChild(badgeImg);
+      }
+      const badgeName = document.createElement('span');
+      badgeName.className = 's-dlc-badge-name';
+      badgeName.textContent = dict.dlc_main_game;
+      badge.appendChild(badgeName);
+      date.appendChild(badge);
     }
     info.appendChild(date);
     
@@ -1071,8 +1104,11 @@ function renderSessionList() {
     div.appendChild(info);
     div.appendChild(dur);
     if (!isMultiSelectMode) {
-      div.appendChild(edit);
-      div.appendChild(del);
+      const actions = document.createElement('div');
+      actions.className = 's-actions';
+      actions.appendChild(edit);
+      actions.appendChild(del);
+      div.appendChild(actions);
     }
     el.appendChild(div);
   });
