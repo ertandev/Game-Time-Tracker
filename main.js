@@ -1089,21 +1089,22 @@ function updateTrayMenu() {
 
 // ─── Lifecycle ────────────────────────────────────────────────────────────────
 app.whenReady().then(() => {
-  createWindow();
-  createTray();
-  startIdlePoller();
-  
   // Set headers for HLTB to prevent hotlink/origin 403 blocks on images
   if (session && session.defaultSession) {
     session.defaultSession.webRequest.onBeforeSendHeaders(
-      { urls: ['*://*.howlongtobeat.com/*'] },
+      { urls: ['*://howlongtobeat.com/*', '*://*.howlongtobeat.com/*'] },
       (details, callback) => {
         details.requestHeaders['Referer'] = 'https://howlongtobeat.com/';
         details.requestHeaders['Origin'] = 'https://howlongtobeat.com';
+        details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
         callback({ requestHeaders: details.requestHeaders });
       }
     );
   }
+
+  createWindow();
+  createTray();
+  startIdlePoller();
 
   // Power monitor events for PC shutdown, sleep/suspend, and lock
   powerMonitor.on('suspend', () => {

@@ -170,6 +170,25 @@ function getGameIconUrl(g) {
   return null;
 }
 
+function attachImageWithRetry(imgEl, fallbackFn, maxRetries = 2) {
+  let retries = 0;
+  const originalSrc = imgEl.src;
+  
+  imgEl.onerror = () => {
+    if (retries < maxRetries && originalSrc) {
+      retries++;
+      setTimeout(() => {
+        const sep = originalSrc.includes('?') ? '&' : '?';
+        imgEl.src = `${originalSrc}${sep}_r=${Date.now()}`;
+      }, 500 * retries);
+    } else {
+      if (typeof fallbackFn === 'function') {
+        fallbackFn();
+      }
+    }
+  };
+}
+
 // ─── Drag-and-Drop Manager (Smooth Spring-Physics) ──────────────────────────────
 const DragManager = (() => {
   let isDragging = false;
@@ -1052,7 +1071,15 @@ function renderSessionList() {
           badgeImg.className = 's-dlc-badge-img';
           badgeImg.src = resolveHltbImage(dlc.image);
           badgeImg.alt = '';
-          badgeImg.onerror = () => { badgeImg.style.display = 'none'; };
+          attachImageWithRetry(badgeImg, () => {
+            badgeImg.style.display = 'none';
+            if (!badge.querySelector('.s-dlc-badge-icon')) {
+              const badgeIcon = document.createElement('span');
+              badgeIcon.className = 's-dlc-badge-icon';
+              badgeIcon.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 2 7 12 12 22 7 12 2"></polygon><polyline points="2 17 12 22 22 17"></polyline><polyline points="2 12 12 17 22 12"></polyline></svg>`;
+              badge.insertBefore(badgeIcon, badge.firstChild);
+            }
+          });
           badge.appendChild(badgeImg);
         } else {
           const badgeIcon = document.createElement('span');
@@ -1075,7 +1102,9 @@ function renderSessionList() {
         badgeImg.className = 's-dlc-badge-img';
         badgeImg.src = mainIconUrl;
         badgeImg.alt = '';
-        badgeImg.onerror = () => { badgeImg.style.display = 'none'; };
+        attachImageWithRetry(badgeImg, () => {
+          badgeImg.style.display = 'none';
+        });
         badge.appendChild(badgeImg);
       }
       const badgeName = document.createElement('span');
@@ -1216,11 +1245,11 @@ function renderDlcSection() {
     mainImg.className = 'dlc-item-cover';
     mainImg.src = mainCoverUrl;
     mainImg.alt = '';
-    mainImg.onerror = () => {
+    attachImageWithRetry(mainImg, () => {
       mainImg.style.display = 'none';
       const ph = mainCoverWrapper.querySelector('.dlc-item-cover-placeholder');
       if (ph) ph.style.display = 'flex';
-    };
+    });
     mainCoverWrapper.appendChild(mainImg);
   }
   const mainPlaceholder = document.createElement('div');
@@ -1283,11 +1312,11 @@ function renderDlcSection() {
         dlcImg.className = 'dlc-item-cover';
         dlcImg.src = dlcCoverUrl;
         dlcImg.alt = '';
-        dlcImg.onerror = () => {
+        attachImageWithRetry(dlcImg, () => {
           dlcImg.style.display = 'none';
           const ph = dlcCoverWrapper.querySelector('.dlc-item-cover-placeholder');
           if (ph) ph.style.display = 'flex';
-        };
+        });
         dlcCoverWrapper.appendChild(dlcImg);
       }
       const dlcPlaceholder = document.createElement('div');
@@ -1380,7 +1409,13 @@ function renderDlcSection() {
             const dlcName = (typeof item === 'string' ? item : item.name).trim().toLowerCase();
             const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
             if (dlcImage) {
-              const targetDlc = g.dlcs.find(d => d.name.trim().toLowerCase() === dlcName);
+              const cleanItem = dlcName.replace(/[^a-z0-9]/g, '');
+              const targetDlc = g.dlcs.find(d => {
+                const nameLower = (d.name || '').trim().toLowerCase();
+                if (nameLower === dlcName) return true;
+                const cleanD = nameLower.replace(/[^a-z0-9]/g, '');
+                return cleanD === cleanItem || cleanD.includes(cleanItem) || cleanItem.includes(cleanD);
+              });
               if (targetDlc && !targetDlc.image) {
                 targetDlc.image = dlcImage;
                 updated = true;
@@ -1391,6 +1426,7 @@ function renderDlcSection() {
             await saveGames();
             if (selectedId === g.id) {
               renderDlcSection();
+              renderSessionList();
             }
           }
         }
@@ -1737,6 +1773,7 @@ function renderHltbSearchResults(results) {
             if (changedCount > 0) {
               await saveGames();
               renderDlcSection();
+              renderSessionList();
             }
           }
         }
@@ -1747,6 +1784,7 @@ function renderHltbSearchResults(results) {
       closeHltbModal();
       renderHltbSection();
       renderSidebar();
+      renderSessionList();
       renderGameHeader();
       toast(dict.toast_hltb_linked);
     });
@@ -2049,6 +2087,7 @@ async function handleResetIcon(g) {
     renderHltbSection();
     renderDlcSection();
     renderStats();
+    renderSessionList();
   }
   
   toast(settings.lang === 'tr' ? 'Simge orijinal sistem simgesine sıfırlandı' : 'Icon reset to system icon');
