@@ -1,4 +1,4 @@
-# Game-Time Tracker 🎮🕰️
+# <img src="https://api.iconify.design/lucide:timer.svg?color=%2338bdf8" width="28" height="28" align="center" /> Game-Time Tracker
 
 Game-Time Tracker is a modern, high-performance desktop application built with **Electron** and vanilla JavaScript/CSS that automatically tracks your gaming sessions. It runs silently in the background, monitors your active game processes on Windows, and dynamically handles idle time and Alt-Tab detection to ensure your recorded playtimes are 100% accurate.
 
@@ -6,23 +6,23 @@ Featuring a premium **"Liquid Glass" (glassmorphic)** user interface, customizab
 
 ---
 
-## 🌟 Key Features
+## <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23818cf8" width="20" height="20" align="center" /> Key Features
 
-- **Automated Game Tracking:** Automatically detects when a game is launched and starts the stopwatch timer. When the game process exits, it automatically stops and saves the session.
-- **Smart AFK (Away From Keyboard) Detection:** Uses native Windows API integration to detect system-wide keyboard and mouse inactivity. If you step away from your PC for longer than a configurable threshold (default: 10 minutes), the timer automatically pauses and resumes when you return.
-- **Alt-Tab / Background Window Detection:** Monitors which window currently has focus. If you Alt-Tab out of your game for more than a set time limit (default: 2 minutes), the session is paused until you click back into the game.
-- **System Tray Integration:** Minimize the app to the system tray. The tray tooltip dynamically updates to show which game is running and how long you've been playing.
-- **Detailed History & Statistics:** View historical sessions with timestamps, durations, daily playtimes, personal records, and session count statistics.
-- **Liquid Glass UI & Design:** A state-of-the-art dark-mode interface featuring vibrant gradients, glassmorphism blur effects (`backdrop-filter`), smooth hover animations, and custom-designed inline SVG icons replacing standard emojis.
-- **Custom HTML Context Menu:** Right-click any game card in the sidebar to open a premium context menu to launch the game, open its folder, change its accent color, rename it, reset its icon, or delete it.
-- **Auto Game-Executable Detection (Scan List):** The app automatically scans currently running processes. Adding games directly from this list automatically saves their executable paths, enabling instant launching and file location tracking.
-- **Native Game Icon Extraction:** Automatically extracts the high-resolution original icon of the game executable (`.exe`) via the Windows shell to display in the dashboard.
-- **Anti-Cheat Compatibility (Shell Launching):** Spawns games directly via Windows Shell (`explorer.exe`) to detach processes from the Node.js/Electron tree, ensuring compatibility with modern anti-cheat systems (e.g., Easy Anti-Cheat, BattlEye).
-- **Single-Instance Application Lock:** Prevents multiple instances of the app from running simultaneously. Launching a new instance focuses the already running dashboard.
+- <img src="https://api.iconify.design/lucide:play-circle.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Automated Game Tracking:** Automatically detects when a game is launched and starts the stopwatch timer. When the game process exits, it automatically stops and saves the session.
+- <img src="https://api.iconify.design/lucide:coffee.svg?color=%23fbbf24" width="16" height="16" align="center" /> **Smart AFK (Away From Keyboard) Detection:** Uses native Windows API integration to detect system-wide keyboard and mouse inactivity. If you step away from your PC for longer than a configurable threshold (default: 10 minutes), the timer automatically pauses and resumes when you return.
+- <img src="https://api.iconify.design/lucide:minimize-2.svg?color=%23a78bfa" width="16" height="16" align="center" /> **Alt-Tab / Background Window Detection:** Monitors which window currently has focus. If you Alt-Tab out of your game for more than a set time limit (default: 2 minutes), the session is paused until you click back into the game.
+- <img src="https://api.iconify.design/lucide:layout-grid.svg?color=%2338bdf8" width="16" height="16" align="center" /> **System Tray Integration:** Minimize the app to the system tray. The tray tooltip dynamically updates to show which game is running and how long you've been playing.
+- <img src="https://api.iconify.design/lucide:bar-chart-2.svg?color=%2334d399" width="16" height="16" align="center" /> **Detailed History & Statistics:** View historical sessions with timestamps, durations, daily playtimes, personal records, and session count statistics.
+- <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23818cf8" width="16" height="16" align="center" /> **Liquid Glass UI & Design:** A state-of-the-art dark-mode interface featuring vibrant gradients, glassmorphism blur effects (`backdrop-filter`), smooth hover animations, and custom-designed inline SVG icons.
+- <img src="https://api.iconify.design/lucide:menu.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Custom HTML Context Menu:** Right-click any game card in the sidebar to open a premium context menu to launch the game, open its folder, change its accent color, rename it, reset its icon, or delete it.
+- <img src="https://api.iconify.design/lucide:scan.svg?color=%2334d399" width="16" height="16" align="center" /> **Auto Game-Executable Detection (Scan List):** The app automatically scans currently running processes. Adding games directly from this list automatically saves their executable paths, enabling instant launching and file location tracking.
+- <img src="https://api.iconify.design/lucide:image.svg?color=%23fbbf24" width="16" height="16" align="center" /> **Native Game Icon Extraction:** Automatically extracts the high-resolution original icon of the game executable (`.exe`) via the Windows shell to display in the dashboard.
+- <img src="https://api.iconify.design/lucide:shield-check.svg?color=%2334d399" width="16" height="16" align="center" /> **Anti-Cheat Compatibility (Shell Launching):** Spawns games directly via Windows Shell (`explorer.exe`) to detach processes from the Node.js/Electron tree, ensuring compatibility with modern anti-cheat systems (e.g., Easy Anti-Cheat, BattlEye).
+- <img src="https://api.iconify.design/lucide:lock.svg?color=%23f43f5e" width="16" height="16" align="center" /> **Single-Instance Application Lock:** Prevents multiple instances of the app from running simultaneously. Launching a new instance focuses the already running dashboard.
 
 ---
 
-## 🛠️ How It Works Under the Hood
+## <img src="https://api.iconify.design/lucide:cpu.svg?color=%23a78bfa" width="20" height="20" align="center" /> How It Works Under the Hood
 
 The application relies on several core tracking mechanisms to monitor games and system activity on Windows:
 
@@ -40,7 +40,7 @@ The application relies on several core tracking mechanisms to monitor games and 
 
 ---
 
-## 🚀 Getting Started
+## <img src="https://api.iconify.design/lucide:play.svg?color=%2334d399" width="20" height="20" align="center" /> Getting Started
 
 ### Prerequisites
 
@@ -67,7 +67,7 @@ Start the development server:
 npm start
 ```
 
-### Packaging / Building Yükleyici (Installer)
+### Packaging / Building Installer
 
 To build a standalone, offline English-only NSIS Windows installer:
 ```bash
@@ -77,7 +77,7 @@ The compiled setup executable (`GameTime-Tracker-Setup-1.0.0.exe`) will be gener
 
 ---
 
-## ⚙️ Configuration & Customization
+## <img src="https://api.iconify.design/lucide:sliders.svg?color=%2338bdf8" width="20" height="20" align="center" /> Configuration & Customization
 
 You can fine-tune tracking behaviors via the **Global Settings** modal inside the app:
 
@@ -89,7 +89,7 @@ You can fine-tune tracking behaviors via the **Global Settings** modal inside th
 
 ---
 
-## 📁 Project Structure
+## <img src="https://api.iconify.design/lucide:folder-tree.svg?color=%23818cf8" width="20" height="20" align="center" /> Project Structure
 
 The project has been refactored into modular, clean scripts to separate concerns and prevent monolithic file growth:
 
@@ -113,7 +113,7 @@ Game-Time-Tracker/
 
 ---
 
-## 🔒 Technologies Used
+## <img src="https://api.iconify.design/lucide:layers.svg?color=%23a78bfa" width="20" height="20" align="center" /> Technologies Used
 
 - **Framework:** Electron (v42+)
 - **Frontend:** Vanilla HTML5, CSS3, JavaScript (ES6 Modules)
@@ -122,6 +122,6 @@ Game-Time-Tracker/
 
 ---
 
-## 📝 License
+## <img src="https://api.iconify.design/lucide:file-text.svg?color=%2394a3b8" width="20" height="20" align="center" /> License
 
-This project is licensed under the ISC License. See the [package.json](file:///c:/Users/v0rteX/Desktop/Game-Time%20Tracker/package.json) file for details.
+This project is licensed under the ISC License. See the [package.json](package.json) file for details.
