@@ -1,124 +1,178 @@
 # <img src="https://api.iconify.design/lucide:timer.svg?color=%2338bdf8" width="28" height="28" align="center" /> Game-Time Tracker
 
-Game-Time Tracker is a modern, high-performance desktop application built with **Electron** and vanilla JavaScript/CSS that automatically tracks your gaming sessions. It runs silently in the background, monitors your active game processes on Windows, and dynamically handles idle time and Alt-Tab detection to ensure your recorded playtimes are 100% accurate.
+<p align="left">
+  <img src="https://img.shields.io/badge/version-1.8.0-38bdf8.svg?style=flat-square" alt="Version 1.8.0" />
+  <img src="https://img.shields.io/badge/Electron-42.1.0-47848F.svg?style=flat-square&logo=electron&logoColor=white" alt="Electron" />
+  <img src="https://img.shields.io/badge/Windows-10%20%7C%2011-0078D4.svg?style=flat-square&logo=windows&logoColor=white" alt="Windows" />
+  <img src="https://img.shields.io/badge/HLTB-Integrated-f59e0b.svg?style=flat-square" alt="HowLongToBeat" />
+  <img src="https://img.shields.io/badge/Tests-21%20Passed-34d399.svg?style=flat-square" alt="Unit Tests" />
+  <img src="https://img.shields.io/badge/license-ISC-94a3b8.svg?style=flat-square" alt="License ISC" />
+</p>
 
-Featuring a premium **"Liquid Glass" (glassmorphic)** user interface, customizable sidebar context menus, and native Windows integrations, it is the ultimate tool for keeping track of your gaming history.
+**Game-Time Tracker** is a high-performance desktop application built with **Electron** and vanilla JavaScript/CSS that automatically tracks your PC gaming sessions. Running quietly as a background daemon in the Windows system tray, it dynamically handles idle pauses, Alt-Tab detection, and sleep/crash protection to ensure playtimes remain 100% accurate.
+
+Beyond stopwatch tracking, it integrates directly with **HowLongToBeat** to benchmark your playtime against community completion targets, aggregates critic and user reviews across **Metacritic**, **IGN**, and **OpenCritic**, and provides dedicated sub-target tracking for **DLCs and Expansions**.
 
 ---
 
 ## <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23818cf8" width="20" height="20" align="center" /> Key Features
 
-- <img src="https://api.iconify.design/lucide:play-circle.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Automated Game Tracking:** Automatically detects when a game is launched and starts the stopwatch timer. When the game process exits, it automatically stops and saves the session.
-- <img src="https://api.iconify.design/lucide:coffee.svg?color=%23fbbf24" width="16" height="16" align="center" /> **Smart AFK (Away From Keyboard) Detection:** Uses native Windows API integration to detect system-wide keyboard and mouse inactivity. If you step away from your PC for longer than a configurable threshold (default: 10 minutes), the timer automatically pauses and resumes when you return.
-- <img src="https://api.iconify.design/lucide:minimize-2.svg?color=%23a78bfa" width="16" height="16" align="center" /> **Alt-Tab / Background Window Detection:** Monitors which window currently has focus. If you Alt-Tab out of your game for more than a set time limit (default: 2 minutes), the session is paused until you click back into the game.
-- <img src="https://api.iconify.design/lucide:layout-grid.svg?color=%2338bdf8" width="16" height="16" align="center" /> **System Tray Integration:** Minimize the app to the system tray. The tray tooltip dynamically updates to show which game is running and how long you've been playing.
-- <img src="https://api.iconify.design/lucide:bar-chart-2.svg?color=%2334d399" width="16" height="16" align="center" /> **Detailed History & Statistics:** View historical sessions with timestamps, durations, daily playtimes, personal records, and session count statistics.
-- <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23818cf8" width="16" height="16" align="center" /> **Liquid Glass UI & Design:** A state-of-the-art dark-mode interface featuring vibrant gradients, glassmorphism blur effects (`backdrop-filter`), smooth hover animations, and custom-designed inline SVG icons.
-- <img src="https://api.iconify.design/lucide:menu.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Custom HTML Context Menu:** Right-click any game card in the sidebar to open a premium context menu to launch the game, open its folder, change its accent color, rename it, reset its icon, or delete it.
-- <img src="https://api.iconify.design/lucide:scan.svg?color=%2334d399" width="16" height="16" align="center" /> **Auto Game-Executable Detection (Scan List):** The app automatically scans currently running processes. Adding games directly from this list automatically saves their executable paths, enabling instant launching and file location tracking.
-- <img src="https://api.iconify.design/lucide:image.svg?color=%23fbbf24" width="16" height="16" align="center" /> **Native Game Icon Extraction:** Automatically extracts the high-resolution original icon of the game executable (`.exe`) via the Windows shell to display in the dashboard.
-- <img src="https://api.iconify.design/lucide:shield-check.svg?color=%2334d399" width="16" height="16" align="center" /> **Anti-Cheat Compatibility (Shell Launching):** Spawns games directly via Windows Shell (`explorer.exe`) to detach processes from the Node.js/Electron tree, ensuring compatibility with modern anti-cheat systems (e.g., Easy Anti-Cheat, BattlEye).
-- <img src="https://api.iconify.design/lucide:lock.svg?color=%23f43f5e" width="16" height="16" align="center" /> **Single-Instance Application Lock:** Prevents multiple instances of the app from running simultaneously. Launching a new instance focuses the already running dashboard.
+### <img src="https://api.iconify.design/lucide:crosshair.svg?color=%2338bdf8" width="18" height="18" align="center" /> Precision Session Tracking
+- <img src="https://api.iconify.design/lucide:play-circle.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Automated Process Detection:** Scans running Windows executables every 3 seconds. Automatically starts the timer upon launch and saves the session on exit.
+- <img src="https://api.iconify.design/lucide:coffee.svg?color=%23fbbf24" width="16" height="16" align="center" /> **Smart AFK Detection:** Leverages low-level Windows API hooks (`user32.dll` via PowerShell) to monitor global mouse and keyboard inactivity. Automatically pauses the session when you step away.
+- <img src="https://api.iconify.design/lucide:minimize-2.svg?color=%23a78bfa" width="16" height="16" align="center" /> **Alt-Tab Tolerance:** Watches the active foreground window. If you switch to another application past your configurable tolerance threshold, tracking pauses until focus returns.
+- <img src="https://api.iconify.design/lucide:shield-alert.svg?color=%2334d399" width="16" height="16" align="center" /> **Sleep & Crash Protection:** Intelligent state recovery prevents offline sleep/hibernation hours from polluting records and safely recovers unfinished sessions after sudden system restarts.
+- <img src="https://api.iconify.design/lucide:git-merge.svg?color=%23818cf8" width="16" height="16" align="center" /> **Launcher Hierarchy Support:** Recognizes child process hierarchies when games are launched via Steam, Epic Games Launcher, EA App, Riot Client, Ubisoft Connect, or Battle.net.
 
 ---
 
-## <img src="https://api.iconify.design/lucide:cpu.svg?color=%23a78bfa" width="20" height="20" align="center" /> How It Works Under the Hood
+### <img src="https://api.iconify.design/lucide:database.svg?color=%23f59e0b" width="18" height="18" align="center" /> HowLongToBeat (HLTB) & Review Aggregation
+- <img src="https://api.iconify.design/lucide:clock.svg?color=%23f59e0b" width="16" height="16" align="center" /> **Completion Time Targets:** Search and match games with the HowLongToBeat database to display target completion hours for:
+  - **Main Story**
+  - **Main + Extras**
+  - **100% Completionist**
+- <img src="https://api.iconify.design/lucide:image.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Automatic Artwork Sync:** Downloads official high-resolution game banners and box covers directly into your library.
+- <img src="https://api.iconify.design/lucide:star.svg?color=%23fbbf24" width="16" height="16" align="center" /> **Multi-Source Review Aggregator:** Live critic and community scoring:
+  - **Metacritic:** Official Metascore & User Score.
+  - **IGN:** Review score with direct clickable review links.
+  - **OpenCritic:** Top Critic Average & Critics Recommend percentage.
 
-The application relies on several core tracking mechanisms to monitor games and system activity on Windows:
+---
+
+### <img src="https://api.iconify.design/lucide:layers.svg?color=%23a78bfa" width="18" height="18" align="center" /> DLCs, Expansions & Sub-Targets
+- <img src="https://api.iconify.design/lucide:package-plus.svg?color=%23a78bfa" width="16" height="16" align="center" /> **Independent DLC Tracking:** Add expansions manually or import them directly from HowLongToBeat.
+- <img src="https://api.iconify.design/lucide:target.svg?color=%2334d399" width="16" height="16" align="center" /> **Target Isolation:** Attribute playtime sessions specifically to the base game or a designated DLC to measure expansion completion progress.
+- <img src="https://api.iconify.design/lucide:check-square.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Batch Management:** Multi-select DLCs or sessions for bulk deletion and cleanup.
+
+---
+
+### <img src="https://api.iconify.design/lucide:calendar.svg?color=%2334d399" width="18" height="18" align="center" /> Manual Session Management
+- <img src="https://api.iconify.design/lucide:plus-circle.svg?color=%2334d399" width="16" height="16" align="center" /> **Retroactive Logging:** Add past or offline gaming sessions using custom calendar and time picker controls.
+- <img src="https://api.iconify.design/lucide:edit-3.svg?color=%23818cf8" width="16" height="16" align="center" /> **Granular Session History:** View full timestamps, durations, target tags, and daily/weekly play trends.
+
+---
+
+### <img src="https://api.iconify.design/lucide:monitor.svg?color=%2338bdf8" width="18" height="18" align="center" /> Desktop Experience & System Integration
+- <img src="https://api.iconify.design/lucide:sparkles.svg?color=%23818cf8" width="16" height="16" align="center" /> **Liquid Glass Aesthetic:** Dark-mode frosted glass interface (`backdrop-filter: blur(28px)`), fluid hover micro-animations, and vector outline SVG typography.
+- <img src="https://api.iconify.design/lucide:layout-grid.svg?color=%2338bdf8" width="16" height="16" align="center" /> **System Tray Daemon:** Minimize to tray on close, live tray tooltips displaying current game and playtime, and quick tray actions.
+- <img src="https://api.iconify.design/lucide:power.svg?color=%2334d399" width="16" height="16" align="center" /> **Windows Startup:** Option to launch minimized to tray on system boot.
+- <img src="https://api.iconify.design/lucide:shield-check.svg?color=%2334d399" width="16" height="16" align="center" /> **Anti-Cheat Safe Shell Launching:** Spawns games directly via Windows Shell (`explorer.exe`) to detach them from the Node.js process tree, ensuring full compatibility with Easy Anti-Cheat, BattlEye, and Vanguard.
+- <img src="https://api.iconify.design/lucide:refresh-cw.svg?color=%2338bdf8" width="16" height="16" align="center" /> **Built-in Auto Updater:** Integrated with `electron-updater` to check GitHub Releases and notify you when an update is ready.
+- <img src="https://api.iconify.design/lucide:languages.svg?color=%23f43f5e" width="16" height="16" align="center" /> **Bilingual Interface:** Instant language toggle between English and Türkçe in settings.
+
+---
+
+## <img src="https://api.iconify.design/lucide:cpu.svg?color=%23a78bfa" width="20" height="20" align="center" /> Under the Hood
+
+The tracking engine coordinates several decoupled services across the Electron Main and Renderer processes:
+
+```mermaid
+graph TD
+    subgraph Windows System
+        PS[Persistent PowerShell Script] -->|user32.dll PInvoke| WinState[Foreground Process & System Idle Ms]
+        Tasklist[Windows tasklist / WMI] -->|3s Polling| ProcList[Active Process Names & PIDs]
+    end
+
+    subgraph Electron Main Process
+        WinState --> IPC[IPC Bridge / preload.js]
+        ProcList --> IPC
+        HLTBService[HLTB & Rating Scrapers] --> IPC
+        Store[(Local JSON File Store)] --> IPC
+    end
+
+    subgraph Liquid Glass Renderer
+        IPC --> StateMgr[State Manager & Timer Engine]
+        StateMgr --> Stopwatch[Active Session Counter]
+        StateMgr --> Recovery[Sleep & Crash Recovery Handler]
+        StateMgr --> UI[DOM Renderer & Charts]
+    end
+```
 
 1. **Process List Scanning (`tasklist`):**
-   Every **3 seconds**, Electron scans running processes using the Windows utility `tasklist`. This determines whether any of your added game executable files (e.g., `cyberpunk2077.exe`) are currently active.
-   - *CPU Optimization:* If no games are currently set to be watched, process scanning is dynamically paused to save CPU cycles.
-
-2. **PowerShell Window & Idle Watcher:**
-   A lightweight, persistent PowerShell script runs in the background. Using `.NET / PInvoke` calls to native Windows DLLs (`user32.dll`), it checks the system state every **1 second**:
-   - `GetForegroundWindow` & `GetWindowThreadProcessId`: Retrieves the process name of the active foreground window.
-   - `GetLastInputInfo`: Measures the duration (in milliseconds) since the last keyboard or mouse event across the entire system.
-
-3. **Immediate Session Saving:**
-   When a game is launched, a 30-second launch grace period is active to accommodate startup times. Once the game process is detected running, the grace period is instantly skipped, allowing the tracker to save/pause the session within 3 seconds of closing or ALT+TAB.
+   Scans active executables every **3 seconds**. If no tracked games are configured or currently open, poller cycles dynamically throttle to minimize background CPU usage.
+2. **Foreground & Input Watcher:**
+   A persistent background PowerShell process queries `user32.dll` (`GetForegroundWindow`, `GetWindowThreadProcessId`, `GetLastInputInfo`) every **1 second** without administrative elevation.
+3. **Launch Grace Period & Immediate Saving:**
+   Accommodates slow-loading titles with an initial grace window. As soon as gameplay processes establish focus, saves are synchronized immediately upon process termination or Alt-Tab timeout.
 
 ---
 
 ## <img src="https://api.iconify.design/lucide:play.svg?color=%2334d399" width="20" height="20" align="center" /> Getting Started
 
 ### Prerequisites
-
-- **Operating System:** Windows 10/11 (required for PowerShell/Win32 API components)
-- **Runtime:** [Node.js](https://nodejs.org/) (v16.0.0 or higher recommended)
+- **Operating System:** Windows 10 or 11 (64-bit)
+- **Runtime:** [Node.js](https://nodejs.org/) (v18.0.0 or higher recommended)
 
 ### Installation
-
-1. Clone this repository to your local machine:
+1. Clone this repository:
    ```bash
    git clone https://github.com/ertandev/Game-Time-Tracker.git
    cd Game-Time-Tracker
    ```
-
-2. Install the dependencies:
+2. Install npm dependencies:
    ```bash
    npm install
    ```
 
-### Running the App
-
-Start the development server:
+### Running in Development
+Start the application in development mode:
 ```bash
 npm start
 ```
 
-### Packaging / Building Installer
+### Running Unit Tests
+Execute the native Node.js test suite covering time mathematics, state mutations, HLTB parsing, and shutdown recovery:
+```bash
+npm test
+```
 
-To build a standalone, offline English-only NSIS Windows installer:
+### Building the Windows Installer
+Compile an offline standalone NSIS installer (`GameTime-Tracker-Setup-1.8.0.exe`):
 ```bash
 npm run dist
 ```
-The compiled setup executable (`GameTime-Tracker-Setup-1.0.0.exe`) will be generated inside the `dist` directory.
+The compiled installer will be generated in the `dist/` directory.
 
 ---
 
-## <img src="https://api.iconify.design/lucide:sliders.svg?color=%2338bdf8" width="20" height="20" align="center" /> Configuration & Customization
+## <img src="https://api.iconify.design/lucide:sliders.svg?color=%2338bdf8" width="20" height="20" align="center" /> Global Configuration
 
-You can fine-tune tracking behaviors via the **Global Settings** modal inside the app:
+Access the **Settings Modal** from the top right titlebar gear icon:
 
-| Setting | Default Value | Description |
+| Setting | Default | Description |
 | :--- | :--- | :--- |
-| **AFK Timeout** | 10 minutes | Time of inactivity before the session is auto-paused. Set to **Off** to disable. |
-| **Alt-Tab Timeout** | 2 minutes | Time allowed outside the game window before auto-pausing. Set to **Off** to disable. |
-| **Auto-Save on Close** | Enabled | If enabled, the session is saved automatically when you close the game. If disabled, the session is paused instead. |
+| **In-Game AFK Timeout** | 10 minutes | System idle duration before auto-pausing the stopwatch. Set to `0` to disable. |
+| **Alt-Tab Tolerance** | 2 minutes | Maximum duration the game can remain in the background before pausing. Set to `0` to disable. |
+| **Auto-Save on Close** | Enabled | Automatically concludes and stores the session when the game closes. |
+| **Run at Startup** | Disabled | Automatically boots the app minimized to the system tray on Windows login. |
+| **Close to Tray** | Enabled | Hitting the `✕` button hides the window to the system tray instead of closing. |
+| **Language** | Türkçe | Toggle application language between **Türkçe** and **English**. |
+| **Maintenance** | — | One-click options to reset settings or clear all games and recorded sessions. |
 
 ---
 
 ## <img src="https://api.iconify.design/lucide:folder-tree.svg?color=%23818cf8" width="20" height="20" align="center" /> Project Structure
 
-The project has been refactored into modular, clean scripts to separate concerns and prevent monolithic file growth:
-
 ```text
 Game-Time-Tracker/
-├── dist/                 # Compiled distribution files and setup installer
-├── index.html            # Main frontend HTML5 view & structure
-├── style.css             # Main styling, layouts, custom scrollbars, animations, context menu styles
-├── main.js               # Electron main process (OS integration, process launcher, tray menu, single-instance lock)
-├── preload.js            # Secure IPC gateway connecting frontend and main process
-├── app.js                # Application bootstrapper (init, event binding, modal overlays)
-├── i18n.js               # Localization dictionary (English & Turkish) and translation utilities
-├── state.js              # State manager (LocalStorage read/write, game lists, historical logs)
-├── timer.js              # Stopwatch, active session tracker, grace period handling
-├── renderer.js           # UI drawer (sidebar lists, stats cards, active session render, custom context menu)
-├── settings.js           # Settings manager & layout updates
-├── installer.nsh         # Custom NSIS script containing Windows registry and shortcut configs
-├── package.json          # Node scripts, dependency versions, electron-builder setup
-└── .gitignore            # Files excluded from git
+├── main.js               # Electron main process, OS API hooks, HLTB & ratings IPC handlers, tray & auto-updater
+├── preload.js            # Secure IPC bridge exposing protected APIs to renderer
+├── app.js                # App lifecycle bootstrapper, modal controller, event listeners
+├── state.js              # Centralized state management, local JSON persistence, duration math, crash recovery
+├── timer.js              # Precision stopwatch engine, AFK threshold checks, Alt-Tab tracker
+├── renderer.js           # Liquid Glass UI view rendering (games sidebar, HLTB cards, stats, sessions list)
+├── settings.js           # Settings manager, auto-launch hooks, close-to-tray handling
+├── i18n.js               # Localization dictionary (English & Türkçe) and text switchers
+├── index.html            # Main UI markup with Liquid Glass components, modals, and context menus
+├── style.css             # Glassmorphism theme, CSS variables, responsive layout, animations
+├── installer.nsh         # Custom NSIS script for Windows registry keys and startup shortcuts
+├── installer_sidebar.bmp # Installer sidebar branding artwork
+├── icon.ico / icon.png   # Application icons
+├── package.json          # Project metadata, dependencies, electron-builder build config
+├── tests/
+│   └── test_suite.js     # 21 automated unit tests (time math, validation, HLTB, i18n, crash recovery)
+└── README.md             # Project documentation
 ```
-
----
-
-## <img src="https://api.iconify.design/lucide:layers.svg?color=%23a78bfa" width="20" height="20" align="center" /> Technologies Used
-
-- **Framework:** Electron (v42+)
-- **Frontend:** Vanilla HTML5, CSS3, JavaScript (ES6 Modules)
-- **System Integration:** Windows PowerShell Scripting (System-wide Hooking & PInvoke)
-- **Packaging:** electron-builder with NSIS Custom Scripting
 
 ---
 
