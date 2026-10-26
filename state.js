@@ -550,6 +550,27 @@ async function unlinkGameHltbData(gameId) {
   await saveGames();
 }
 
+async function updateDlcHltbData(gameId, dlcId, hltbData) {
+  const g = gameById(gameId);
+  if (!g || !g.dlcs) return;
+  const d = g.dlcs.find(x => x.id === dlcId);
+  if (!d) return;
+  d.hltbData = hltbData;
+  if (hltbData && hltbData.image) {
+    d.image = hltbData.image;
+  }
+  await saveGames();
+}
+
+async function unlinkDlcHltbData(gameId, dlcId) {
+  const g = gameById(gameId);
+  if (!g || !g.dlcs) return;
+  const d = g.dlcs.find(x => x.id === dlcId);
+  if (!d) return;
+  delete d.hltbData;
+  await saveGames();
+}
+
 if (typeof module !== 'undefined') {
   module.exports = {
     GAMES_KEY, STATE_KEY, SETTINGS_KEY, PALETTE,
@@ -558,6 +579,7 @@ if (typeof module !== 'undefined') {
     gameById, totalMs, todayMs, bestMs,
     filteredTotalMs, filteredTodayMs, filteredBestMs, filteredSessionCount,
     updateGameHltbData, unlinkGameHltbData,
+    updateDlcHltbData, unlinkDlcHltbData,
     resolveHltbImage, addDlc
   };
 }

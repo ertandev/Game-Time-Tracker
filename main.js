@@ -1043,6 +1043,10 @@ ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
 
       const dlcResults = await Promise.all(dlcs.map(async (d) => {
         let image = null;
+        let comp_main = 0;
+        let comp_plus = 0;
+        let comp_100 = 0;
+        let review_score = 0;
         try {
           const dlcRes = await fetch(`${HLTB_BASE_URL}/game/${d.game_id}`, { headers });
           if (dlcRes.ok) {
@@ -1051,18 +1055,26 @@ ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
             if (dlcMatch) {
               const dlcData = JSON.parse(dlcMatch[1]);
               const dlcGame = dlcData.props?.pageProps?.game?.data?.game?.[0];
-              if (dlcGame && dlcGame.game_image) {
-                image = dlcGame.game_image;
+              if (dlcGame) {
+                if (dlcGame.game_image) image = dlcGame.game_image;
+                if (dlcGame.comp_main) comp_main = dlcGame.comp_main;
+                if (dlcGame.comp_plus) comp_plus = dlcGame.comp_plus;
+                if (dlcGame.comp_100) comp_100 = dlcGame.comp_100;
+                if (dlcGame.review_score) review_score = dlcGame.review_score;
               }
             }
           }
         } catch (imgErr) {
-          console.warn(`Failed to fetch DLC cover for ${d.game_name} (${d.game_id}):`, imgErr.message);
+          console.warn(`Failed to fetch DLC details for ${d.game_name} (${d.game_id}):`, imgErr.message);
         }
         return {
           id: d.game_id,
           name: d.game_name,
-          image: image
+          image: image,
+          comp_main: comp_main || 0,
+          comp_plus: comp_plus || 0,
+          comp_100: comp_100 || 0,
+          review_score: review_score || 0
         };
       }));
 
@@ -1072,6 +1084,40 @@ ipcMain.handle('fetch-hltb-dlcs', async (event, gameId) => {
   } catch (e) {
     console.error('Error fetching game details/DLCs from HLTB:', e);
     return [];
+  }
+});
+
+ipcMain.handle('fetch-hltb-game-details', async (event, hltbId) => {
+  const HLTB_BASE_URL = 'https://howlongtobeat.com';
+  const headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+    'Referer': HLTB_BASE_URL,
+    'Origin': HLTB_BASE_URL
+  };
+
+  try {
+    const url = `${HLTB_BASE_URL}/game/${hltbId}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) return null;
+    const html = await res.text();
+    const nextDataPattern = /<script id="__NEXT_DATA__" type="application\/json">([^<]+)<\/script>/;
+    const match = html.match(nextDataPattern);
+    if (!match) return null;
+    const data = JSON.parse(match[1]);
+    const dlcGame = data.props?.pageProps?.game?.data?.game?.[0];
+    if (!dlcGame) return null;
+    return {
+      id: dlcGame.game_id,
+      name: dlcGame.game_name,
+      main: dlcGame.comp_main || 0,
+      plus: dlcGame.comp_plus || 0,
+      completionist: dlcGame.comp_100 || 0,
+      image: dlcGame.game_image || null,
+      rating: dlcGame.review_score || 0
+    };
+  } catch (e) {
+    console.error('Error fetching HLTB game details:', e);
+    return null;
   }
 });
 

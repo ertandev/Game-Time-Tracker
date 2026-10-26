@@ -1308,6 +1308,7 @@ function renderDlcSection() {
     renderSessionList();
     renderStats();
     renderSidebar();
+    renderHltbSection();
   });
 
   el.appendChild(mainItem);
@@ -1417,6 +1418,7 @@ function renderDlcSection() {
           renderSessionList();
           renderStats();
           renderSidebar();
+          renderHltbSection();
         });
       }
 
@@ -1424,29 +1426,42 @@ function renderDlcSection() {
     });
   }
 
-  // Auto-sync DLC cover images in background if missing
+  // Auto-sync DLC cover images and HLTB data in background if missing
   if (g.hltbData && g.hltbData.id && g.dlcs && g.dlcs.length && window.electronAPI && window.electronAPI.fetchHltbDlcs) {
-    const missingCover = g.dlcs.some(d => !d.image);
-    if (missingCover && !g._dlcSyncing) {
-      g._dlcSyncing = true;
+    const missingData = g.dlcs.some(d => !d.image || !d.hltbData || !d.hltbData.main);
+    if (missingData && !g._dlcSyncAttempted) {
+      g._dlcSyncAttempted = true;
       window.electronAPI.fetchHltbDlcs(g.hltbData.id).then(async (dlcList) => {
         g._dlcSyncing = false;
         if (dlcList && dlcList.length) {
           let updated = false;
           dlcList.forEach(item => {
             const dlcName = (typeof item === 'string' ? item : item.name).trim().toLowerCase();
-            const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
-            if (dlcImage) {
-              const cleanItem = dlcName.replace(/[^a-z0-9]/g, '');
-              const targetDlc = g.dlcs.find(d => {
-                const nameLower = (d.name || '').trim().toLowerCase();
-                if (nameLower === dlcName) return true;
-                const cleanD = nameLower.replace(/[^a-z0-9]/g, '');
-                return cleanD === cleanItem || cleanD.includes(cleanItem) || cleanItem.includes(cleanD);
-              });
-              if (targetDlc && !targetDlc.image) {
-                targetDlc.image = dlcImage;
+            const cleanItem = dlcName.replace(/[^a-z0-9]/g, '');
+            const targetDlc = g.dlcs.find(d => {
+              const nameLower = (d.name || '').trim().toLowerCase();
+              if (nameLower === dlcName) return true;
+              const cleanD = nameLower.replace(/[^a-z0-9]/g, '');
+              return cleanD === cleanItem || cleanD.includes(cleanItem) || cleanItem.includes(cleanD);
+            });
+            if (targetDlc) {
+              if (item.image && (!targetDlc.image || targetDlc.image !== item.image)) {
+                targetDlc.image = item.image;
                 updated = true;
+              }
+              if (item.comp_main || item.comp_plus || item.comp_100 || item.id) {
+                if (!targetDlc.hltbData || !targetDlc.hltbData.main || !targetDlc.hltbData.id) {
+                  targetDlc.hltbData = {
+                    id: item.id,
+                    name: item.name,
+                    main: item.comp_main || 0,
+                    plus: item.comp_plus || 0,
+                    completionist: item.comp_100 || 0,
+                    image: item.image || targetDlc.image,
+                    rating: item.review_score || 0
+                  };
+                  updated = true;
+                }
               }
             }
           });
@@ -1454,7 +1469,7 @@ function renderDlcSection() {
             await saveGames();
             if (selectedId === g.id) {
               renderDlcSection();
-              renderSessionList();
+              renderHltbSection();
             }
           }
         }
@@ -1612,13 +1627,86 @@ function renderHltbSection() {
   const nameEl = $('hltbGameTitleName');
   const imgEl = $('hltbGameImage');
   const headerTitleEl = $('hltbHeaderTitle');
+  const labelEl = titleEl ? titleEl.querySelector('.hltb-matched-label') : null;
 
-  if (g.hltbData) {
+  const activeDlc = g.activeDlcId ? g.dlcs?.find(d => d.id === g.activeDlcId) : null;
+  const currentHltb = activeDlc ? activeDlc.hltbData : g.hltbData;
+
+  // Auto-resolve active DLC HLTB data in background if missing
+  if (activeDlc && !activeDlc.hltbData && !activeDlc._hltbAttempted) {
+    activeDlc._hltbAttempted = true;
+    (async () => {
+      try {
+        let foundData = null;
+        const imageIdMatch = activeDlc.image ? String(activeDlc.image).match(/^(\d+)_/) : null;
+        const candidateId = activeDlc.hltbId || (imageIdMatch ? imageIdMatch[1] : null);
+        if (candidateId && window.electronAPI && window.electronAPI.fetchHltbGameDetails) {
+          foundData = await window.electronAPI.fetchHltbGameDetails(candidateId);
+        }
+
+        if (!foundData && g.hltbData && g.hltbData.id && window.electronAPI && window.electronAPI.fetchHltbDlcs) {
+          const dlcList = await window.electronAPI.fetchHltbDlcs(g.hltbData.id);
+          if (dlcList && dlcList.length) {
+            const cleanDlcName = activeDlc.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            const match = dlcList.find(x => {
+              const cleanItem = x.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+              return cleanItem === cleanDlcName || cleanItem.includes(cleanDlcName) || cleanDlcName.includes(cleanItem);
+            });
+            if (match) {
+              foundData = {
+                id: match.id,
+                name: match.name,
+                main: match.comp_main || 0,
+                plus: match.comp_plus || 0,
+                completionist: match.comp_100 || 0,
+                image: match.image || activeDlc.image,
+                rating: match.review_score || 0
+              };
+            }
+          }
+        }
+
+        if (!foundData && window.electronAPI && window.electronAPI.fetchHltbTime) {
+          const searchResults = await window.electronAPI.fetchHltbTime(`${g.name} ${activeDlc.name}`);
+          const resMatch = searchResults && searchResults.length ? searchResults[0] : null;
+          if (resMatch) {
+            foundData = {
+              id: resMatch.game_id,
+              name: resMatch.game_name,
+              main: resMatch.comp_main || 0,
+              plus: resMatch.comp_plus || 0,
+              completionist: resMatch.comp_100 || 0,
+              image: resMatch.game_image || activeDlc.image,
+              rating: resMatch.review_score || 0
+            };
+          }
+        }
+
+        if (foundData) {
+          activeDlc.hltbData = foundData;
+          if (foundData.image && !activeDlc.image) {
+            activeDlc.image = foundData.image;
+          }
+          await saveGames();
+          if (selectedId === g.id && g.activeDlcId === activeDlc.id) {
+            renderHltbSection();
+            renderDlcSection();
+          }
+        }
+      } catch (err) {
+        console.warn('Could not auto-resolve DLC HLTB data:', err);
+      } finally {
+        delete activeDlc._resolvingHltb;
+      }
+    })();
+  }
+
+  if (currentHltb) {
     container.style.display = 'grid';
     emptyState.style.display = 'none';
     unlinkBtn.style.display = 'inline-flex';
 
-    const hltbUrl = 'https://howlongtobeat.com/game/' + g.hltbData.id;
+    const hltbUrl = currentHltb.id ? 'https://howlongtobeat.com/game/' + currentHltb.id : 'https://howlongtobeat.com';
     const openHltb = () => {
       if (window.electronAPI && window.electronAPI.openExternal) {
         window.electronAPI.openExternal(hltbUrl);
@@ -1645,18 +1733,32 @@ function renderHltbSection() {
 
     if (titleEl) {
       titleEl.style.display = 'flex';
-      if (nameEl) nameEl.textContent = g.hltbData.name || '';
-      renderRatings(g);
+      if (labelEl) {
+        labelEl.textContent = activeDlc 
+          ? (dict.hltb_dlc_matched_label || (settings.lang === 'tr' ? 'DLC Eşleşmesi' : 'DLC Match'))
+          : (dict.hltb_matched_label || (settings.lang === 'tr' ? 'HowLongToBeat Eşleşmesi' : 'HowLongToBeat Match'));
+      }
+      if (nameEl) nameEl.textContent = currentHltb.name || (activeDlc ? activeDlc.name : g.name) || '';
       
+      const ratingsContainer = $('hltbRatingsContainer');
+      if (ratingsContainer) {
+        if (activeDlc) {
+          ratingsContainer.style.display = 'none';
+        } else {
+          renderRatings(g);
+        }
+      }
+      
+      const coverImage = currentHltb.image || (activeDlc ? activeDlc.image : null);
       if (imgEl) {
-        if (g.hltbData.image) {
+        if (coverImage) {
           let imageUrl = '';
-          if (g.hltbData.image.startsWith('http')) {
-            imageUrl = g.hltbData.image;
-          } else if (g.hltbData.image.startsWith('/')) {
-            imageUrl = 'https://howlongtobeat.com' + g.hltbData.image;
+          if (coverImage.startsWith('http')) {
+            imageUrl = coverImage;
+          } else if (coverImage.startsWith('/')) {
+            imageUrl = 'https://howlongtobeat.com' + coverImage;
           } else {
-            imageUrl = 'https://howlongtobeat.com/games/' + g.hltbData.image;
+            imageUrl = 'https://howlongtobeat.com/games/' + coverImage;
           }
           imgEl.src = imageUrl;
           imgEl.style.display = 'block';
@@ -1686,11 +1788,9 @@ function renderHltbSection() {
       }
     };
 
-    $('hltbMainTime').textContent = formatHltbSeconds(g.hltbData.main);
-    $('hltbPlusTime').textContent = formatHltbSeconds(g.hltbData.plus);
-    $('hltb100Time').textContent = formatHltbSeconds(g.hltbData.completionist);
-    
-    // HLTB Rating card removed as requested
+    $('hltbMainTime').textContent = formatHltbSeconds(currentHltb.main);
+    $('hltbPlusTime').textContent = formatHltbSeconds(currentHltb.plus);
+    $('hltb100Time').textContent = formatHltbSeconds(currentHltb.completionist);
   } else {
     container.style.display = 'none';
     emptyState.style.display = 'flex';
@@ -1737,7 +1837,8 @@ function renderHltbSearchResults(results) {
   }
 
   const g = gameById(selectedId);
-  const currentHltbId = g?.hltbData?.id;
+  const activeDlc = g?.activeDlcId ? g.dlcs?.find(d => d.id === g.activeDlcId) : null;
+  const currentHltbId = activeDlc ? activeDlc.hltbData?.id : g?.hltbData?.id;
 
   results.forEach(res => {
     const item = document.createElement('div');
@@ -1808,41 +1909,71 @@ function renderHltbSearchResults(results) {
         image: res.game_image,
         rating: res.review_score
       };
-      await updateGameHltbData(selectedId, hltbData);
-      
-      try {
-        const dlcList = await window.electronAPI.fetchHltbDlcs(hltbData.id);
-        if (dlcList && dlcList.length > 0) {
-          const game = gameById(selectedId);
-          if (game) {
-            if (!game.dlcs) game.dlcs = [];
-            let changedCount = 0;
-            dlcList.forEach(item => {
-              const dlcName = (typeof item === 'string' ? item : item.name).trim();
-              const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
-              const existing = game.dlcs.find(d => d.name.toLowerCase().trim() === dlcName.toLowerCase());
-              if (!existing) {
-                game.dlcs.push({
-                  id: genId(),
-                  name: dlcName,
-                  image: dlcImage,
-                  createdTs: new Date().toISOString()
-                });
-                changedCount++;
-              } else if (!existing.image && dlcImage) {
-                existing.image = dlcImage;
-                changedCount++;
+
+      if (activeDlc) {
+        await updateDlcHltbData(selectedId, activeDlc.id, hltbData);
+      } else {
+        await updateGameHltbData(selectedId, hltbData);
+        
+        try {
+          const dlcList = await window.electronAPI.fetchHltbDlcs(hltbData.id);
+          if (dlcList && dlcList.length > 0) {
+            const game = gameById(selectedId);
+            if (game) {
+              if (!game.dlcs) game.dlcs = [];
+              let changedCount = 0;
+              dlcList.forEach(item => {
+                const dlcName = (typeof item === 'string' ? item : item.name).trim();
+                const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
+                const existing = game.dlcs.find(d => d.name.toLowerCase().trim() === dlcName.toLowerCase());
+                if (!existing) {
+                  game.dlcs.push({
+                    id: genId(),
+                    name: dlcName,
+                    image: dlcImage,
+                    hltbData: {
+                      id: item.id,
+                      name: dlcName,
+                      main: item.comp_main || 0,
+                      plus: item.comp_plus || 0,
+                      completionist: item.comp_100 || 0,
+                      image: dlcImage,
+                      rating: item.review_score || 0
+                    },
+                    createdTs: new Date().toISOString()
+                  });
+                  changedCount++;
+                } else {
+                  let dlcUpdated = false;
+                  if (!existing.image && dlcImage) {
+                    existing.image = dlcImage;
+                    dlcUpdated = true;
+                  }
+                  if (!existing.hltbData || !existing.hltbData.main) {
+                    existing.hltbData = {
+                      id: item.id,
+                      name: dlcName,
+                      main: item.comp_main || 0,
+                      plus: item.comp_plus || 0,
+                      completionist: item.comp_100 || 0,
+                      image: dlcImage || existing.image,
+                      rating: item.review_score || 0
+                    };
+                    dlcUpdated = true;
+                  }
+                  if (dlcUpdated) changedCount++;
+                }
+              });
+              if (changedCount > 0) {
+                await saveGames();
+                renderDlcSection();
+                renderSessionList();
               }
-            });
-            if (changedCount > 0) {
-              await saveGames();
-              renderDlcSection();
-              renderSessionList();
             }
           }
+        } catch (e) {
+          console.error('Failed to populate DLCs on manual link:', e);
         }
-      } catch (e) {
-        console.error('Failed to populate DLCs on manual link:', e);
       }
 
       await new Promise(r => setTimeout(r, 220));

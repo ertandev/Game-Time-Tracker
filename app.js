@@ -237,6 +237,8 @@ $('deleteSelectedDlcsBtn').addEventListener('click', () => {
 
 // ─── Add Game Modal ───────────────────────────────────────────────────────────
 let selectedHltbData = null;
+let userDeselectedHltb = false;
+let addGameSearchSeq = 0;
 let addGameHltbTimeout = null;
 let manualSelectedPath = null;
 let manualSelectedIcon = null;
@@ -282,8 +284,12 @@ async function searchAddGameHltb(query) {
   container.innerHTML = `<p class="scan-hint">${dict.hltb_searching}</p>`;
   $('addGameConfirm').disabled = true;
 
+  const currentSeq = ++addGameSearchSeq;
+
   try {
     const results = await window.electronAPI.fetchHltbTime(query);
+    if (currentSeq !== addGameSearchSeq) return;
+
     if (!results || results.length === 0) {
       $('newGameHltbStatus').style.display = 'none';
       container.innerHTML = `<p class="scan-hint">${dict.hltb_no_results}</p>`;
@@ -294,23 +300,23 @@ async function searchAddGameHltb(query) {
     $('newGameHltbStatus').style.display = 'none';
     container.textContent = '';
     
-    // Auto-select first candidate if it's a confident match and no selection is active
-    if (!selectedHltbData && results.length > 0) {
-      const queryLower = query.toLowerCase().replace(/[^a-z0-9]/g, '');
-      const firstTitleLower = results[0].game_name.toLowerCase().replace(/[^a-z0-9]/g, '');
-      if (queryLower && (firstTitleLower.includes(queryLower) || queryLower.includes(firstTitleLower))) {
-        const autoSelectedRes = results[0];
-        selectedHltbData = {
-          id: autoSelectedRes.game_id,
-          name: autoSelectedRes.game_name,
-          main: autoSelectedRes.comp_main,
-          plus: autoSelectedRes.comp_plus,
-          completionist: autoSelectedRes.comp_100,
-          image: autoSelectedRes.game_image,
-          rating: autoSelectedRes.review_score
-        };
-        setHltbStatusSelected(dict.hltb_status_matched);
-      }
+    // Auto-select first candidate if no selection is active and user hasn't explicitly deselected
+    const currentMatchInResults = selectedHltbData && results.find(r => r.game_id === selectedHltbData.id);
+    if (!currentMatchInResults && !userDeselectedHltb && results.length > 0) {
+      const autoSelectedRes = results[0];
+      selectedHltbData = {
+        id: autoSelectedRes.game_id,
+        name: autoSelectedRes.game_name,
+        main: autoSelectedRes.comp_main,
+        plus: autoSelectedRes.comp_plus,
+        completionist: autoSelectedRes.comp_100,
+        image: autoSelectedRes.game_image,
+        rating: autoSelectedRes.review_score
+      };
+      $('newGameName').value = autoSelectedRes.game_name;
+      setHltbStatusSelected(dict.hltb_status_matched);
+    } else if (currentMatchInResults) {
+      setHltbStatusSelected(dict.hltb_status_matched);
     }
 
     results.forEach(res => {
@@ -380,9 +386,11 @@ async function searchAddGameHltb(query) {
         
         if (isAlreadySelected) {
           selectedHltbData = null;
+          userDeselectedHltb = true;
           $('newGameHltbStatus').textContent = '';
           $('newGameHltbStatus').style.display = 'none';
         } else {
+          userDeselectedHltb = false;
           item.classList.add('selected');
           btn.classList.add('is-selected');
           btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg><span>${dict.selected || (settings.lang === 'tr' ? 'Seçildi' : 'Selected')}</span>`;
@@ -404,6 +412,7 @@ async function searchAddGameHltb(query) {
     });
     $('addGameConfirm').disabled = false;
   } catch (err) {
+    if (currentSeq !== addGameSearchSeq) return;
     console.error('Failed to search HLTB in modal:', err);
     $('newGameHltbStatus').style.display = 'none';
     container.innerHTML = `<p class="scan-hint">${dict.toast_hltb_fetch_failed}</p>`;
@@ -416,6 +425,7 @@ function openAddModal(e) {
   $('newGameName').value=''; $('newGameExe').value='';
   scanSelectedExe=null; scanSelectedName=null; scanSelectedPath=null;
   selectedHltbData = null;
+  userDeselectedHltb = false;
   manualSelectedPath = null;
   manualSelectedIcon = null;
   isNameManuallyEdited = false;
@@ -452,7 +462,8 @@ function closeAddModal() { $('addGameOverlay').classList.remove('open'); }
 
 function openHltbModal() {
   const g = gameById(selectedId); if(!g) return;
-  $('hltbSearchInput').value = g.name;
+  const activeDlc = g.activeDlcId ? g.dlcs?.find(d => d.id === g.activeDlcId) : null;
+  $('hltbSearchInput').value = activeDlc ? activeDlc.name : g.name;
   $('hltbResultList').textContent = '';
 
   const modalBody = $('hltbOverlay').querySelector('.modal-body');
@@ -1490,12 +1501,18 @@ if(isElectron) {
 // ─── HowLongToBeat Events ──────────────────────────────────────────────────────
 $('hltbLinkBtn').addEventListener('click', openHltbModal);
 $('hltbUnlinkBtn').addEventListener('click', () => {
+  const g = gameById(selectedId); if(!g) return;
+  const activeDlc = g.activeDlcId ? g.dlcs?.find(d => d.id === g.activeDlcId) : null;
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   showConfirm(
     dict.confirm_unlink_hltb_title || (settings.lang === 'tr' ? 'Eşleşmeyi Kaldır' : 'Unlink Match'),
     dict.confirm_unlink_hltb_text || (settings.lang === 'tr' ? 'HowLongToBeat eşleşmesi kaldırılacak. Emin misiniz?' : 'HowLongToBeat match will be removed. Are you sure?'),
     async () => {
-      await unlinkGameHltbData(selectedId);
+      if (activeDlc) {
+        await unlinkDlcHltbData(selectedId, activeDlc.id);
+      } else {
+        await unlinkGameHltbData(selectedId);
+      }
       renderHltbSection();
       renderSidebar();
       renderGameHeader();
