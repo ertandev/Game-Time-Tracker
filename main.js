@@ -209,32 +209,43 @@ while (\$true) {
 `;
 
 function startIdlePoller() {
-  idleProcess = spawn('powershell', [
-    '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', PS_WATCHER
-  ], { windowsHide: true });
+  if (process.platform !== 'win32') return;
 
-  let buf = '';
-  idleProcess.stdout.on('data', data => {
-    buf += data.toString();
-    const lines = buf.split('\n');
-    buf = lines.pop();
-    for (const line of lines) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      const sep = trimmed.lastIndexOf('|');
-      if (sep < 0) continue;
-      const procName = trimmed.slice(0, sep);
-      const idleMs   = parseInt(trimmed.slice(sep + 1));
-      if (mainWindow && !isNaN(idleMs)) {
-        mainWindow.webContents.send('win-status', { procName, idleMs });
+  try {
+    idleProcess = spawn('powershell', [
+      '-NoProfile', '-NonInteractive', '-WindowStyle', 'Hidden', '-Command', PS_WATCHER
+    ], { windowsHide: true });
+
+    idleProcess.on('error', (err) => {
+      console.warn('PowerShell idle watcher error:', err.message);
+      idleProcess = null;
+    });
+
+    let buf = '';
+    idleProcess.stdout.on('data', data => {
+      buf += data.toString();
+      const lines = buf.split('\n');
+      buf = lines.pop();
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed) continue;
+        const sep = trimmed.lastIndexOf('|');
+        if (sep < 0) continue;
+        const procName = trimmed.slice(0, sep);
+        const idleMs   = parseInt(trimmed.slice(sep + 1));
+        if (mainWindow && !isNaN(idleMs)) {
+          mainWindow.webContents.send('win-status', { procName, idleMs });
+        }
       }
-    }
-  });
+    });
 
-  idleProcess.on('exit', () => {
-    idleProcess = null;
-    if (!app.isQuitting) setTimeout(startIdlePoller, 3000);
-  });
+    idleProcess.on('exit', () => {
+      idleProcess = null;
+      if (!app.isQuitting) setTimeout(startIdlePoller, 3000);
+    });
+  } catch (err) {
+    console.warn('Failed to start idle poller:', err.message);
+  }
 }
 
 // ─── IPC ──────────────────────────────────────────────────────────────────────
@@ -243,6 +254,7 @@ ipcMain.handle('get-app-version', () => app.getVersion());
 // One-shot scan (invokable)
 ipcMain.handle('scan-processes', () =>
   new Promise(resolve => {
+    if (process.platform !== 'win32') return resolve([]);
     exec('powershell -NoProfile -NonInteractive -Command "Get-Process | Where-Object MainWindowTitle | Select-Object -Property ProcessName, Id, Path | ConvertTo-Csv -NoTypeInformation"', { windowsHide: true }, (err, stdout) => {
       resolve(err ? [] : parsePowerShellList(stdout));
     });
@@ -471,6 +483,7 @@ ipcMain.handle('get-file-icon', async (_, filePath) => {
 
 ipcMain.handle('find-process-path', (_, exeName) =>
   new Promise(resolve => {
+    if (process.platform !== 'win32') return resolve(null);
     const safeExe = exeName.replace(/[^a-zA-Z0-9._-]/g, '');
     if (!safeExe) return resolve(null);
     const standardizedExe = safeExe.toLowerCase().endsWith('.exe') ? safeExe : safeExe + '.exe';
@@ -538,6 +551,7 @@ if ($found) {
 
 ipcMain.handle('get-child-processes', (_, parentExeName) =>
   new Promise(resolve => {
+    if (process.platform !== 'win32') return resolve([]);
     const safeExe = parentExeName.replace(/[^a-zA-Z0-9._-]/g, '');
     if (!safeExe) return resolve([]);
     const nameWithoutExt = safeExe.replace(/\.exe$/i, '');
@@ -580,6 +594,7 @@ Write-Output (ConvertTo-Json -InputObject @($result) -Compress)
 
 ipcMain.handle('check-game-running', (_, { exeName, gamePath }) =>
   new Promise(resolve => {
+    if (process.platform !== 'win32') return resolve({ running: false });
     const safeExe = exeName ? exeName.replace(/[^a-zA-Z0-9._-]/g, '') : '';
     const standardizedExe = safeExe.toLowerCase().endsWith('.exe') ? safeExe : (safeExe ? safeExe + '.exe' : '');
     const nameWithoutExt = standardizedExe.replace(/\.exe$/i, '');

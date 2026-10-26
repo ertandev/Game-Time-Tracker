@@ -147,6 +147,9 @@ async function onProcessList(procs) {
       const dot = $('autoStatusDot'), txt = $('autoStatusText');
       dot.className='auto-dot'+(running?' active':g.exe?' watching':'');
       txt.textContent=running?dict.exe_running.replace('NAME', g.name):g.exe?dict.exe_waiting:dict.exe_none;
+      if ($('gameAutoStatus')) {
+        $('gameAutoStatus').className = 'game-auto-status' + (running ? ' is-active' : (g.exe ? ' is-watching' : ''));
+      }
     }
   }
 }
@@ -809,19 +812,27 @@ function renderGameHeader() {
   av.style.boxShadow  = `0 0 16px ${g.color}66`;
   $('gameNameTitle').textContent = g.name;
   $('gameExeBadge').textContent  = g.exe || dict.exe_not_assigned;
+  $('gameExeBadge').classList.toggle('has-exe', Boolean(g.exe));
 
   const dot = $('autoStatusDot'), txt = $('autoStatusText');
   dot.className='auto-dot'+(g.exe?' watching':'');
   txt.textContent = g.exe ? dict.exe_watching : dict.exe_manual_mode;
+  if ($('gameAutoStatus')) {
+    $('gameAutoStatus').className = 'game-auto-status' + (g.exe ? ' is-watching' : '');
+  }
 }
 
 function renderTimer() {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
+  const sessionBadge = $('sessionBadge');
   if(selectedId!==activeGameId||!activeState) {
     $('th').textContent=$('tm').textContent=$('ts').textContent='00';
     $('timerDisplay').className='timer-display';
     document.querySelectorAll('.blink').forEach(c=>c.classList.remove('on'));
-    $('sessionBadge').textContent=dict.badge_waiting;
+    if (sessionBadge) {
+      sessionBadge.textContent=dict.badge_waiting;
+      sessionBadge.className='session-badge';
+    }
     renderDlcSection();
     return;
   }
@@ -830,21 +841,37 @@ function renderTimer() {
   const st = activeState.isPaused||activeState.isAutoPaused;
   $('timerDisplay').className='timer-display '+(st?'paused':'running');
   document.querySelectorAll('.blink').forEach(c=>c.classList.toggle('on',!st));
-  $('sessionBadge').textContent = st ? dict.badge_paused : dict.badge_running;
+  if (sessionBadge) {
+    sessionBadge.textContent = st ? dict.badge_paused : dict.badge_running;
+    sessionBadge.className = 'session-badge ' + (st ? 'is-paused' : 'is-running');
+  }
   if(isElectron) window.electronAPI.updateTray(`${st ? '⏸' : '▶'} ${gameById(activeGameId)?.name} — ${fmtShort(activeState.runningMs)}`);
   renderDlcSection();
 }
 
 function renderStatusPill() {
-  const dot=$('statusDot'), txt=$('statusText');
+  const dot=$('statusDot'), txt=$('statusText'), pill=$('statusPill');
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   dot.className='status-dot';
+  if (pill) pill.className='status-pill';
   if(!activeState||selectedId!==activeGameId) {
     txt.textContent=dict.status_ready; return;
   }
-  if(activeState.isAutoPaused) { dot.classList.add('autopaused'); txt.textContent=dict.status_autopaused; }
-  else if(activeState.isPaused){ dot.classList.add('paused');     txt.textContent=dict.status_paused; }
-  else                         { dot.classList.add('running');    txt.textContent=dict.status_running; }
+  if(activeState.isAutoPaused) { 
+    dot.classList.add('autopaused'); 
+    txt.textContent=dict.status_autopaused; 
+    if (pill) pill.classList.add('is-autopaused');
+  }
+  else if(activeState.isPaused){ 
+    dot.classList.add('paused');     
+    txt.textContent=dict.status_paused; 
+    if (pill) pill.classList.add('is-paused');
+  }
+  else { 
+    dot.classList.add('running');    
+    txt.textContent=dict.status_running; 
+    if (pill) pill.classList.add('is-running');
+  }
 }
 
 function renderControls() {
@@ -1708,9 +1735,29 @@ function renderHltbSearchResults(results) {
     return;
   }
 
+  const g = gameById(selectedId);
+  const currentHltbId = g?.hltbData?.id;
+
   results.forEach(res => {
     const item = document.createElement('div');
-    item.className = 'hltb-result-item';
+    const isSelected = currentHltbId && String(currentHltbId) === String(res.game_id);
+    item.className = 'hltb-result-item' + (isSelected ? ' selected' : '');
+    
+    // Cover image thumbnail
+    if (res.game_image) {
+      const img = document.createElement('img');
+      img.className = 'hltb-result-item-img';
+      let imageUrl = '';
+      if (res.game_image.startsWith('http')) {
+        imageUrl = res.game_image;
+      } else if (res.game_image.startsWith('/')) {
+        imageUrl = 'https://howlongtobeat.com' + res.game_image;
+      } else {
+        imageUrl = 'https://howlongtobeat.com/games/' + res.game_image;
+      }
+      img.src = imageUrl;
+      item.appendChild(img);
+    }
     
     const info = document.createElement('div');
     info.className = 'hltb-result-info';
@@ -1730,11 +1777,27 @@ function renderHltbSearchResults(results) {
     item.appendChild(info);
     
     const btn = document.createElement('button');
-    btn.className = 'hltb-result-btn';
-    btn.textContent = dict.select || 'Seç';
+    btn.type = 'button';
+    btn.className = 'hltb-result-btn' + (isSelected ? ' is-selected' : '');
+    btn.innerHTML = isSelected 
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg> <span>${dict.selected || (settings.lang === 'tr' ? 'Seçildi' : 'Selected')}</span>`
+      : `<span>${dict.select || (settings.lang === 'tr' ? 'Seç' : 'Select')}</span>`;
     item.appendChild(btn);
     
     item.addEventListener('click', async () => {
+      // Immediate tactile feedback
+      el.querySelectorAll('.hltb-result-item').forEach(x => {
+        x.classList.remove('selected');
+        const otherBtn = x.querySelector('.hltb-result-btn');
+        if (otherBtn) {
+          otherBtn.className = 'hltb-result-btn';
+          otherBtn.innerHTML = `<span>${dict.select || (settings.lang === 'tr' ? 'Seç' : 'Select')}</span>`;
+        }
+      });
+      item.classList.add('selected');
+      btn.className = 'hltb-result-btn is-selected';
+      btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12"><polyline points="20 6 9 17 4 12"/></svg> <span>${dict.selected || (settings.lang === 'tr' ? 'Seçildi' : 'Selected')}</span>`;
+
       const hltbData = {
         id: res.game_id,
         name: res.game_name,
@@ -1749,16 +1812,16 @@ function renderHltbSearchResults(results) {
       try {
         const dlcList = await window.electronAPI.fetchHltbDlcs(hltbData.id);
         if (dlcList && dlcList.length > 0) {
-          const g = gameById(selectedId);
-          if (g) {
-            if (!g.dlcs) g.dlcs = [];
+          const game = gameById(selectedId);
+          if (game) {
+            if (!game.dlcs) game.dlcs = [];
             let changedCount = 0;
             dlcList.forEach(item => {
               const dlcName = (typeof item === 'string' ? item : item.name).trim();
               const dlcImage = (typeof item === 'object' && item.image) ? item.image : null;
-              const existing = g.dlcs.find(d => d.name.toLowerCase().trim() === dlcName.toLowerCase());
+              const existing = game.dlcs.find(d => d.name.toLowerCase().trim() === dlcName.toLowerCase());
               if (!existing) {
-                g.dlcs.push({
+                game.dlcs.push({
                   id: genId(),
                   name: dlcName,
                   image: dlcImage,
@@ -1781,6 +1844,7 @@ function renderHltbSearchResults(results) {
         console.error('Failed to populate DLCs on manual link:', e);
       }
 
+      await new Promise(r => setTimeout(r, 220));
       closeHltbModal();
       renderHltbSection();
       renderSidebar();

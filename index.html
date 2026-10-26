@@ -79,7 +79,15 @@
               <span class="auto-dot" id="autoStatusDot"></span>
               <span id="autoStatusText">İzleniyor</span>
             </div>
-            <button class="btn-icon-danger" id="deleteGameBtn" title="Oyunu Sil" data-i18n-title="delete_game_title" data-tooltip-key="tt_delete_game">🗑</button>
+            <button class="btn-icon-danger" id="deleteGameBtn" title="Oyunu Sil" data-i18n-title="delete_game_title" data-tooltip-key="tt_delete_game">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 6h18"></path>
+                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+            </button>
           </div>
         </div>
 
@@ -92,7 +100,7 @@
             <span id="th">00</span><span class="col blink">:</span><span id="tm">00</span><span class="col blink">:</span><span id="ts">00</span>
           </div>
           <div class="status-row">
-            <div class="status-pill">
+            <div class="status-pill" id="statusPill">
               <span class="status-dot" id="statusDot"></span>
               <span id="statusText" data-i18n="status_ready">Hazır</span>
             </div>
@@ -446,12 +454,14 @@
         </div>
 
         <!-- HLTB Match Section in Add Game Modal -->
-        <div class="form-group" id="newGameHltbGroup" style="margin-top: 12px; display: none;">
-          <label style="display: flex; align-items: center; margin-bottom: 6px;">
-            <span data-i18n="hltb_match_optional">HowLongToBeat Eşleştirmesi (Opsiyonel)</span>
-            <span id="newGameHltbStatus" class="s-dlc-badge" style="display: none; font-size: 0.6rem; margin-left: 8px; padding: 1px 6px; vertical-align: middle;"></span>
-          </label>
-          <div id="newGameHltbResults" class="scan-list hltb-add-results" style="max-height: 140px; overflow-y: auto;">
+        <div class="form-group" id="newGameHltbGroup" style="margin-top: 14px; display: none;">
+          <div class="hltb-section-header">
+            <label class="hltb-section-label">
+              <span data-i18n="hltb_match_optional">HowLongToBeat Eşleştirmesi (Opsiyonel)</span>
+            </label>
+            <span id="newGameHltbStatus" class="hltb-match-badge" style="display: none;"></span>
+          </div>
+          <div id="newGameHltbResults" class="scan-list hltb-add-results" style="max-height: 148px; overflow-y: auto;">
             <!-- Dynamic HLTB candidates -->
           </div>
         </div>
@@ -459,16 +469,15 @@
         <!-- Tabs -->
         <div class="tabs">
           <button class="tab active" data-tab="manual" id="tabManualBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin: 0;">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
-              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="margin: 0;">
+              <polyline points="4 17 10 11 4 5"></polyline>
+              <line x1="12" y1="19" x2="20" y2="19"></line>
             </svg>
             <span data-i18n="tab_manual">Manuel EXE</span>
           </button>
           <button class="tab" data-tab="scan" id="tabScanBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" style="margin: 0;">
-              <circle cx="11" cy="11" r="8"></circle>
-              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="margin: 0;">
+              <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
             </svg>
             <span data-i18n="tab_scan">Şu An Açık</span>
           </button>
@@ -492,8 +501,12 @@
         <!-- Scan Tab -->
         <div class="tab-pane hidden" id="paneScan">
           <button class="btn-scan" id="scanBtn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
-              <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15">
+              <path d="M3 7V5a2 2 0 0 1 2-2h2"></path>
+              <path d="M17 3h2a2 2 0 0 1 2 2v2"></path>
+              <path d="M21 17v2a2 2 0 0 1-2 2h-2"></path>
+              <path d="M7 21H5a2 2 0 0 1-2-2v-2"></path>
+              <line x1="7" y1="12" x2="17" y2="12"></line>
             </svg>
             <span data-i18n="scan_btn_idle">Çalışan Processleri Tara</span>
           </button>
@@ -693,7 +706,13 @@
           <label data-i18n="game_name_label">Oyun Adı</label>
           <div style="display: flex; gap: 8px;">
             <input type="text" id="hltbSearchInput" class="form-input" placeholder="Oyun adı..." data-i18n-placeholder="hltb_search_placeholder" style="flex: 1;" />
-            <button class="btn-scan" id="hltbSearchBtn" style="margin-top: 0; width: auto; white-space: nowrap; padding: 0 16px;" data-i18n="hltb_button_search">Ara</button>
+            <button class="btn-search-modal" id="hltbSearchBtn">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+              <span id="hltbSearchBtnText" data-i18n="hltb_button_search">Ara</span>
+            </button>
           </div>
         </div>
         

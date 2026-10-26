@@ -246,22 +246,23 @@ function setHltbStatusSelected(text) {
   const statusSpan = $('newGameHltbStatus');
   if (!statusSpan) return;
   statusSpan.textContent = '';
-  statusSpan.style.display = 'inline-block';
+  statusSpan.style.display = 'inline-flex';
+  statusSpan.className = 'hltb-match-badge';
   
-  const wrapper = document.createElement('span');
-  wrapper.style.display = 'inline-flex';
-  wrapper.style.alignItems = 'center';
-  wrapper.style.gap = '4px';
-  wrapper.style.color = 'var(--accent)';
-  wrapper.style.fontWeight = '600';
-  wrapper.style.fontSize = '0.62rem';
-  wrapper.style.textTransform = 'uppercase';
-  wrapper.style.letterSpacing = '0.03em';
-  wrapper.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5" width="11" height="11" style="display: block; stroke-linecap: round; stroke-linejoin: round;"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+  const icon = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  icon.setAttribute('viewBox', '0 0 24 24');
+  icon.setAttribute('fill', 'none');
+  icon.setAttribute('stroke', 'currentColor');
+  icon.setAttribute('stroke-width', '2.5');
+  icon.setAttribute('stroke-linecap', 'round');
+  icon.setAttribute('stroke-linejoin', 'round');
+  icon.innerHTML = '<polyline points="20 6 9 17 4 12"></polyline>';
   
-  const txtNode = document.createTextNode(text);
-  wrapper.appendChild(txtNode);
-  statusSpan.appendChild(wrapper);
+  const txtNode = document.createElement('span');
+  txtNode.textContent = text;
+  
+  statusSpan.appendChild(icon);
+  statusSpan.appendChild(txtNode);
 }
 
 async function searchAddGameHltb(query) {
@@ -315,7 +316,8 @@ async function searchAddGameHltb(query) {
     results.forEach(res => {
       const item = document.createElement('div');
       item.className = 'hltb-result-item';
-      if (selectedHltbData && selectedHltbData.id === res.game_id) {
+      const isSelected = selectedHltbData && selectedHltbData.id === res.game_id;
+      if (isSelected) {
         item.classList.add('selected');
       }
       
@@ -353,8 +355,13 @@ async function searchAddGameHltb(query) {
       item.appendChild(info);
       
       const btn = document.createElement('button');
-      btn.className = 'hltb-result-btn';
-      btn.textContent = dict.select || 'Seç';
+      btn.type = 'button';
+      btn.className = 'hltb-result-btn' + (isSelected ? ' is-selected' : '');
+      if (isSelected) {
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg><span>${dict.selected || (settings.lang === 'tr' ? 'Seçildi' : 'Selected')}</span>`;
+      } else {
+        btn.innerHTML = `<span>${dict.select || (settings.lang === 'tr' ? 'Seç' : 'Select')}</span>`;
+      }
       item.appendChild(btn);
       
       item.addEventListener('click', (e) => {
@@ -362,7 +369,14 @@ async function searchAddGameHltb(query) {
         
         const isAlreadySelected = item.classList.contains('selected');
         
-        container.querySelectorAll('.hltb-result-item').forEach(x => x.classList.remove('selected'));
+        container.querySelectorAll('.hltb-result-item').forEach(x => {
+          x.classList.remove('selected');
+          const otherBtn = x.querySelector('.hltb-result-btn');
+          if (otherBtn) {
+            otherBtn.classList.remove('is-selected');
+            otherBtn.innerHTML = `<span>${dict.select || (settings.lang === 'tr' ? 'Seç' : 'Select')}</span>`;
+          }
+        });
         
         if (isAlreadySelected) {
           selectedHltbData = null;
@@ -370,6 +384,8 @@ async function searchAddGameHltb(query) {
           $('newGameHltbStatus').style.display = 'none';
         } else {
           item.classList.add('selected');
+          btn.classList.add('is-selected');
+          btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="12" height="12" style="stroke-linecap:round;stroke-linejoin:round;flex-shrink:0;"><polyline points="20 6 9 17 4 12"></polyline></svg><span>${dict.selected || (settings.lang === 'tr' ? 'Seçildi' : 'Selected')}</span>`;
           selectedHltbData = {
             id: res.game_id,
             name: res.game_name,
@@ -1249,7 +1265,7 @@ $('scanBtn').addEventListener('click', async()=>{
   try {
     const procs = await window.electronAPI.scanProcesses();
     btn.classList.remove('loading');
-    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> ${dict.scan_btn_again}`;
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg> ${dict.scan_btn_again}`;
     if(!procs.length) {
       const el = $('scanList');
       el.textContent = '';
@@ -1263,7 +1279,7 @@ $('scanBtn').addEventListener('click', async()=>{
     renderScanList(procs);
   } catch(e) {
     btn.classList.remove('loading');
-    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> ${dict.scan_btn_again}`;
+    btn.innerHTML=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg> ${dict.scan_btn_again}`;
     const el = $('scanList');
     el.textContent = '';
     const p = document.createElement('p');
@@ -1498,8 +1514,9 @@ async function handleHltbSearch() {
   if (!query) return;
 
   const btn = $('hltbSearchBtn');
+  const btnText = $('hltbSearchBtnText') || btn;
   btn.disabled = true;
-  btn.textContent = dict.hltb_fetching;
+  btnText.textContent = dict.hltb_fetching;
   
   const el = $('hltbResultList');
   el.innerHTML = `<p class="scan-hint">${dict.hltb_fetching}</p>`;
@@ -1507,11 +1524,11 @@ async function handleHltbSearch() {
   try {
     const results = await window.electronAPI.fetchHltbTime(query);
     btn.disabled = false;
-    btn.textContent = dict.hltb_button_search;
+    btnText.textContent = dict.hltb_button_search;
     renderHltbSearchResults(results);
   } catch (e) {
     btn.disabled = false;
-    btn.textContent = dict.hltb_button_search;
+    btnText.textContent = dict.hltb_button_search;
     el.innerHTML = `<p class="scan-hint">${dict.toast_hltb_fetch_failed}</p>`;
   }
 }

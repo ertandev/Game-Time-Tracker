@@ -169,6 +169,7 @@ const TRANSLATIONS = {
     
     // Multi-select sessions
     select: "Seç",
+    selected: "Seçildi",
     selected_count: "COUNT seçildi",
     select_all: "Tümünü Seç",
     confirm_delete_selected_title: "Seçilenleri Sil",
@@ -406,6 +407,7 @@ const TRANSLATIONS = {
     
     // Multi-select sessions
     select: "Select",
+    selected: "Selected",
     selected_count: "COUNT selected",
     select_all: "Select All",
     confirm_delete_selected_title: "Delete Selected",
@@ -503,7 +505,7 @@ function applyLanguage() {
   const scanBtn = $('scanBtn');
   if (scanBtn && !scanBtn.classList.contains('loading')) {
     const isScanAgain = scanBtn.innerHTML.includes('Yeniden') || scanBtn.innerHTML.includes('Again');
-    scanBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg> ` + (isScanAgain ? dict.scan_btn_again : dict.scan_btn_idle);
+    scanBtn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="15" height="15"><path d="M3 7V5a2 2 0 0 1 2-2h2"></path><path d="M17 3h2a2 2 0 0 1 2 2v2"></path><path d="M21 17v2a2 2 0 0 1-2 2h-2"></path><path d="M7 21H5a2 2 0 0 1-2-2v-2"></path><line x1="7" y1="12" x2="17" y2="12"></line></svg> ` + (isScanAgain ? dict.scan_btn_again : dict.scan_btn_idle);
   }
 
   if (isElectron && window.electronAPI.setLanguage) {
