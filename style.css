@@ -7,6 +7,8 @@
 @font-face{font-family:'Inter';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/Inter-400.ttf') format('truetype')}
 @font-face{font-family:'Inter';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/Inter-500.ttf') format('truetype')}
 @font-face{font-family:'Inter';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/Inter-600.ttf') format('truetype')}
+@font-face{font-family:'Chakra Petch';font-style:normal;font-weight:400;font-display:swap;src:url('fonts/ChakraPetch-Regular.ttf') format('truetype')}
+@font-face{font-family:'Chakra Petch';font-style:normal;font-weight:500;font-display:swap;src:url('fonts/ChakraPetch-Medium.ttf') format('truetype')}
 @font-face{font-family:'Chakra Petch';font-style:normal;font-weight:600;font-display:swap;src:url('fonts/ChakraPetch-SemiBold.ttf') format('truetype')}
 @font-face{font-family:'Chakra Petch';font-style:normal;font-weight:700;font-display:swap;src:url('fonts/ChakraPetch-Bold.ttf') format('truetype')}
 
@@ -17,7 +19,7 @@ button,input,select,textarea{font-family:inherit}
   --danger:hsl(0,90%,60%);--warning:hsl(40,100%,55%);
   --bg:hsl(220,20%,6%);--s1:hsl(220,18%,10%);--s2:hsl(220,16%,14%);--s3:hsl(220,14%,19%);
   --border:hsl(220,15%,22%);--text:hsl(220,15%,95%);--muted:hsl(220,12%,55%);
-  --fd:'Orbitron',monospace;--fb:'Inter',sans-serif;--fc:'Chakra Petch',sans-serif;
+  --fd:'Orbitron',monospace;--fb:'Chakra Petch','Inter',sans-serif;--fc:'Chakra Petch',sans-serif;
   --r:12px;--rl:18px;
   --game-color:hsl(162,100%,50%);
 }
@@ -732,70 +734,90 @@ input[type=range]::-webkit-slider-thumb:hover{
 .sessions-header{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border)}
 .sessions-title{font-family:var(--fd);font-size:.82rem;font-weight:700;letter-spacing:.08em}
 .btn-clear-sessions {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: hsl(220, 15%, 82%);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: hsl(220, 15%, 88%);
   border-radius: 8px;
-  padding: 5px 12px;
-  font-family: var(--fd);
-  font-size: .72rem;
+  padding: 0 13px;
+  height: 30px;
+  box-sizing: border-box;
+  font-family: var(--fc);
+  font-size: .74rem;
   font-weight: 700;
-  letter-spacing: .06em;
+  letter-spacing: .04em;
   cursor: pointer;
   transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 -1px 1px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .btn-clear-sessions:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
+  border-color: rgba(255, 255, 255, 0.38);
   color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.35);
   transform: translateY(-1px);
 }
 .btn-clear-sessions:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
 }
 .btn-clear-sessions.btn-danger-action,
 #clearSessionsBtn,
 #deleteSelectedDlcsBtn,
 #deleteSelectedSessionsBtn {
-  background: rgba(255, 71, 87, 0.08);
-  border-color: rgba(255, 71, 87, 0.25);
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.14) 0%, rgba(255, 71, 87, 0.04) 100%);
+  border: 1px solid rgba(255, 71, 87, 0.38);
   color: #ff5e6c;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.22), inset 0 0 12px rgba(255, 71, 87, 0.08);
 }
 .btn-clear-sessions.btn-danger-action:hover,
 #clearSessionsBtn:hover,
 #deleteSelectedDlcsBtn:hover,
 #deleteSelectedSessionsBtn:hover {
-  background: rgba(255, 71, 87, 0.18);
-  border-color: rgba(255, 71, 87, 0.6);
-  color: #ff3838;
-  box-shadow: 0 0 12px rgba(255, 71, 87, 0.3);
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.28) 0%, rgba(255, 71, 87, 0.14) 100%);
+  border-color: rgba(255, 71, 87, 0.75);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 18px rgba(255, 71, 87, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.38);
+  transform: translateY(-1px);
 }
 .btn-add-session {
-  background: rgba(0, 255, 163, 0.08);
-  border: 1px solid rgba(0, 255, 163, 0.3);
-  color: var(--accent);
+  background: linear-gradient(135deg, rgba(0, 255, 163, 0.15) 0%, rgba(0, 200, 130, 0.05) 100%);
+  border: 1px solid rgba(0, 255, 163, 0.38);
+  color: #00ffa3;
   border-radius: 8px;
-  width: 28px;
-  height: 28px;
-  display: flex;
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 1rem;
-  font-weight: 700;
   cursor: pointer;
   transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
   user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 12px rgba(0, 255, 163, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  flex-shrink: 0;
 }
 .btn-add-session:hover {
-  background: rgba(0, 255, 163, 0.18);
-  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(0, 255, 163, 0.28) 0%, rgba(0, 200, 130, 0.14) 100%);
+  border-color: rgba(0, 255, 163, 0.75);
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(0, 255, 163, 0.3);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 18px rgba(0, 255, 163, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4);
   transform: translateY(-1px);
 }
 .btn-add-session:active {
-  transform: scale(0.95);
+  transform: scale(0.94);
+}
+.btn-add-session svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2.2;
 }
 /* Custom date picker input container style */
 .date-input-wrapper {
@@ -1355,7 +1377,7 @@ input[type=range]::-webkit-slider-thumb:hover{
     0 24px 60px rgba(0, 0, 0, 0.7),
     0 0 0 1px rgba(255, 255, 255, 0.06) inset,
     0 0 40px var(--dialog-shadow-glow, rgba(0, 229, 160, 0.05));
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "San Francisco", sans-serif;
+  font-family: var(--fc);
 }
 
 .prompt-dialog-box {
@@ -1369,13 +1391,14 @@ input[type=range]::-webkit-slider-thumb:hover{
 }
 .prompt-dialog-box label,
 #promptLabel {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "San Francisco", sans-serif !important;
-  font-weight: 700 !important;
+  font-family: var(--fc) !important;
+  font-weight: 600 !important;
+  letter-spacing: 0.03em;
 }
 .prompt-dialog-box input,
 #promptInput {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "San Francisco", sans-serif;
-  font-weight: 600;
+  font-family: var(--fc);
+  font-weight: 500;
 }
 
 /* Ambient Top Glow & Strip */
@@ -1451,22 +1474,22 @@ input[type=range]::-webkit-slider-thumb:hover{
   z-index: 1;
 }
 .dialog-title {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "SF Pro", "San Francisco", sans-serif;
-  font-size: 1.15rem;
+  font-family: var(--fc);
+  font-size: 1.2rem;
   font-weight: 700;
   color: #f8fafc;
   margin-bottom: 8px;
-  letter-spacing: -0.015em;
+  letter-spacing: 0.02em;
 }
 .dialog-desc {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "San Francisco", sans-serif;
-  font-weight: 700;
-  font-size: 0.88rem;
+  font-family: var(--fc);
+  font-weight: 500;
+  font-size: 0.92rem;
   color: hsl(220, 15%, 88%);
   line-height: 1.5;
   margin: 0 0 20px 0;
   word-break: break-word;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
 }
 
 /* Actions & Buttons */
@@ -1483,10 +1506,10 @@ input[type=range]::-webkit-slider-thumb:hover{
   flex: 1;
   height: 40px;
   border-radius: 8px;
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "San Francisco", sans-serif;
-  font-size: 0.84rem;
+  font-family: var(--fc);
+  font-size: 0.86rem;
   font-weight: 700;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.03em;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -1559,30 +1582,6 @@ input[type=range]::-webkit-slider-thumb:hover{
   --btn-confirm-glow: rgba(255, 71, 87, 0.4);
 }
 
-/* Trial: Chakra Petch on danger confirmation popup ("Oyunu Sil" / "DLC'yi Sil") */
-.dialog-type-danger.modal-dialog-box {
-  font-family: var(--fc);
-}
-.dialog-type-danger .dialog-title {
-  font-family: var(--fc);
-  font-size: 1.2rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-.dialog-type-danger .dialog-desc,
-.dialog-type-danger .confirm-text {
-  font-family: var(--fc);
-  font-size: 0.92rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  color: hsl(220, 15%, 88%);
-}
-.dialog-type-danger .dialog-btn {
-  font-family: var(--fc);
-  font-size: 0.86rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-}
 
 .dialog-type-warning {
   --dialog-accent: #ffa502;
@@ -1635,6 +1634,13 @@ input[type=range]::-webkit-slider-thumb:hover{
   background: var(--muted);
 }
 .modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-title {
+  font-family: var(--fc);
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  color: var(--text);
+}
 .modal-close {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -1662,13 +1668,13 @@ input[type=range]::-webkit-slider-thumb:hover{
 }
 .modal-icon-lg{font-size:2.2rem;margin-bottom:10px}
 .confirm-text {
-  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "SF Pro", "San Francisco", sans-serif;
-  font-weight: 700;
-  font-size: 0.88rem;
+  font-family: var(--fc);
+  font-weight: 500;
+  font-size: 0.92rem;
   color: hsl(220, 15%, 88%);
   line-height: 1.5;
   margin: 6px 0 20px;
-  letter-spacing: -0.01em;
+  letter-spacing: 0.01em;
 }
 .form-group{margin-bottom:14px}
 .form-group label{display:block;font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;font-weight:500;font-family:var(--fb)}
@@ -1819,7 +1825,7 @@ input[type=range]::-webkit-slider-thumb:hover{
 }
 
 /* TOAST */
-.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--s3);border:1px solid var(--border);color:var(--text);padding:10px 22px;border-radius:50px;font-size:.82rem;font-weight:600;font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","SF Pro Display","SF Pro","San Francisco",sans-serif;box-shadow:0 6px 28px hsl(220,30%,3%,0.5);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;max-width:90vw}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(70px);background:var(--s3);border:1px solid var(--border);color:var(--text);padding:10px 22px;border-radius:50px;font-size:.85rem;font-weight:600;font-family:var(--fc);letter-spacing:0.02em;box-shadow:0 6px 28px hsl(220,30%,3%,0.5);transition:transform .3s cubic-bezier(.34,1.56,.64,1);z-index:999;white-space:nowrap;max-width:90vw}
 .sg-avatar-img {
   width: 34px;
   height: 34px;
@@ -2174,31 +2180,50 @@ input[type=range]::-webkit-slider-thumb:hover{
   letter-spacing: .08em;
 }
 .btn-add-dlc {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(0, 255, 163, 0.3);
-  color: var(--accent);
+  background: linear-gradient(135deg, rgba(0, 255, 163, 0.15) 0%, rgba(0, 200, 130, 0.05) 100%);
+  border: 1px solid rgba(0, 255, 163, 0.38);
+  color: #00ffa3;
   border-radius: 8px;
-  padding: 5px 12px;
-  font-size: .72rem;
-  font-family: var(--fd);
+  padding: 0 14px;
+  height: 30px;
+  box-sizing: border-box;
+  font-size: .74rem;
+  font-family: var(--fc);
   font-weight: 700;
-  letter-spacing: .06em;
+  letter-spacing: .04em;
   cursor: pointer;
   transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 6px;
   user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 12px rgba(0, 255, 163, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .btn-add-dlc:hover {
-  background: linear-gradient(135deg, rgba(0, 255, 163, 0.16) 0%, rgba(0, 200, 130, 0.08) 100%);
-  border-color: var(--accent);
+  background: linear-gradient(135deg, rgba(0, 255, 163, 0.28) 0%, rgba(0, 200, 130, 0.14) 100%);
+  border-color: rgba(0, 255, 163, 0.75);
   color: #ffffff;
-  box-shadow: 0 0 14px rgba(0, 255, 163, 0.25);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 18px rgba(0, 255, 163, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4);
   transform: translateY(-1px);
 }
 .btn-add-dlc:active {
-  transform: scale(0.97);
+  transform: scale(0.96);
+}
+#selectDlcsBtn {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.09) 0%, rgba(255, 255, 255, 0.03) 100%);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: hsl(220, 15%, 88%);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 -1px 1px rgba(0, 0, 0, 0.2);
+}
+#selectDlcsBtn:hover {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.06) 100%);
+  border-color: rgba(255, 255, 255, 0.38);
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4), 0 0 14px rgba(255, 255, 255, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
 }
 .dlc-list {
   padding: 10px;
@@ -2980,31 +3005,83 @@ input[type=range]::-webkit-slider-thumb:hover{
 }
 
 .btn-hltb-action {
-  background: rgba(255, 120, 0, 0.08);
-  border: 1px solid rgba(255, 120, 0, 0.3);
-  color: #ff952b;
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.16) 0%, rgba(255, 100, 0, 0.05) 100%);
+  border: 1px solid rgba(255, 140, 0, 0.4);
+  color: #ff9f38;
   border-radius: 8px;
-  padding: 6px 14px;
-  font-size: .72rem;
-  font-family: var(--fd);
+  padding: 0 14px;
+  height: 30px;
+  box-sizing: border-box;
+  font-size: .74rem;
+  font-family: var(--fc);
   font-weight: 700;
-  letter-spacing: .06em;
+  letter-spacing: .04em;
   cursor: pointer;
   transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   user-select: none;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.25), inset 0 0 12px rgba(255, 140, 0, 0.09);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 .btn-hltb-action:hover {
-  background: rgba(255, 120, 0, 0.16);
-  border-color: rgba(255, 120, 0, 0.65);
-  color: #ffa742;
-  box-shadow: 0 0 14px rgba(255, 120, 0, 0.25);
+  background: linear-gradient(135deg, rgba(255, 140, 0, 0.3) 0%, rgba(255, 100, 0, 0.14) 100%);
+  border-color: rgba(255, 140, 0, 0.8);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 18px rgba(255, 140, 0, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.4);
   transform: translateY(-1px);
 }
 .btn-hltb-action:active {
   transform: scale(0.96);
+}
+.btn-hltb-action svg {
+  width: 13px;
+  height: 13px;
+  stroke-width: 2.2px;
+}
+
+#hltbUnlinkBtn {
+  width: 30px;
+  height: 30px;
+  box-sizing: border-box;
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.12) 0%, rgba(255, 71, 87, 0.03) 100%);
+  border: 1px solid rgba(255, 71, 87, 0.35);
+  color: #ff5e6c;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+  transition: all .2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35), inset 0 1px 1px rgba(255, 255, 255, 0.18), inset 0 0 10px rgba(255, 71, 87, 0.06);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  user-select: none;
+}
+#hltbUnlinkBtn:hover {
+  background: linear-gradient(135deg, rgba(255, 71, 87, 0.28) 0%, rgba(255, 71, 87, 0.14) 100%);
+  border-color: rgba(255, 71, 87, 0.75);
+  color: #ffffff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4), 0 0 16px rgba(255, 71, 87, 0.4), inset 0 1px 1px rgba(255, 255, 255, 0.35);
+  transform: translateY(-1px);
+}
+#hltbUnlinkBtn:active {
+  transform: scale(0.94);
+}
+#hltbUnlinkBtn svg {
+  width: 14px;
+  height: 14px;
+  stroke: currentColor;
+  stroke-width: 2;
+  transition: transform .2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+#hltbUnlinkBtn:hover svg {
+  transform: scale(1.1);
 }
 
 /* === CUSTOM TOOLTIP === */
