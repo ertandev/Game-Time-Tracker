@@ -909,7 +909,13 @@ function renderSessionTabs(g) {
   if (!bar._wheelInit) {
     bar._wheelInit = true;
     bar.addEventListener('wheel', (e) => {
-      if (e.deltaY !== 0) {
+      // Touchpad horizontal gestures produce deltaX. Let the browser handle touchpad scrolling natively with full kinetic physics!
+      if (Math.abs(e.deltaX) > 0) {
+        return;
+      }
+      // If it's a discrete physical mouse wheel tick or Shift key is held, map deltaY to horizontal scroll
+      const isMouseWheel = e.deltaMode !== 0 || Math.abs(e.deltaY) >= 30 || e.shiftKey;
+      if (isMouseWheel && e.deltaY !== 0) {
         e.preventDefault();
         bar.scrollLeft += e.deltaY;
       }
