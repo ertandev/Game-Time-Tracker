@@ -737,6 +737,7 @@ function renderSidebar() {
     const name = document.createElement('div');
     name.className = 'sg-name';
     name.textContent = g.name;
+    name.title = g.name;
     
     const total = document.createElement('div');
     total.className = 'sg-total';
