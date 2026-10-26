@@ -269,7 +269,7 @@ function setHltbStatusSelected(text) {
 
 async function searchAddGameHltb(query) {
   query = query.trim();
-  if (!query || !isElectron) {
+  if (!query || query.length < 2 || !isElectron) {
     $('newGameHltbGroup').style.display = 'none';
     $('newGameHltbResults').textContent = '';
     $('addGameConfirm').disabled = false;
@@ -313,7 +313,12 @@ async function searchAddGameHltb(query) {
         image: autoSelectedRes.game_image,
         rating: autoSelectedRes.review_score
       };
-      $('newGameName').value = autoSelectedRes.game_name;
+      
+      // NEVER overwrite the text field if the user is currently typing in it!
+      if (document.activeElement !== $('newGameName')) {
+        $('newGameName').value = autoSelectedRes.game_name;
+      }
+      
       setHltbStatusSelected(dict.hltb_status_matched);
     } else if (currentMatchInResults) {
       setHltbStatusSelected(dict.hltb_status_matched);
@@ -1105,24 +1110,21 @@ $('addGameCancel').addEventListener('click',closeAddModal);
 $('newGameName').addEventListener('input', (e) => {
   if (e.isTrusted) {
     isNameManuallyEdited = $('newGameName').value.trim() !== '';
+    userDeselectedHltb = false;
   }
   const nameVal = $('newGameName').value.trim();
   clearTimeout(addGameHltbTimeout);
   
-  if (nameVal) {
+  if (nameVal && nameVal.length >= 2) {
     $('addGameConfirm').disabled = true;
+    addGameHltbTimeout = setTimeout(() => {
+      searchAddGameHltb(nameVal);
+    }, 600);
   } else {
     $('addGameConfirm').disabled = false;
+    $('newGameHltbGroup').style.display = 'none';
+    $('newGameHltbResults').textContent = '';
   }
-  
-  addGameHltbTimeout = setTimeout(() => {
-    if (selectedHltbData && selectedHltbData.name.toLowerCase() !== nameVal.toLowerCase()) {
-      selectedHltbData = null;
-      $('newGameHltbStatus').textContent = '';
-      $('newGameHltbStatus').style.display = 'none';
-    }
-    searchAddGameHltb(nameVal);
-  }, 500);
 });
 
 $('newGameExe').addEventListener('input', () => {
@@ -1181,8 +1183,36 @@ document.querySelectorAll('.tab').forEach(t=>t.addEventListener('click',()=>swit
 
 $('addGameConfirm').addEventListener('click', async()=>{
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
-  const name=$('newGameName').value.trim();
+  let name=$('newGameName').value.trim();
   if(!name) { toast(dict.toast_err_game_name); return; }
+
+  // Auto-match fallback if user didn't manually pick or search didn't finish
+  if (!selectedHltbData && !userDeselectedHltb && isElectron) {
+    try {
+      const fallbackResults = await window.electronAPI.fetchHltbTime(name);
+      if (fallbackResults && fallbackResults.length > 0) {
+        const top = fallbackResults[0];
+        selectedHltbData = {
+          id: top.game_id,
+          name: top.game_name,
+          main: top.comp_main,
+          plus: top.comp_plus,
+          completionist: top.comp_100,
+          image: top.game_image,
+          rating: top.review_score
+        };
+        name = top.game_name;
+      }
+    } catch (err) {
+      console.warn('Fallback HLTB match error in confirm:', err);
+    }
+  } else if (selectedHltbData && selectedHltbData.name) {
+    const hasCustomNotes = /[([{\-/]/.test(name) && !/[([{\-/]/.test(selectedHltbData.name);
+    if (!hasCustomNotes) {
+      name = selectedHltbData.name;
+    }
+  }
+
   let exe='';
   let iconDataUrl = null;
   let finalPath = '';
