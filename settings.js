@@ -146,9 +146,12 @@ $('settingsSave').addEventListener('click', () => {
     if (selectedId) {
       renderGameHeader();
       renderTimer();
+      renderControls();
       renderStatusPill();
       renderStats();
       renderSessionList();
+      renderDlcSection();
+      renderHltbSection();
     }
   }
 });
@@ -179,6 +182,17 @@ $('resetSettingsBtn').addEventListener('click', () => {
       window.electronAPI.setCloseToTray(settings.closeToTray);
     }
     applyLanguage();
+    renderSidebar();
+    if (selectedId) {
+      renderGameHeader();
+      renderTimer();
+      renderControls();
+      renderStatusPill();
+      renderStats();
+      renderSessionList();
+      renderDlcSection();
+      renderHltbSection();
+    }
     toast(TRANSLATIONS[settings.lang || 'tr']?.toast_settings_reset || '🔄 Settings reset to defaults');
   });
 });

@@ -881,9 +881,9 @@ function renderControls() {
   $('stopBtn').disabled  = !isThisGame;
   $('pauseBtn').disabled = !isThisGame;
   if(isThisGame && (activeState.isPaused||activeState.isAutoPaused)) {
-    $('pauseBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> ${dict.resume}`;
+    $('pauseBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><polygon points="5,3 19,12 5,21"/></svg> <span data-i18n="resume">${dict.resume}</span>`;
   } else {
-    $('pauseBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> ${dict.pause}`;
+    $('pauseBtn').innerHTML=`<svg viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg> <span data-i18n="pause">${dict.pause}</span>`;
   }
 }
 
@@ -1669,7 +1669,7 @@ function renderHltbSection() {
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
       </svg>
-      <span>${settings.lang === 'tr' ? 'Güncelle' : 'Update'}</span>
+      <span data-i18n="hltb_update">${dict.hltb_update || (settings.lang === 'tr' ? 'Güncelle' : 'Update')}</span>
     `;
 
     const formatHltbSeconds = (seconds) => {
@@ -1716,7 +1716,7 @@ function renderHltbSection() {
         <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
         <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
       </svg>
-      <span>${dict.hltb_link_manually || (settings.lang === 'tr' ? 'HLTB Eşleştir' : 'Match HLTB')}</span>
+      <span data-i18n="hltb_link_manually">${dict.hltb_link_manually || (settings.lang === 'tr' ? 'HLTB Eşleştir' : 'Match HLTB')}</span>
     `;
   }
 }

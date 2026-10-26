@@ -106,6 +106,7 @@ const TRANSLATIONS = {
     toast_exe_updated: "Takip edilen EXE dosyası güncellendi",
     toast_game_not_running_paused: "⚠️ Oyun çalışmadığı için sayaç duraklatıldı",
     toast_game_not_running_cancelled: "⚠️ Oyun çalışmadığı için sayaç iptal edildi",
+    toast_session_too_short: "⚠️ Oturum 1 dakikadan kısa olduğu için kaydedilmedi",
     prompt_change_exe_title: "Takip Edilen EXE Değiştir",
     prompt_change_exe_label: "İzlenecek process adını (.exe) girin:",
     
@@ -141,6 +142,7 @@ const TRANSLATIONS = {
     menu_clear_sessions: "Oturum Geçmişini Temizle",
     menu_delete: "Oyunu Sil",
     
+    settings_section_maintenance: "Bakım ve Veri",
     settings_reset_btn: "Ayarları Sıfırla",
     settings_delete_all_data_btn: "Tüm Verileri Temizle (Oyunlar & Oturumlar)",
     confirm_reset_settings_title: "Ayarları Sıfırla",
@@ -185,7 +187,10 @@ const TRANSLATIONS = {
     hltb_search_placeholder: "Oyun adı...",
     hltb_button_search: "Ara",
     hltb_link_manually: "HLTB Eşleştir",
+    hltb_update: "Güncelle",
     hltb_unlink: "Eşleşmeyi Kaldır",
+    confirm_unlink_hltb_title: "Eşleşmeyi Kaldır",
+    confirm_unlink_hltb_text: "HowLongToBeat eşleşmesi kaldırılacak. Emin misiniz?",
     hltb_fetching: "Aranıyor...",
     hltb_no_results: "Eşleşen oyun bulunamadı.",
     hltb_not_matched: "HowLongToBeat verisi eşleştirilmemiş.",
@@ -344,6 +349,7 @@ const TRANSLATIONS = {
     toast_exe_updated: "Watched EXE updated",
     toast_game_not_running_paused: "⚠️ Game not running — timer paused",
     toast_game_not_running_cancelled: "⚠️ Game not running — timer cancelled",
+    toast_session_too_short: "⚠️ Session too short (< 1 min) — not saved",
     prompt_change_exe_title: "Change Watched EXE",
     prompt_change_exe_label: "Enter process name (.exe) to watch:",
     
@@ -379,6 +385,7 @@ const TRANSLATIONS = {
     menu_clear_sessions: "Clear Session History",
     menu_delete: "Delete Game",
     
+    settings_section_maintenance: "Maintenance & Data",
     settings_reset_btn: "Reset Settings",
     settings_delete_all_data_btn: "Delete All Data (Games & Sessions)",
     confirm_reset_settings_title: "Reset Settings",
@@ -423,7 +430,10 @@ const TRANSLATIONS = {
     hltb_search_placeholder: "Game name...",
     hltb_button_search: "Search",
     hltb_link_manually: "Match HLTB",
+    hltb_update: "Update",
     hltb_unlink: "Unlink",
+    confirm_unlink_hltb_title: "Unlink Match",
+    confirm_unlink_hltb_text: "HowLongToBeat match will be removed. Are you sure?",
     hltb_fetching: "Searching...",
     hltb_no_results: "No matching games found.",
     hltb_not_matched: "HowLongToBeat data is not matched.",

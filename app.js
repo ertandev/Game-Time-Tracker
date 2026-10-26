@@ -1492,8 +1492,8 @@ $('hltbLinkBtn').addEventListener('click', openHltbModal);
 $('hltbUnlinkBtn').addEventListener('click', () => {
   const dict = TRANSLATIONS[settings.lang || 'tr'] || TRANSLATIONS.tr;
   showConfirm(
-    settings.lang === 'tr' ? 'Eşleşmeyi Kaldır' : 'Unlink Game',
-    settings.lang === 'tr' ? 'HowLongToBeat eşleşmesi kaldırılacak. Emin misiniz?' : 'HowLongToBeat link will be removed. Are you sure?',
+    dict.confirm_unlink_hltb_title || (settings.lang === 'tr' ? 'Eşleşmeyi Kaldır' : 'Unlink Match'),
+    dict.confirm_unlink_hltb_text || (settings.lang === 'tr' ? 'HowLongToBeat eşleşmesi kaldırılacak. Emin misiniz?' : 'HowLongToBeat match will be removed. Are you sure?'),
     async () => {
       await unlinkGameHltbData(selectedId);
       renderHltbSection();
